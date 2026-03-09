@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package employee;
+
+option go_package = "github.com/exbanka/backend/shared/pb/employee";
+
+message Employee {
+  int64  id              = 1;
+  string ime             = 2;
+  string prezime         = 3;
+  string datum_rodjenja  = 4;
+  string pol             = 5;
+  string email           = 6;
+  string broj_telefona   = 7;
+  string adresa          = 8;
+  string username        = 9;
+  string pozicija        = 10;
+  string departman       = 11;
+  bool   aktivan         = 12;
+  repeated string dozvole = 13;
+}
+
+// password is intentionally excluded — never returned over the API
+
+message GetAllEmployeesRequest {}
+
+message GetAllEmployeesResponse {
+  repeated Employee employees = 1;
+}
+
+service EmployeeService {
+  rpc GetAllEmployees(GetAllEmployeesRequest) returns (GetAllEmployeesResponse);
+}

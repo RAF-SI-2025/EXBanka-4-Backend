@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: employee_user
       POSTGRES_PASSWORD: employee_pass
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - employee-db-data:/var/lib/postgresql/data
       - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
