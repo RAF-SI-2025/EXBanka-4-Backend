@@ -241,6 +241,118 @@ func (x *GetAllEmployeesResponse) GetEmployees() []*Employee {
 	return nil
 }
 
+type SearchEmployeesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Ime           string                 `protobuf:"bytes,2,opt,name=ime,proto3" json:"ime,omitempty"`
+	Prezime       string                 `protobuf:"bytes,3,opt,name=prezime,proto3" json:"prezime,omitempty"`
+	Pozicija      string                 `protobuf:"bytes,4,opt,name=pozicija,proto3" json:"pozicija,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchEmployeesRequest) Reset() {
+	*x = SearchEmployeesRequest{}
+	mi := &file_employee_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchEmployeesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchEmployeesRequest) ProtoMessage() {}
+
+func (x *SearchEmployeesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_employee_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchEmployeesRequest.ProtoReflect.Descriptor instead.
+func (*SearchEmployeesRequest) Descriptor() ([]byte, []int) {
+	return file_employee_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *SearchEmployeesRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *SearchEmployeesRequest) GetIme() string {
+	if x != nil {
+		return x.Ime
+	}
+	return ""
+}
+
+func (x *SearchEmployeesRequest) GetPrezime() string {
+	if x != nil {
+		return x.Prezime
+	}
+	return ""
+}
+
+func (x *SearchEmployeesRequest) GetPozicija() string {
+	if x != nil {
+		return x.Pozicija
+	}
+	return ""
+}
+
+type SearchEmployeesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Employees     []*Employee            `protobuf:"bytes,1,rep,name=employees,proto3" json:"employees,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchEmployeesResponse) Reset() {
+	*x = SearchEmployeesResponse{}
+	mi := &file_employee_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchEmployeesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchEmployeesResponse) ProtoMessage() {}
+
+func (x *SearchEmployeesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_employee_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchEmployeesResponse.ProtoReflect.Descriptor instead.
+func (*SearchEmployeesResponse) Descriptor() ([]byte, []int) {
+	return file_employee_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *SearchEmployeesResponse) GetEmployees() []*Employee {
+	if x != nil {
+		return x.Employees
+	}
+	return nil
+}
+
 var File_employee_proto protoreflect.FileDescriptor
 
 const file_employee_proto_rawDesc = "" +
@@ -263,9 +375,17 @@ const file_employee_proto_rawDesc = "" +
 	"\adozvole\x18\r \x03(\tR\adozvole\"\x18\n" +
 	"\x16GetAllEmployeesRequest\"K\n" +
 	"\x17GetAllEmployeesResponse\x120\n" +
-	"\temployees\x18\x01 \x03(\v2\x12.employee.EmployeeR\temployees2i\n" +
+	"\temployees\x18\x01 \x03(\v2\x12.employee.EmployeeR\temployees\"v\n" +
+	"\x16SearchEmployeesRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x10\n" +
+	"\x03ime\x18\x02 \x01(\tR\x03ime\x12\x18\n" +
+	"\aprezime\x18\x03 \x01(\tR\aprezime\x12\x1a\n" +
+	"\bpozicija\x18\x04 \x01(\tR\bpozicija\"K\n" +
+	"\x17SearchEmployeesResponse\x120\n" +
+	"\temployees\x18\x01 \x03(\v2\x12.employee.EmployeeR\temployees2\xc1\x01\n" +
 	"\x0fEmployeeService\x12V\n" +
-	"\x0fGetAllEmployees\x12 .employee.GetAllEmployeesRequest\x1a!.employee.GetAllEmployeesResponseB/Z-github.com/exbanka/backend/shared/pb/employeeb\x06proto3"
+	"\x0fGetAllEmployees\x12 .employee.GetAllEmployeesRequest\x1a!.employee.GetAllEmployeesResponse\x12V\n" +
+	"\x0fSearchEmployees\x12 .employee.SearchEmployeesRequest\x1a!.employee.SearchEmployeesResponseB/Z-github.com/exbanka/backend/shared/pb/employeeb\x06proto3"
 
 var (
 	file_employee_proto_rawDescOnce sync.Once
@@ -279,21 +399,26 @@ func file_employee_proto_rawDescGZIP() []byte {
 	return file_employee_proto_rawDescData
 }
 
-var file_employee_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_employee_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_employee_proto_goTypes = []any{
 	(*Employee)(nil),                // 0: employee.Employee
 	(*GetAllEmployeesRequest)(nil),  // 1: employee.GetAllEmployeesRequest
 	(*GetAllEmployeesResponse)(nil), // 2: employee.GetAllEmployeesResponse
+	(*SearchEmployeesRequest)(nil),  // 3: employee.SearchEmployeesRequest
+	(*SearchEmployeesResponse)(nil), // 4: employee.SearchEmployeesResponse
 }
 var file_employee_proto_depIdxs = []int32{
 	0, // 0: employee.GetAllEmployeesResponse.employees:type_name -> employee.Employee
-	1, // 1: employee.EmployeeService.GetAllEmployees:input_type -> employee.GetAllEmployeesRequest
-	2, // 2: employee.EmployeeService.GetAllEmployees:output_type -> employee.GetAllEmployeesResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // 1: employee.SearchEmployeesResponse.employees:type_name -> employee.Employee
+	1, // 2: employee.EmployeeService.GetAllEmployees:input_type -> employee.GetAllEmployeesRequest
+	3, // 3: employee.EmployeeService.SearchEmployees:input_type -> employee.SearchEmployeesRequest
+	2, // 4: employee.EmployeeService.GetAllEmployees:output_type -> employee.GetAllEmployeesResponse
+	4, // 5: employee.EmployeeService.SearchEmployees:output_type -> employee.SearchEmployeesResponse
+	4, // [4:6] is the sub-list for method output_type
+	2, // [2:4] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_employee_proto_init() }
@@ -307,7 +432,7 @@ func file_employee_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_employee_proto_rawDesc), len(file_employee_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

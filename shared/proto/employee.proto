@@ -28,6 +28,18 @@ message GetAllEmployeesResponse {
   repeated Employee employees = 1;
 }
 
+message SearchEmployeesRequest {
+  string email    = 1;
+  string ime      = 2;
+  string prezime  = 3;
+  string pozicija = 4;
+}
+
+message SearchEmployeesResponse {
+  repeated Employee employees = 1;
+}
+
 service EmployeeService {
   rpc GetAllEmployees(GetAllEmployeesRequest) returns (GetAllEmployeesResponse);
+  rpc SearchEmployees(SearchEmployeesRequest) returns (SearchEmployeesResponse);
 }

@@ -17,5 +17,6 @@ func main() {
 
 	r := gin.Default()
 	r.GET("/employees", handlers.GetEmployees(employeeClient))
+	r.GET("/employees/search", handlers.SearchEmployees(employeeClient))
 	r.Run(":8081")
 }
