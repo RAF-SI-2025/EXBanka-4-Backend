@@ -90,3 +90,39 @@ func (s *EmployeeServer) GetEmployeeCredentials(ctx context.Context, req *pb.Get
 	}
 	return &pb.GetEmployeeCredentialsResponse{Id: id, PasswordHash: passwordHash, Dozvole: dozvole}, nil
 }
+
+func (s *EmployeeServer) CreateEmployee(ctx context.Context, req *pb.CreateEmployeeRequest) (*pb.CreateEmployeeResponse, error) {
+	var id int64
+	err := s.DB.QueryRowContext(ctx, `
+		INSERT INTO employees
+			(ime, prezime, datum_rodjenja, pol, email, broj_telefona, adresa, username,
+			 password, pozicija, departman, aktivan, dozvole)
+		VALUES ($1, $2, $3::date, $4, $5, $6, $7, $8, '', $9, $10, false, '{}')
+		RETURNING id`,
+		req.Ime, req.Prezime, req.DatumRodjenja, req.Pol, req.Email,
+		req.BrojTelefona, req.Adresa, req.Username, req.Pozicija, req.Departman,
+	).Scan(&id)
+	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			return nil, status.Error(codes.AlreadyExists, "email already exists")
+		}
+		return nil, err
+	}
+	return &pb.CreateEmployeeResponse{
+		Employee: &pb.Employee{
+			Id:            id,
+			Ime:           req.Ime,
+			Prezime:       req.Prezime,
+			DatumRodjenja: req.DatumRodjenja,
+			Pol:           req.Pol,
+			Email:         req.Email,
+			BrojTelefona:  req.BrojTelefona,
+			Adresa:        req.Adresa,
+			Username:      req.Username,
+			Pozicija:      req.Pozicija,
+			Departman:     req.Departman,
+			Aktivan:       false,
+			Dozvole:       []string{},
+		},
+	}, nil
+}

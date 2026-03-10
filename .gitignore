@@ -1,0 +1,26 @@
+# Go binaries and build output
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+__debug_bin*
+
+# Go workspace (not used here, but common)
+go.work
+go.work.sum
+
+# Environment / secrets
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -49,8 +49,26 @@ message GetEmployeeCredentialsResponse {
   repeated string dozvole       = 3;
 }
 
+message CreateEmployeeRequest {
+  string ime            = 1;
+  string prezime        = 2;
+  string datum_rodjenja = 3;
+  string pol            = 4;
+  string email          = 5;
+  string broj_telefona  = 6;
+  string adresa         = 7;
+  string username       = 8;
+  string pozicija       = 9;
+  string departman      = 10;
+}
+
+message CreateEmployeeResponse {
+  Employee employee = 1;
+}
+
 service EmployeeService {
   rpc GetAllEmployees(GetAllEmployeesRequest) returns (GetAllEmployeesResponse);
   rpc SearchEmployees(SearchEmployeesRequest) returns (SearchEmployeesResponse);
   rpc GetEmployeeCredentials(GetEmployeeCredentialsRequest) returns (GetEmployeeCredentialsResponse);
+  rpc CreateEmployee(CreateEmployeeRequest) returns (CreateEmployeeResponse);
 }

@@ -1,7 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE employees (
-    id              BIGINT PRIMARY KEY,
+    id              BIGSERIAL PRIMARY KEY,
     ime             VARCHAR,
     prezime         VARCHAR,
     datum_rodjenja  DATE,
@@ -17,6 +17,6 @@ CREATE TABLE employees (
     dozvole         TEXT[]
 );
 
-INSERT INTO employees (id, ime, prezime, datum_rodjenja, pol, email, broj_telefona, adresa, username, password, pozicija, departman, aktivan, dozvole)
-SELECT 1, 'Admin', 'Admin', '1990-01-01', 'M', 'admin@exbanka.com', '', '', 'admin', crypt('admin', gen_salt('bf', 10)), 'Administrator', 'IT', true, ARRAY['ADMIN', 'READ', 'WRITE', 'DELETE']
+INSERT INTO employees (ime, prezime, datum_rodjenja, pol, email, broj_telefona, adresa, username, password, pozicija, departman, aktivan, dozvole)
+SELECT 'Admin', 'Admin', '1990-01-01', 'M', 'admin@exbanka.com', '', '', 'admin', crypt('admin', gen_salt('bf', 10)), 'Administrator', 'IT', true, ARRAY['ADMIN', 'READ', 'WRITE', 'DELETE']
 WHERE NOT EXISTS (SELECT 1 FROM employees WHERE username = 'admin');

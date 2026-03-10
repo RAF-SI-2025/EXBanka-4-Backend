@@ -457,6 +457,166 @@ func (x *GetEmployeeCredentialsResponse) GetDozvole() []string {
 	return nil
 }
 
+type CreateEmployeeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ime           string                 `protobuf:"bytes,1,opt,name=ime,proto3" json:"ime,omitempty"`
+	Prezime       string                 `protobuf:"bytes,2,opt,name=prezime,proto3" json:"prezime,omitempty"`
+	DatumRodjenja string                 `protobuf:"bytes,3,opt,name=datum_rodjenja,json=datumRodjenja,proto3" json:"datum_rodjenja,omitempty"`
+	Pol           string                 `protobuf:"bytes,4,opt,name=pol,proto3" json:"pol,omitempty"`
+	Email         string                 `protobuf:"bytes,5,opt,name=email,proto3" json:"email,omitempty"`
+	BrojTelefona  string                 `protobuf:"bytes,6,opt,name=broj_telefona,json=brojTelefona,proto3" json:"broj_telefona,omitempty"`
+	Adresa        string                 `protobuf:"bytes,7,opt,name=adresa,proto3" json:"adresa,omitempty"`
+	Username      string                 `protobuf:"bytes,8,opt,name=username,proto3" json:"username,omitempty"`
+	Pozicija      string                 `protobuf:"bytes,9,opt,name=pozicija,proto3" json:"pozicija,omitempty"`
+	Departman     string                 `protobuf:"bytes,10,opt,name=departman,proto3" json:"departman,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateEmployeeRequest) Reset() {
+	*x = CreateEmployeeRequest{}
+	mi := &file_employee_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateEmployeeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateEmployeeRequest) ProtoMessage() {}
+
+func (x *CreateEmployeeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_employee_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateEmployeeRequest.ProtoReflect.Descriptor instead.
+func (*CreateEmployeeRequest) Descriptor() ([]byte, []int) {
+	return file_employee_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *CreateEmployeeRequest) GetIme() string {
+	if x != nil {
+		return x.Ime
+	}
+	return ""
+}
+
+func (x *CreateEmployeeRequest) GetPrezime() string {
+	if x != nil {
+		return x.Prezime
+	}
+	return ""
+}
+
+func (x *CreateEmployeeRequest) GetDatumRodjenja() string {
+	if x != nil {
+		return x.DatumRodjenja
+	}
+	return ""
+}
+
+func (x *CreateEmployeeRequest) GetPol() string {
+	if x != nil {
+		return x.Pol
+	}
+	return ""
+}
+
+func (x *CreateEmployeeRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *CreateEmployeeRequest) GetBrojTelefona() string {
+	if x != nil {
+		return x.BrojTelefona
+	}
+	return ""
+}
+
+func (x *CreateEmployeeRequest) GetAdresa() string {
+	if x != nil {
+		return x.Adresa
+	}
+	return ""
+}
+
+func (x *CreateEmployeeRequest) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *CreateEmployeeRequest) GetPozicija() string {
+	if x != nil {
+		return x.Pozicija
+	}
+	return ""
+}
+
+func (x *CreateEmployeeRequest) GetDepartman() string {
+	if x != nil {
+		return x.Departman
+	}
+	return ""
+}
+
+type CreateEmployeeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Employee      *Employee              `protobuf:"bytes,1,opt,name=employee,proto3" json:"employee,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateEmployeeResponse) Reset() {
+	*x = CreateEmployeeResponse{}
+	mi := &file_employee_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateEmployeeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateEmployeeResponse) ProtoMessage() {}
+
+func (x *CreateEmployeeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_employee_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateEmployeeResponse.ProtoReflect.Descriptor instead.
+func (*CreateEmployeeResponse) Descriptor() ([]byte, []int) {
+	return file_employee_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CreateEmployeeResponse) GetEmployee() *Employee {
+	if x != nil {
+		return x.Employee
+	}
+	return nil
+}
+
 var File_employee_proto protoreflect.FileDescriptor
 
 const file_employee_proto_rawDesc = "" +
@@ -492,11 +652,26 @@ const file_employee_proto_rawDesc = "" +
 	"\x1eGetEmployeeCredentialsResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12#\n" +
 	"\rpassword_hash\x18\x02 \x01(\tR\fpasswordHash\x12\x18\n" +
-	"\adozvole\x18\x03 \x03(\tR\adozvole2\xae\x02\n" +
+	"\adozvole\x18\x03 \x03(\tR\adozvole\"\xa5\x02\n" +
+	"\x15CreateEmployeeRequest\x12\x10\n" +
+	"\x03ime\x18\x01 \x01(\tR\x03ime\x12\x18\n" +
+	"\aprezime\x18\x02 \x01(\tR\aprezime\x12%\n" +
+	"\x0edatum_rodjenja\x18\x03 \x01(\tR\rdatumRodjenja\x12\x10\n" +
+	"\x03pol\x18\x04 \x01(\tR\x03pol\x12\x14\n" +
+	"\x05email\x18\x05 \x01(\tR\x05email\x12#\n" +
+	"\rbroj_telefona\x18\x06 \x01(\tR\fbrojTelefona\x12\x16\n" +
+	"\x06adresa\x18\a \x01(\tR\x06adresa\x12\x1a\n" +
+	"\busername\x18\b \x01(\tR\busername\x12\x1a\n" +
+	"\bpozicija\x18\t \x01(\tR\bpozicija\x12\x1c\n" +
+	"\tdepartman\x18\n" +
+	" \x01(\tR\tdepartman\"H\n" +
+	"\x16CreateEmployeeResponse\x12.\n" +
+	"\bemployee\x18\x01 \x01(\v2\x12.employee.EmployeeR\bemployee2\x83\x03\n" +
 	"\x0fEmployeeService\x12V\n" +
 	"\x0fGetAllEmployees\x12 .employee.GetAllEmployeesRequest\x1a!.employee.GetAllEmployeesResponse\x12V\n" +
 	"\x0fSearchEmployees\x12 .employee.SearchEmployeesRequest\x1a!.employee.SearchEmployeesResponse\x12k\n" +
-	"\x16GetEmployeeCredentials\x12'.employee.GetEmployeeCredentialsRequest\x1a(.employee.GetEmployeeCredentialsResponseB/Z-github.com/exbanka/backend/shared/pb/employeeb\x06proto3"
+	"\x16GetEmployeeCredentials\x12'.employee.GetEmployeeCredentialsRequest\x1a(.employee.GetEmployeeCredentialsResponse\x12S\n" +
+	"\x0eCreateEmployee\x12\x1f.employee.CreateEmployeeRequest\x1a .employee.CreateEmployeeResponseB/Z-github.com/exbanka/backend/shared/pb/employeeb\x06proto3"
 
 var (
 	file_employee_proto_rawDescOnce sync.Once
@@ -510,7 +685,7 @@ func file_employee_proto_rawDescGZIP() []byte {
 	return file_employee_proto_rawDescData
 }
 
-var file_employee_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_employee_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_employee_proto_goTypes = []any{
 	(*Employee)(nil),                       // 0: employee.Employee
 	(*GetAllEmployeesRequest)(nil),         // 1: employee.GetAllEmployeesRequest
@@ -519,21 +694,26 @@ var file_employee_proto_goTypes = []any{
 	(*SearchEmployeesResponse)(nil),        // 4: employee.SearchEmployeesResponse
 	(*GetEmployeeCredentialsRequest)(nil),  // 5: employee.GetEmployeeCredentialsRequest
 	(*GetEmployeeCredentialsResponse)(nil), // 6: employee.GetEmployeeCredentialsResponse
+	(*CreateEmployeeRequest)(nil),          // 7: employee.CreateEmployeeRequest
+	(*CreateEmployeeResponse)(nil),         // 8: employee.CreateEmployeeResponse
 }
 var file_employee_proto_depIdxs = []int32{
 	0, // 0: employee.GetAllEmployeesResponse.employees:type_name -> employee.Employee
 	0, // 1: employee.SearchEmployeesResponse.employees:type_name -> employee.Employee
-	1, // 2: employee.EmployeeService.GetAllEmployees:input_type -> employee.GetAllEmployeesRequest
-	3, // 3: employee.EmployeeService.SearchEmployees:input_type -> employee.SearchEmployeesRequest
-	5, // 4: employee.EmployeeService.GetEmployeeCredentials:input_type -> employee.GetEmployeeCredentialsRequest
-	2, // 5: employee.EmployeeService.GetAllEmployees:output_type -> employee.GetAllEmployeesResponse
-	4, // 6: employee.EmployeeService.SearchEmployees:output_type -> employee.SearchEmployeesResponse
-	6, // 7: employee.EmployeeService.GetEmployeeCredentials:output_type -> employee.GetEmployeeCredentialsResponse
-	5, // [5:8] is the sub-list for method output_type
-	2, // [2:5] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	0, // 2: employee.CreateEmployeeResponse.employee:type_name -> employee.Employee
+	1, // 3: employee.EmployeeService.GetAllEmployees:input_type -> employee.GetAllEmployeesRequest
+	3, // 4: employee.EmployeeService.SearchEmployees:input_type -> employee.SearchEmployeesRequest
+	5, // 5: employee.EmployeeService.GetEmployeeCredentials:input_type -> employee.GetEmployeeCredentialsRequest
+	7, // 6: employee.EmployeeService.CreateEmployee:input_type -> employee.CreateEmployeeRequest
+	2, // 7: employee.EmployeeService.GetAllEmployees:output_type -> employee.GetAllEmployeesResponse
+	4, // 8: employee.EmployeeService.SearchEmployees:output_type -> employee.SearchEmployeesResponse
+	6, // 9: employee.EmployeeService.GetEmployeeCredentials:output_type -> employee.GetEmployeeCredentialsResponse
+	8, // 10: employee.EmployeeService.CreateEmployee:output_type -> employee.CreateEmployeeResponse
+	7, // [7:11] is the sub-list for method output_type
+	3, // [3:7] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_employee_proto_init() }
@@ -547,7 +727,7 @@ func file_employee_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_employee_proto_rawDesc), len(file_employee_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
