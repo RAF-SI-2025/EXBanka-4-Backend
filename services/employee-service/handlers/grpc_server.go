@@ -72,10 +72,10 @@ func (s *EmployeeServer) SearchEmployees(ctx context.Context, req *pb.SearchEmpl
 	var total int32
 	if err := s.DB.QueryRowContext(ctx, `
 		SELECT COUNT(*) FROM employees
-		WHERE ($1 = '' OR email    = $1)
-		  AND ($2 = '' OR ime      = $2)
-		  AND ($3 = '' OR prezime  = $3)
-		  AND ($4 = '' OR pozicija = $4)`,
+		WHERE ($1 = '' OR email    ILIKE '%' || $1 || '%')
+		  AND ($2 = '' OR ime      ILIKE '%' || $2 || '%')
+		  AND ($3 = '' OR prezime  ILIKE '%' || $3 || '%')
+		  AND ($4 = '' OR pozicija ILIKE '%' || $4 || '%')`,
 		req.Email, req.Ime, req.Prezime, req.Pozicija,
 	).Scan(&total); err != nil {
 		return nil, err
@@ -85,10 +85,10 @@ func (s *EmployeeServer) SearchEmployees(ctx context.Context, req *pb.SearchEmpl
 		SELECT id, ime, prezime, datum_rodjenja::text, pol, email,
 		       broj_telefona, adresa, username, pozicija, departman, aktivan, dozvole
 		FROM employees
-		WHERE ($1 = '' OR email    = $1)
-		  AND ($2 = '' OR ime      = $2)
-		  AND ($3 = '' OR prezime  = $3)
-		  AND ($4 = '' OR pozicija = $4)
+		WHERE ($1 = '' OR email    ILIKE '%' || $1 || '%')
+		  AND ($2 = '' OR ime      ILIKE '%' || $2 || '%')
+		  AND ($3 = '' OR prezime  ILIKE '%' || $3 || '%')
+		  AND ($4 = '' OR pozicija ILIKE '%' || $4 || '%')
 		LIMIT $5 OFFSET $6`,
 		req.Email, req.Ime, req.Prezime, req.Pozicija, limit, offset)
 	if err != nil {
