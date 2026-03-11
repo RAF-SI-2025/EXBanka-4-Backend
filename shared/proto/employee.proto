@@ -108,6 +108,19 @@ message ActivateEmployeeRequest {
 }
 message ActivateEmployeeResponse {}
 
+message GetEmployeeByEmailRequest  { string email = 1; }
+message GetEmployeeByEmailResponse {
+  int64  id         = 1;
+  string first_name = 2;
+  string email      = 3;
+}
+
+message UpdatePasswordRequest {
+  int64  employee_id   = 1;
+  string password_hash = 2;
+}
+message UpdatePasswordResponse {}
+
 service EmployeeService {
   rpc GetAllEmployees(GetAllEmployeesRequest) returns (GetAllEmployeesResponse);
   rpc SearchEmployees(SearchEmployeesRequest) returns (SearchEmployeesResponse);
@@ -116,4 +129,6 @@ service EmployeeService {
   rpc GetEmployeeById(GetEmployeeByIdRequest) returns (GetEmployeeByIdResponse);
   rpc UpdateEmployee(UpdateEmployeeRequest) returns (UpdateEmployeeResponse);
   rpc ActivateEmployee(ActivateEmployeeRequest) returns (ActivateEmployeeResponse);
+  rpc GetEmployeeByEmail(GetEmployeeByEmailRequest) returns (GetEmployeeByEmailResponse);
+  rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse);
 }

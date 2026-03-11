@@ -66,6 +66,12 @@ func main() {
 	}
 	defer consumeCh.Close()
 
+	resetConsumeCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to open reset consume channel: %v", err)
+	}
+	defer resetConsumeCh.Close()
+
 	producer, err := queue.NewProducer(publishCh)
 	if err != nil {
 		log.Fatalf("failed to create producer: %v", err)
@@ -76,7 +82,13 @@ func main() {
 		log.Fatalf("failed to parse email template: %v", err)
 	}
 
+	resetTmpl, err := template.ParseFiles("templates/password_reset.html")
+	if err != nil {
+		log.Fatalf("failed to parse password reset email template: %v", err)
+	}
+
 	go queue.Consume(consumeCh, smtpCfg, tmpl)
+	go queue.ConsumePasswordReset(resetConsumeCh, smtpCfg, resetTmpl)
 
 	lis, err := net.Listen("tcp", ":50053")
 	if err != nil {

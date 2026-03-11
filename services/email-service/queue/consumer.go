@@ -62,3 +62,52 @@ func sendEmail(cfg SMTPConfig, tmpl *template.Template, msg ActivationMessage) e
 	d := gomail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password)
 	return d.DialAndSend(m)
 }
+
+func ConsumePasswordReset(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	if _, err := ch.QueueDeclare(ResetQueueName, true, false, false, false, nil); err != nil {
+		log.Fatalf("failed to declare password reset queue: %v", err)
+	}
+
+	msgs, err := ch.Consume(ResetQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start password reset consumer: %v", err)
+	}
+
+	log.Println("password reset email consumer started, waiting for messages")
+
+	for d := range msgs {
+		var msg PasswordResetMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode password reset message: %v", err)
+			d.Ack(false)
+			continue
+		}
+
+		if err := sendPasswordResetEmail(cfg, tmpl, msg); err != nil {
+			log.Printf("failed to send password reset email to %s: %v", msg.Email, err)
+		} else {
+			log.Printf("password reset email sent to %s", msg.Email)
+		}
+
+		d.Ack(false)
+	}
+}
+
+func sendPasswordResetEmail(cfg SMTPConfig, tmpl *template.Template, msg PasswordResetMessage) error {
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, map[string]string{
+		"FirstName": msg.FirstName,
+		"ResetLink": msg.ResetLink,
+	}); err != nil {
+		return err
+	}
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", cfg.From)
+	m.SetHeader("To", msg.Email)
+	m.SetHeader("Subject", "Reset your EXBanka password")
+	m.SetBody("text/html", buf.String())
+
+	d := gomail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password)
+	return d.DialAndSend(m)
+}

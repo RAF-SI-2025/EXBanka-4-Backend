@@ -225,6 +225,40 @@ func (s *EmployeeServer) ActivateEmployee(ctx context.Context, req *pb.ActivateE
 	return &pb.ActivateEmployeeResponse{}, nil
 }
 
+func (s *EmployeeServer) GetEmployeeByEmail(ctx context.Context, req *pb.GetEmployeeByEmailRequest) (*pb.GetEmployeeByEmailResponse, error) {
+	var id int64
+	var firstName, email string
+	err := s.DB.QueryRowContext(ctx,
+		`SELECT id, ime, email FROM employees WHERE email = $1`,
+		req.Email,
+	).Scan(&id, &firstName, &email)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "user with this email doesn't exist")
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &pb.GetEmployeeByEmailResponse{Id: id, FirstName: firstName, Email: email}, nil
+}
+
+func (s *EmployeeServer) UpdatePassword(ctx context.Context, req *pb.UpdatePasswordRequest) (*pb.UpdatePasswordResponse, error) {
+	res, err := s.DB.ExecContext(ctx,
+		`UPDATE employees SET password = $2 WHERE id = $1`,
+		req.EmployeeId, req.PasswordHash,
+	)
+	if err != nil {
+		return nil, err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+	if n == 0 {
+		return nil, status.Error(codes.NotFound, "employee not found")
+	}
+	return &pb.UpdatePasswordResponse{}, nil
+}
+
 func (s *EmployeeServer) CreateEmployee(ctx context.Context, req *pb.CreateEmployeeRequest) (*pb.CreateEmployeeResponse, error) {
 	var id int64
 	err := s.DB.QueryRowContext(ctx, `

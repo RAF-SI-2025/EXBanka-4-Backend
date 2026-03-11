@@ -12,6 +12,14 @@ message SendActivationEmailRequest {
 
 message SendActivationEmailResponse {}
 
+message SendPasswordResetEmailRequest {
+  string email      = 1;
+  string first_name = 2;
+  string reset_link = 3;
+}
+message SendPasswordResetEmailResponse {}
+
 service EmailService {
-  rpc SendActivationEmail(SendActivationEmailRequest) returns (SendActivationEmailResponse);
+  rpc SendActivationEmail(SendActivationEmailRequest)       returns (SendActivationEmailResponse);
+  rpc SendPasswordResetEmail(SendPasswordResetEmailRequest) returns (SendPasswordResetEmailResponse);
 }

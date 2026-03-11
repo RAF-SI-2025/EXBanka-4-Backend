@@ -60,6 +60,8 @@ func main() {
 	r.POST("/login", handlers.Login(authClient))
 	r.POST("/refresh", handlers.Refresh(authClient))
 	r.POST("/auth/activate", handlers.Activate(authClient))
+	r.POST("/auth/forgot-password", handlers.ForgotPassword(authClient, emailClient))
+	r.POST("/auth/reset-password", handlers.ResetPassword(authClient))
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run(":8081")
 }

@@ -32,9 +32,25 @@ message ActivateAccountRequest {
 }
 message ActivateAccountResponse {}
 
+message RequestPasswordResetRequest  { string email = 1; }
+message RequestPasswordResetResponse {
+  string token      = 1;
+  string first_name = 2;
+  string email      = 3;
+}
+
+message ResetPasswordRequest {
+  string token            = 1;
+  string password         = 2;
+  string confirm_password = 3;
+}
+message ResetPasswordResponse {}
+
 service AuthService {
-  rpc Login(LoginRequest)                                 returns (LoginResponse);
-  rpc Refresh(RefreshRequest)                             returns (RefreshResponse);
-  rpc CreateActivationToken(CreateActivationTokenRequest) returns (CreateActivationTokenResponse);
-  rpc ActivateAccount(ActivateAccountRequest)             returns (ActivateAccountResponse);
+  rpc Login(LoginRequest)                                   returns (LoginResponse);
+  rpc Refresh(RefreshRequest)                               returns (RefreshResponse);
+  rpc CreateActivationToken(CreateActivationTokenRequest)   returns (CreateActivationTokenResponse);
+  rpc ActivateAccount(ActivateAccountRequest)               returns (ActivateAccountResponse);
+  rpc RequestPasswordReset(RequestPasswordResetRequest)     returns (RequestPasswordResetResponse);
+  rpc ResetPassword(ResetPasswordRequest)                   returns (ResetPasswordResponse);
 }
