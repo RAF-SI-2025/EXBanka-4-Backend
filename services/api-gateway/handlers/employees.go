@@ -2,10 +2,16 @@ package handlers
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"net/http"
+	"net/mail"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	authpb "github.com/exbanka/backend/shared/pb/auth"
+	emailpb "github.com/exbanka/backend/shared/pb/email"
 	pb "github.com/exbanka/backend/shared/pb/employee"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -56,7 +62,9 @@ func GetEmployeeById(client pb.EmployeeServiceClient) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 			return
 		}
-		resp, err := client.GetEmployeeById(context.Background(), &pb.GetEmployeeByIdRequest{Id: id})
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		resp, err := client.GetEmployeeById(ctx, &pb.GetEmployeeByIdRequest{Id: id})
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
 				c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
@@ -97,8 +105,14 @@ func UpdateEmployee(client pb.EmployeeServiceClient) gin.HandlerFunc {
 		if req.Permissions == nil {
 			req.Permissions = []string{}
 		}
+		if _, err := mail.ParseAddress(req.Email); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email address"})
+			return
+		}
 
-		resp, err := client.UpdateEmployee(context.Background(), &pb.UpdateEmployeeRequest{
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		resp, err := client.UpdateEmployee(ctx, &pb.UpdateEmployeeRequest{
 			Id:            id,
 			Ime:           req.FirstName,
 			Prezime:       req.LastName,
@@ -118,7 +132,7 @@ func UpdateEmployee(client pb.EmployeeServiceClient) gin.HandlerFunc {
 			case codes.NotFound:
 				c.JSON(http.StatusNotFound, gin.H{"error": "employee not found"})
 			case codes.AlreadyExists:
-				c.JSON(http.StatusConflict, gin.H{"error": "email already exists"})
+				c.JSON(http.StatusConflict, gin.H{"error": status.Convert(err).Message()})
 			case codes.FailedPrecondition:
 				c.JSON(http.StatusUnprocessableEntity, gin.H{"error": status.Convert(err).Message()})
 			default:
@@ -132,11 +146,17 @@ func UpdateEmployee(client pb.EmployeeServiceClient) gin.HandlerFunc {
 
 func SearchEmployees(client pb.EmployeeServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		resp, err := client.SearchEmployees(context.Background(), &pb.SearchEmployeesRequest{
+		page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 32)
+		pageSize, _ := strconv.ParseInt(c.DefaultQuery("page_size", "20"), 10, 32)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		resp, err := client.SearchEmployees(ctx, &pb.SearchEmployeesRequest{
 			Email:    c.Query("email"),
 			Ime:      c.Query("ime"),
 			Prezime:  c.Query("prezime"),
 			Pozicija: c.Query("pozicija"),
+			Page:     int32(page),
+			PageSize: int32(pageSize),
 		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -146,13 +166,20 @@ func SearchEmployees(client pb.EmployeeServiceClient) gin.HandlerFunc {
 		for i, e := range resp.Employees {
 			result[i] = toEmployeeResponse(e)
 		}
-		c.JSON(http.StatusOK, result)
+		c.JSON(http.StatusOK, gin.H{"employees": result, "total_count": resp.TotalCount})
 	}
 }
 
 func GetEmployees(client pb.EmployeeServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		resp, err := client.GetAllEmployees(context.Background(), &pb.GetAllEmployeesRequest{})
+		page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 32)
+		pageSize, _ := strconv.ParseInt(c.DefaultQuery("page_size", "20"), 10, 32)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		resp, err := client.GetAllEmployees(ctx, &pb.GetAllEmployeesRequest{
+			Page:     int32(page),
+			PageSize: int32(pageSize),
+		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -161,11 +188,11 @@ func GetEmployees(client pb.EmployeeServiceClient) gin.HandlerFunc {
 		for i, e := range resp.Employees {
 			result[i] = toEmployeeResponse(e)
 		}
-		c.JSON(http.StatusOK, result)
+		c.JSON(http.StatusOK, gin.H{"employees": result, "total_count": resp.TotalCount})
 	}
 }
 
-func CreateEmployee(client pb.EmployeeServiceClient) gin.HandlerFunc {
+func CreateEmployee(empClient pb.EmployeeServiceClient, authClient authpb.AuthServiceClient, emailClient emailpb.EmailServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req struct {
 			FirstName   string `json:"first_name"    binding:"required"`
@@ -183,8 +210,14 @@ func CreateEmployee(client pb.EmployeeServiceClient) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+		if _, err := mail.ParseAddress(req.Email); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email address"})
+			return
+		}
 
-		resp, err := client.CreateEmployee(context.Background(), &pb.CreateEmployeeRequest{
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		resp, err := empClient.CreateEmployee(ctx, &pb.CreateEmployeeRequest{
 			Ime:           req.FirstName,
 			Prezime:       req.LastName,
 			DatumRodjenja: req.DateOfBirth,
@@ -198,12 +231,35 @@ func CreateEmployee(client pb.EmployeeServiceClient) gin.HandlerFunc {
 		})
 		if err != nil {
 			if status.Code(err) == codes.AlreadyExists {
-				c.JSON(http.StatusConflict, gin.H{"error": "email already exists"})
+				c.JSON(http.StatusConflict, gin.H{"error": status.Convert(err).Message()})
 				return
 			}
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+
+		tokenCtx, tokenCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer tokenCancel()
+		tokenResp, err := authClient.CreateActivationToken(tokenCtx,
+			&authpb.CreateActivationTokenRequest{EmployeeId: resp.Employee.Id})
+		if err != nil {
+			log.Printf("failed to create activation token for employee %d: %v", resp.Employee.Id, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "employee created but activation setup failed"})
+			return
+		}
+
+		link := fmt.Sprintf("http://localhost:8081/auth/activate?token=%s", tokenResp.Token)
+		go func() {
+			_, err := emailClient.SendActivationEmail(context.Background(),
+				&emailpb.SendActivationEmailRequest{
+					Email:          req.Email,
+					FirstName:      req.FirstName,
+					ActivationLink: link,
+				})
+			if err != nil {
+				log.Printf("failed to send activation email to %s: %v", req.Email, err)
+			}
+		}()
 
 		c.JSON(http.StatusCreated, toEmployeeResponse(resp.Employee))
 	}

@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package email;
+
+option go_package = "github.com/exbanka/backend/shared/pb/email";
+
+message SendActivationEmailRequest {
+  string email           = 1;
+  string first_name      = 2;
+  string activation_link = 3;
+}
+
+message SendActivationEmailResponse {}
+
+service EmailService {
+  rpc SendActivationEmail(SendActivationEmailRequest) returns (SendActivationEmailResponse);
+}

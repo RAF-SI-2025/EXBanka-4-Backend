@@ -15,11 +15,35 @@ type EmployeeServer struct {
 	DB *sql.DB
 }
 
-func (s *EmployeeServer) GetAllEmployees(ctx context.Context, _ *pb.GetAllEmployeesRequest) (*pb.GetAllEmployeesResponse, error) {
+const defaultPageSize = 20
+const maxPageSize = 100
+
+func paginate(page, pageSize int32) (limit, offset int32) {
+	if pageSize <= 0 {
+		pageSize = defaultPageSize
+	}
+	if pageSize > maxPageSize {
+		pageSize = maxPageSize
+	}
+	if page <= 0 {
+		page = 1
+	}
+	return pageSize, (page - 1) * pageSize
+}
+
+func (s *EmployeeServer) GetAllEmployees(ctx context.Context, req *pb.GetAllEmployeesRequest) (*pb.GetAllEmployeesResponse, error) {
+	limit, offset := paginate(req.Page, req.PageSize)
+
+	var total int32
+	if err := s.DB.QueryRowContext(ctx, `SELECT COUNT(*) FROM employees`).Scan(&total); err != nil {
+		return nil, err
+	}
+
 	rows, err := s.DB.QueryContext(ctx, `
 		SELECT id, ime, prezime, datum_rodjenja::text, pol, email,
 		       broj_telefona, adresa, username, pozicija, departman, aktivan, dozvole
-		FROM employees`)
+		FROM employees
+		LIMIT $1 OFFSET $2`, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -39,10 +63,24 @@ func (s *EmployeeServer) GetAllEmployees(ctx context.Context, _ *pb.GetAllEmploy
 		e.Dozvole = dozvole
 		employees = append(employees, &e)
 	}
-	return &pb.GetAllEmployeesResponse{Employees: employees}, nil
+	return &pb.GetAllEmployeesResponse{Employees: employees, TotalCount: total}, nil
 }
 
 func (s *EmployeeServer) SearchEmployees(ctx context.Context, req *pb.SearchEmployeesRequest) (*pb.SearchEmployeesResponse, error) {
+	limit, offset := paginate(req.Page, req.PageSize)
+
+	var total int32
+	if err := s.DB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM employees
+		WHERE ($1 = '' OR email    = $1)
+		  AND ($2 = '' OR ime      = $2)
+		  AND ($3 = '' OR prezime  = $3)
+		  AND ($4 = '' OR pozicija = $4)`,
+		req.Email, req.Ime, req.Prezime, req.Pozicija,
+	).Scan(&total); err != nil {
+		return nil, err
+	}
+
 	rows, err := s.DB.QueryContext(ctx, `
 		SELECT id, ime, prezime, datum_rodjenja::text, pol, email,
 		       broj_telefona, adresa, username, pozicija, departman, aktivan, dozvole
@@ -50,8 +88,9 @@ func (s *EmployeeServer) SearchEmployees(ctx context.Context, req *pb.SearchEmpl
 		WHERE ($1 = '' OR email    = $1)
 		  AND ($2 = '' OR ime      = $2)
 		  AND ($3 = '' OR prezime  = $3)
-		  AND ($4 = '' OR pozicija = $4)`,
-		req.Email, req.Ime, req.Prezime, req.Pozicija)
+		  AND ($4 = '' OR pozicija = $4)
+		LIMIT $5 OFFSET $6`,
+		req.Email, req.Ime, req.Prezime, req.Pozicija, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +110,7 @@ func (s *EmployeeServer) SearchEmployees(ctx context.Context, req *pb.SearchEmpl
 		e.Dozvole = dozvole
 		employees = append(employees, &e)
 	}
-	return &pb.SearchEmployeesResponse{Employees: employees}, nil
+	return &pb.SearchEmployeesResponse{Employees: employees, TotalCount: total}, nil
 }
 
 func (s *EmployeeServer) GetEmployeeCredentials(ctx context.Context, req *pb.GetEmployeeCredentialsRequest) (*pb.GetEmployeeCredentialsResponse, error) {
@@ -153,12 +192,37 @@ func (s *EmployeeServer) UpdateEmployee(ctx context.Context, req *pb.UpdateEmplo
 	}
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
-			return nil, status.Error(codes.AlreadyExists, "email already exists")
+			switch pqErr.Constraint {
+			case "employees_username_key":
+				return nil, status.Error(codes.AlreadyExists, "username already exists")
+			default:
+				return nil, status.Error(codes.AlreadyExists, "email already exists")
+			}
 		}
 		return nil, err
 	}
 	e.Dozvole = dozvole
 	return &pb.UpdateEmployeeResponse{Employee: &e}, nil
+}
+
+func (s *EmployeeServer) ActivateEmployee(ctx context.Context, req *pb.ActivateEmployeeRequest) (*pb.ActivateEmployeeResponse, error) {
+	var aktivan bool
+	var pwd string
+	err := s.DB.QueryRowContext(ctx, `SELECT aktivan, password FROM employees WHERE id = $1`, req.EmployeeId).Scan(&aktivan, &pwd)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "employee not found")
+	}
+	if err != nil {
+		return nil, err
+	}
+	if aktivan || pwd != "" {
+		return nil, status.Error(codes.FailedPrecondition, "employee already activated")
+	}
+	_, err = s.DB.ExecContext(ctx, `UPDATE employees SET password = $2, aktivan = true WHERE id = $1`, req.EmployeeId, req.PasswordHash)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ActivateEmployeeResponse{}, nil
 }
 
 func (s *EmployeeServer) CreateEmployee(ctx context.Context, req *pb.CreateEmployeeRequest) (*pb.CreateEmployeeResponse, error) {
@@ -174,7 +238,12 @@ func (s *EmployeeServer) CreateEmployee(ctx context.Context, req *pb.CreateEmplo
 	).Scan(&id)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
-			return nil, status.Error(codes.AlreadyExists, "email already exists")
+			switch pqErr.Constraint {
+			case "employees_username_key":
+				return nil, status.Error(codes.AlreadyExists, "username already exists")
+			default:
+				return nil, status.Error(codes.AlreadyExists, "email already exists")
+			}
 		}
 		return nil, err
 	}

@@ -22,21 +22,28 @@ message Employee {
 
 // password is intentionally excluded — never returned over the API
 
-message GetAllEmployeesRequest {}
+message GetAllEmployeesRequest {
+  int32 page      = 1;
+  int32 page_size = 2;
+}
 
 message GetAllEmployeesResponse {
-  repeated Employee employees = 1;
+  repeated Employee employees  = 1;
+  int32             total_count = 2;
 }
 
 message SearchEmployeesRequest {
-  string email    = 1;
-  string ime      = 2;
-  string prezime  = 3;
-  string pozicija = 4;
+  string email     = 1;
+  string ime       = 2;
+  string prezime   = 3;
+  string pozicija  = 4;
+  int32  page      = 5;
+  int32  page_size = 6;
 }
 
 message SearchEmployeesResponse {
-  repeated Employee employees = 1;
+  repeated Employee employees   = 1;
+  int32             total_count = 2;
 }
 
 message GetEmployeeCredentialsRequest {
@@ -95,6 +102,12 @@ message UpdateEmployeeResponse {
   Employee employee = 1;
 }
 
+message ActivateEmployeeRequest {
+  int64  employee_id   = 1;
+  string password_hash = 2;
+}
+message ActivateEmployeeResponse {}
+
 service EmployeeService {
   rpc GetAllEmployees(GetAllEmployeesRequest) returns (GetAllEmployeesResponse);
   rpc SearchEmployees(SearchEmployeesRequest) returns (SearchEmployeesResponse);
@@ -102,4 +115,5 @@ service EmployeeService {
   rpc CreateEmployee(CreateEmployeeRequest) returns (CreateEmployeeResponse);
   rpc GetEmployeeById(GetEmployeeByIdRequest) returns (GetEmployeeByIdResponse);
   rpc UpdateEmployee(UpdateEmployeeRequest) returns (UpdateEmployeeResponse);
+  rpc ActivateEmployee(ActivateEmployeeRequest) returns (ActivateEmployeeResponse);
 }

@@ -2,7 +2,12 @@ package handlers
 
 import (
 	"context"
+	"crypto/rand"
+	"database/sql"
+	"encoding/hex"
+	"log"
 	"time"
+	"unicode"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -17,6 +22,7 @@ const jwtSecret = "secret-key-change-in-production"
 
 type AuthServer struct {
 	pb_auth.UnimplementedAuthServiceServer
+	DB             *sql.DB
 	EmployeeClient pb_emp.EmployeeServiceClient
 }
 
@@ -75,8 +81,16 @@ func (s *AuthServer) Refresh(_ context.Context, req *pb_auth.RefreshRequest) (*p
 		return nil, status.Error(codes.Unauthenticated, "invalid token type")
 	}
 
-	userID := int64(claims["user_id"].(float64))
-	username := claims["username"].(string)
+	userIDRaw, ok := claims["user_id"].(float64)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "invalid token claims")
+	}
+	usernameRaw, ok := claims["username"].(string)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "invalid token claims")
+	}
+	userID := int64(userIDRaw)
+	username := usernameRaw
 
 	var dozvole []string
 	if raw, ok := claims["dozvole"].([]interface{}); ok {
@@ -104,4 +118,112 @@ func generateToken(userID int64, username, tokenType string, dozvole []string, d
 		"exp":      time.Now().Add(d).Unix(),
 	}
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(jwtSecret))
+}
+
+func (s *AuthServer) CreateActivationToken(ctx context.Context, req *pb_auth.CreateActivationTokenRequest) (*pb_auth.CreateActivationTokenResponse, error) {
+	token, err := generateActivationToken()
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate token")
+	}
+	_, err = s.DB.ExecContext(ctx,
+		`INSERT INTO activation_tokens (token, employee_id, expires_at) VALUES ($1, $2, now() + interval '24 hours')`,
+		token, req.EmployeeId,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to store activation token: %v", err)
+	}
+	return &pb_auth.CreateActivationTokenResponse{Token: token}, nil
+}
+
+func (s *AuthServer) ActivateAccount(ctx context.Context, req *pb_auth.ActivateAccountRequest) (*pb_auth.ActivateAccountResponse, error) {
+	var employeeID int64
+	var expiresAt time.Time
+	err := s.DB.QueryRowContext(ctx,
+		`SELECT employee_id, expires_at FROM activation_tokens WHERE token = $1`,
+		req.Token,
+	).Scan(&employeeID, &expiresAt)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "invalid or expired token")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to look up token: %v", err)
+	}
+
+	if time.Now().After(expiresAt) {
+		if _, err := s.DB.ExecContext(ctx, `DELETE FROM activation_tokens WHERE token = $1`, req.Token); err != nil {
+			log.Printf("failed to delete expired activation token: %v", err)
+		}
+		return nil, status.Error(codes.FailedPrecondition, "activation token has expired")
+	}
+
+	empResp, err := s.EmployeeClient.GetEmployeeById(ctx, &pb_emp.GetEmployeeByIdRequest{Id: employeeID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch employee: %v", err)
+	}
+	if empResp.Employee.Aktivan {
+		return nil, status.Error(codes.FailedPrecondition, "account already activated")
+	}
+
+	if req.Password != req.ConfirmPassword {
+		return nil, status.Error(codes.InvalidArgument, "passwords do not match")
+	}
+	if err := validatePassword(req.Password); err != nil {
+		return nil, err
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to hash password")
+	}
+
+	_, err = s.EmployeeClient.ActivateEmployee(ctx, &pb_emp.ActivateEmployeeRequest{
+		EmployeeId:   employeeID,
+		PasswordHash: string(hash),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := s.DB.ExecContext(ctx, `DELETE FROM activation_tokens WHERE token = $1`, req.Token); err != nil {
+		log.Printf("failed to delete used activation token: %v", err)
+	}
+	return &pb_auth.ActivateAccountResponse{}, nil
+}
+
+func validatePassword(p string) error {
+	if len(p) < 8 {
+		return status.Error(codes.InvalidArgument, "password must be at least 8 characters")
+	}
+	if len(p) > 32 {
+		return status.Error(codes.InvalidArgument, "password must be at most 32 characters")
+	}
+	var digits, upper, lower int
+	for _, r := range p {
+		switch {
+		case unicode.IsDigit(r):
+			digits++
+		case unicode.IsUpper(r):
+			upper++
+		case unicode.IsLower(r):
+			lower++
+		}
+	}
+	if digits < 2 {
+		return status.Error(codes.InvalidArgument, "password must contain at least 2 numbers")
+	}
+	if upper < 1 {
+		return status.Error(codes.InvalidArgument, "password must contain at least 1 uppercase letter")
+	}
+	if lower < 1 {
+		return status.Error(codes.InvalidArgument, "password must contain at least 1 lowercase letter")
+	}
+	return nil
+}
+
+func generateActivationToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
