@@ -1,0 +1,15 @@
+services:
+  exchange-db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: exchange_db
+      POSTGRES_USER: exchange_user
+      POSTGRES_PASSWORD: exchange_pass
+    ports:
+      - "5435:5432"
+    volumes:
+      - exchange-db-data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+volumes:
+  exchange-db-data:
