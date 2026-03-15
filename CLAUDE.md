@@ -22,8 +22,9 @@ docs/            # Architecture docs, runbooks (placeholder)
 | Service | Port | Protocol | Database |
 |---|---|---|---|
 | `employee-service` | 50051 | gRPC | PostgreSQL 16 on 5433 |
-| `auth-service` | 50052 | gRPC | none (uses employee-service via gRPC) |
+| `auth-service` | 50052 | gRPC | PostgreSQL 16 on 5434 |
 | `api-gateway` | 8081 | HTTP (Gin) | none |
+| `email-service` | 50053 | gRPC | none (uses RabbitMQ 3 on 5672) |
 
 ## Service layout conventions
 ```
@@ -31,7 +32,9 @@ services/<name>/
   db/                  # SQL schema (not all services have a DB)
   handlers/            # gRPC or HTTP handler implementations
   models/              # Data structs (where needed)
-  docker-compose.yml   # PostgreSQL container (only DB-backed services)
+  queue/               # RabbitMQ producer/consumer (email-service only)
+  templates/           # Email HTML templates (email-service only)
+  docker-compose.yml   # PostgreSQL or RabbitMQ container
   main.go              # Entry point
 ```
 
@@ -51,29 +54,50 @@ protoc --go_out=shared/pb/<service> --go_opt=paths=source_relative \
 - Database-per-service: every DB-backed service has its own PostgreSQL via Docker Compose.
 - Schema in `db/schema.sql`, auto-applied on first container startup via `/docker-entrypoint-initdb.d/`.
 - No `CREATE DATABASE` needed in SQL — handled by `POSTGRES_DB` env var.
+- `auth-service` stores activation tokens and password-reset tokens in its own PostgreSQL instance (port 5434).
+
+## Environment variables
+A `.env` file at the repo root currently holds **email-service** variables:
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `FROM_EMAIL`
+- `RABBITMQ_URL`
+
+`JWT_SECRET` and `EMPLOYEE_DB_URL` are still hardcoded in their respective services and will be migrated to `.env` before production.
 
 ## Running the full stack
 ```bash
 ./scripts/dev.sh
 ```
-This starts the employee database container (waits for readiness), then all three Go services. Ctrl+C stops the Go processes; the database container keeps running.
+This starts the employee database container (waits for readiness), then all Go services. Ctrl+C stops the Go processes; the database containers keep running.
 
-To start only the database for a service:
+To start only the infrastructure container for a service:
 ```bash
 cd services/<service-name>
 docker compose up -d
 ```
+The email-service requires its own RabbitMQ container:
+```bash
+cd services/email-service
+docker compose up -d
+```
 
 ## API Gateway endpoints
-All employee routes require `Authorization: Bearer <access_token>` with the `ADMIN` role.
+Employee routes require `Authorization: Bearer <access_token>` with the `ADMIN` role.
+
+CORS is enabled for `http://localhost:5173` and `http://localhost:3000` (GET, POST, PUT, DELETE, OPTIONS; credentials allowed).
 
 | Method | Path | Auth |
 |---|---|---|
 | POST | `/login` | none |
 | POST | `/refresh` | none |
+| POST | `/auth/activate` | none |
+| POST | `/auth/forgot-password` | none |
+| POST | `/auth/reset-password` | none |
 | GET | `/employees` | ADMIN |
+| GET | `/employees/:id` | ADMIN |
 | GET | `/employees/search?email=&ime=&prezime=&pozicija=` | ADMIN |
 | POST | `/employees` | ADMIN |
+| PUT | `/employees/:id` | ADMIN |
+| GET | `/swagger/*any` | none |
 
 ## Auth
 - JWT signed with HMAC-SHA256. Access tokens expire in 15 min, refresh tokens in 7 days.
