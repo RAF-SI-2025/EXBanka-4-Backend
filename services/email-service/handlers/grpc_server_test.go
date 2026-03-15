@@ -36,6 +36,11 @@ func (m *mockPublisher) PublishPasswordConfirmation(msg queue.PasswordConfirmati
 	return args.Error(0)
 }
 
+func (m *mockPublisher) PublishAccountCreated(msg queue.AccountCreatedMessage) error {
+	args := m.Called(msg)
+	return args.Error(0)
+}
+
 // ---- SendActivationEmail tests ----
 
 func TestSendActivationEmail_InvalidEmail(t *testing.T) {

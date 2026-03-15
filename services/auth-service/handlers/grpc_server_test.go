@@ -127,6 +127,10 @@ func (m *mockEmailClient) SendPasswordConfirmationEmail(ctx context.Context, in 
 	return args.Get(0).(*pb_email.SendActivationEmailResponse), args.Error(1)
 }
 
+func (m *mockEmailClient) SendAccountCreatedEmail(ctx context.Context, in *pb_email.SendAccountCreatedEmailRequest, opts ...grpc.CallOption) (*pb_email.SendAccountCreatedEmailResponse, error) {
+	return &pb_email.SendAccountCreatedEmailResponse{}, nil
+}
+
 // ---- helpers ----
 
 func newAuthServer(db *sql.DB, empClient *mockEmployeeClient, emailClient *mockEmailClient) *AuthServer {
