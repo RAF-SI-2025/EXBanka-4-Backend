@@ -48,5 +48,6 @@ CREATE TABLE accounts (
     monthly_limit       NUMERIC(20, 2),
     daily_spent         NUMERIC(20, 2) NOT NULL DEFAULT 0,
     monthly_spent       NUMERIC(20, 2) NOT NULL DEFAULT 0,
-    maintenance_fee     NUMERIC(20, 2) NOT NULL DEFAULT 0
+    maintenance_fee     NUMERIC(20, 2) NOT NULL DEFAULT 0,
+    company_id          BIGINT REFERENCES companies(id)
 );

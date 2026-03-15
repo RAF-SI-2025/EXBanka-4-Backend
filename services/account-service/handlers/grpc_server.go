@@ -64,14 +64,45 @@ func (s *AccountServer) CreateAccount(ctx context.Context, req *pb.CreateAccount
 	// 4. Set expiration date 5 years from now
 	expirationDate := time.Now().AddDate(5, 0, 0).Format("2006-01-02")
 
-	// 5. Insert account
+	// 5. Resolve company for BUSINESS accounts
+	var companyID *int64
+	if req.AccountType == "BUSINESS" && req.CompanyData != nil && req.CompanyData.Name != "" {
+		var cid int64
+		err = s.DB.QueryRowContext(ctx,
+			`SELECT id FROM companies WHERE registration_number = $1`,
+			req.CompanyData.RegistrationNumber,
+		).Scan(&cid)
+		if err == sql.ErrNoRows {
+			// Company doesn't exist yet – create it
+			err = s.DB.QueryRowContext(ctx,
+				`INSERT INTO companies
+					(name, registration_number, pib, activity_code, address, owner_client_id)
+				VALUES ($1, $2, $3, $4, $5, $6)
+				RETURNING id`,
+				req.CompanyData.Name,
+				req.CompanyData.RegistrationNumber,
+				req.CompanyData.Pib,
+				req.CompanyData.ActivityCode,
+				req.CompanyData.Address,
+				req.ClientId,
+			).Scan(&cid)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to create company: %v", err)
+			}
+		} else if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to look up company: %v", err)
+		}
+		companyID = &cid
+	}
+
+	// 6. Insert account
 	var accountID int64
 	var createdDate string
 	err = s.DB.QueryRowContext(ctx,
 		`INSERT INTO accounts
 			(account_number, account_name, owner_id, employee_id, currency_id,
-			 account_type, status, balance, available_balance, expiration_date)
-		VALUES ($1, $2, $3, $4, $5, $6, 'ACTIVE', $7, $7, $8)
+			 account_type, status, balance, available_balance, expiration_date, company_id)
+		VALUES ($1, $2, $3, $4, $5, $6, 'ACTIVE', $7, $7, $8, $9)
 		RETURNING id, created_date`,
 		accountNumber,
 		req.AccountName,
@@ -81,27 +112,10 @@ func (s *AccountServer) CreateAccount(ctx context.Context, req *pb.CreateAccount
 		req.AccountType,
 		req.InitialBalance,
 		expirationDate,
+		companyID,
 	).Scan(&accountID, &createdDate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create account: %v", err)
-	}
-
-	// 6. Insert company if provided
-	if req.CompanyData != nil && req.CompanyData.Name != "" {
-		_, err = s.DB.ExecContext(ctx,
-			`INSERT INTO companies
-				(name, registration_number, pib, activity_code, address, owner_client_id)
-			VALUES ($1, $2, $3, $4, $5, $6)`,
-			req.CompanyData.Name,
-			req.CompanyData.RegistrationNumber,
-			req.CompanyData.Pib,
-			req.CompanyData.ActivityCode,
-			req.CompanyData.Address,
-			req.ClientId,
-		)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "account created but failed to create company: %v", err)
-		}
 	}
 
 	return &pb.CreateAccountResponse{

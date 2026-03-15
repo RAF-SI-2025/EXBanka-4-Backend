@@ -20,4 +20,5 @@ type Account struct {
 	DailySpent       float64
 	MonthlySpent     float64
 	MaintenanceFee   float64
+	CompanyID        *int64
 }
