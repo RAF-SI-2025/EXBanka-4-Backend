@@ -4,13 +4,6 @@ package payment;
 
 option go_package = "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/payment";
 
-message PaymentRecipient {
-  int64  id             = 1;
-  int64  client_id      = 2;
-  string name           = 3;
-  string account_number = 4;
-}
-
 message CreatePaymentRequest {
   int64  client_id        = 1;
   string from_account     = 2;

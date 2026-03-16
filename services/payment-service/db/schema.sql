@@ -1,10 +1,3 @@
-CREATE TABLE payment_recipients (
-    id             BIGSERIAL PRIMARY KEY,
-    client_id      BIGINT    NOT NULL,
-    name           VARCHAR   NOT NULL,
-    account_number VARCHAR   NOT NULL
-);
-
 CREATE TABLE payments (
     id               BIGSERIAL PRIMARY KEY,
     order_number     VARCHAR     NOT NULL UNIQUE,
@@ -18,6 +11,5 @@ CREATE TABLE payments (
     reference_number VARCHAR,
     purpose          VARCHAR,
     timestamp        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    status           VARCHAR     NOT NULL DEFAULT 'PROCESSING',
-    CONSTRAINT fk_payments_recipient FOREIGN KEY (recipient_id) REFERENCES payment_recipients(id)
+    status           VARCHAR     NOT NULL DEFAULT 'PROCESSING'
 );
