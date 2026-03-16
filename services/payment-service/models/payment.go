@@ -2,6 +2,13 @@ package models
 
 import "time"
 
+type PaymentRecipient struct {
+	ID            int64
+	ClientID      int64
+	Name          string
+	AccountNumber string
+}
+
 type Payment struct {
 	ID              int64
 	OrderNumber     string
