@@ -577,6 +577,118 @@ func (*DeletePaymentRecipientResponse) Descriptor() ([]byte, []int) {
 	return file_payment_proto_rawDescGZIP(), []int{8}
 }
 
+type UpdatePaymentRecipientRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	ClientId      int64                  `protobuf:"varint,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	AccountNumber string                 `protobuf:"bytes,4,opt,name=account_number,json=accountNumber,proto3" json:"account_number,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdatePaymentRecipientRequest) Reset() {
+	*x = UpdatePaymentRecipientRequest{}
+	mi := &file_payment_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdatePaymentRecipientRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdatePaymentRecipientRequest) ProtoMessage() {}
+
+func (x *UpdatePaymentRecipientRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdatePaymentRecipientRequest.ProtoReflect.Descriptor instead.
+func (*UpdatePaymentRecipientRequest) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *UpdatePaymentRecipientRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *UpdatePaymentRecipientRequest) GetClientId() int64 {
+	if x != nil {
+		return x.ClientId
+	}
+	return 0
+}
+
+func (x *UpdatePaymentRecipientRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *UpdatePaymentRecipientRequest) GetAccountNumber() string {
+	if x != nil {
+		return x.AccountNumber
+	}
+	return ""
+}
+
+type UpdatePaymentRecipientResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Recipient     *PaymentRecipient      `protobuf:"bytes,1,opt,name=recipient,proto3" json:"recipient,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdatePaymentRecipientResponse) Reset() {
+	*x = UpdatePaymentRecipientResponse{}
+	mi := &file_payment_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdatePaymentRecipientResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdatePaymentRecipientResponse) ProtoMessage() {}
+
+func (x *UpdatePaymentRecipientResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdatePaymentRecipientResponse.ProtoReflect.Descriptor instead.
+func (*UpdatePaymentRecipientResponse) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *UpdatePaymentRecipientResponse) GetRecipient() *PaymentRecipient {
+	if x != nil {
+		return x.Recipient
+	}
+	return nil
+}
+
 var File_payment_proto protoreflect.FileDescriptor
 
 const file_payment_proto_rawDesc = "" +
@@ -622,11 +734,19 @@ const file_payment_proto_rawDesc = "" +
 	"\x1dDeletePaymentRecipientRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\x03R\bclientId\" \n" +
-	"\x1eDeletePaymentRecipientResponse2\x9b\x03\n" +
+	"\x1eDeletePaymentRecipientResponse\"\x87\x01\n" +
+	"\x1dUpdatePaymentRecipientRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1b\n" +
+	"\tclient_id\x18\x02 \x01(\x03R\bclientId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12%\n" +
+	"\x0eaccount_number\x18\x04 \x01(\tR\raccountNumber\"Y\n" +
+	"\x1eUpdatePaymentRecipientResponse\x127\n" +
+	"\trecipient\x18\x01 \x01(\v2\x19.payment.PaymentRecipientR\trecipient2\x86\x04\n" +
 	"\x0ePaymentService\x12N\n" +
 	"\rCreatePayment\x12\x1d.payment.CreatePaymentRequest\x1a\x1e.payment.CreatePaymentResponse\x12i\n" +
 	"\x16CreatePaymentRecipient\x12&.payment.CreatePaymentRecipientRequest\x1a'.payment.CreatePaymentRecipientResponse\x12c\n" +
 	"\x14GetPaymentRecipients\x12$.payment.GetPaymentRecipientsRequest\x1a%.payment.GetPaymentRecipientsResponse\x12i\n" +
+	"\x16UpdatePaymentRecipient\x12&.payment.UpdatePaymentRecipientRequest\x1a'.payment.UpdatePaymentRecipientResponse\x12i\n" +
 	"\x16DeletePaymentRecipient\x12&.payment.DeletePaymentRecipientRequest\x1a'.payment.DeletePaymentRecipientResponseB<Z:github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/paymentb\x06proto3"
 
 var (
@@ -641,7 +761,7 @@ func file_payment_proto_rawDescGZIP() []byte {
 	return file_payment_proto_rawDescData
 }
 
-var file_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_payment_proto_goTypes = []any{
 	(*CreatePaymentRequest)(nil),           // 0: payment.CreatePaymentRequest
 	(*CreatePaymentResponse)(nil),          // 1: payment.CreatePaymentResponse
@@ -652,23 +772,28 @@ var file_payment_proto_goTypes = []any{
 	(*GetPaymentRecipientsResponse)(nil),   // 6: payment.GetPaymentRecipientsResponse
 	(*DeletePaymentRecipientRequest)(nil),  // 7: payment.DeletePaymentRecipientRequest
 	(*DeletePaymentRecipientResponse)(nil), // 8: payment.DeletePaymentRecipientResponse
+	(*UpdatePaymentRecipientRequest)(nil),  // 9: payment.UpdatePaymentRecipientRequest
+	(*UpdatePaymentRecipientResponse)(nil), // 10: payment.UpdatePaymentRecipientResponse
 }
 var file_payment_proto_depIdxs = []int32{
-	2, // 0: payment.CreatePaymentRecipientResponse.recipient:type_name -> payment.PaymentRecipient
-	2, // 1: payment.GetPaymentRecipientsResponse.recipients:type_name -> payment.PaymentRecipient
-	0, // 2: payment.PaymentService.CreatePayment:input_type -> payment.CreatePaymentRequest
-	3, // 3: payment.PaymentService.CreatePaymentRecipient:input_type -> payment.CreatePaymentRecipientRequest
-	5, // 4: payment.PaymentService.GetPaymentRecipients:input_type -> payment.GetPaymentRecipientsRequest
-	7, // 5: payment.PaymentService.DeletePaymentRecipient:input_type -> payment.DeletePaymentRecipientRequest
-	1, // 6: payment.PaymentService.CreatePayment:output_type -> payment.CreatePaymentResponse
-	4, // 7: payment.PaymentService.CreatePaymentRecipient:output_type -> payment.CreatePaymentRecipientResponse
-	6, // 8: payment.PaymentService.GetPaymentRecipients:output_type -> payment.GetPaymentRecipientsResponse
-	8, // 9: payment.PaymentService.DeletePaymentRecipient:output_type -> payment.DeletePaymentRecipientResponse
-	6, // [6:10] is the sub-list for method output_type
-	2, // [2:6] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	2,  // 0: payment.CreatePaymentRecipientResponse.recipient:type_name -> payment.PaymentRecipient
+	2,  // 1: payment.GetPaymentRecipientsResponse.recipients:type_name -> payment.PaymentRecipient
+	2,  // 2: payment.UpdatePaymentRecipientResponse.recipient:type_name -> payment.PaymentRecipient
+	0,  // 3: payment.PaymentService.CreatePayment:input_type -> payment.CreatePaymentRequest
+	3,  // 4: payment.PaymentService.CreatePaymentRecipient:input_type -> payment.CreatePaymentRecipientRequest
+	5,  // 5: payment.PaymentService.GetPaymentRecipients:input_type -> payment.GetPaymentRecipientsRequest
+	9,  // 6: payment.PaymentService.UpdatePaymentRecipient:input_type -> payment.UpdatePaymentRecipientRequest
+	7,  // 7: payment.PaymentService.DeletePaymentRecipient:input_type -> payment.DeletePaymentRecipientRequest
+	1,  // 8: payment.PaymentService.CreatePayment:output_type -> payment.CreatePaymentResponse
+	4,  // 9: payment.PaymentService.CreatePaymentRecipient:output_type -> payment.CreatePaymentRecipientResponse
+	6,  // 10: payment.PaymentService.GetPaymentRecipients:output_type -> payment.GetPaymentRecipientsResponse
+	10, // 11: payment.PaymentService.UpdatePaymentRecipient:output_type -> payment.UpdatePaymentRecipientResponse
+	8,  // 12: payment.PaymentService.DeletePaymentRecipient:output_type -> payment.DeletePaymentRecipientResponse
+	8,  // [8:13] is the sub-list for method output_type
+	3,  // [3:8] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_payment_proto_init() }
@@ -682,7 +807,7 @@ func file_payment_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_payment_proto_rawDesc), len(file_payment_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

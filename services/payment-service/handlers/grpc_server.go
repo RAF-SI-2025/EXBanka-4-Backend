@@ -183,6 +183,24 @@ func (s *PaymentServer) GetPaymentRecipients(ctx context.Context, req *pb.GetPay
 	return &pb.GetPaymentRecipientsResponse{Recipients: recipients}, nil
 }
 
+func (s *PaymentServer) UpdatePaymentRecipient(ctx context.Context, req *pb.UpdatePaymentRecipientRequest) (*pb.UpdatePaymentRecipientResponse, error) {
+	var r pb.PaymentRecipient
+	err := s.DB.QueryRowContext(ctx, `
+		UPDATE payment_recipients
+		SET name = $3, account_number = $4
+		WHERE id = $1 AND client_id = $2
+		RETURNING id, client_id, name, account_number`,
+		req.Id, req.ClientId, req.Name, req.AccountNumber,
+	).Scan(&r.Id, &r.ClientId, &r.Name, &r.AccountNumber)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "payment recipient not found")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update payment recipient: %v", err)
+	}
+	return &pb.UpdatePaymentRecipientResponse{Recipient: &r}, nil
+}
+
 func (s *PaymentServer) DeletePaymentRecipient(ctx context.Context, req *pb.DeletePaymentRecipientRequest) (*pb.DeletePaymentRecipientResponse, error) {
 	result, err := s.DB.ExecContext(ctx, `
 		DELETE FROM payment_recipients WHERE id = $1 AND client_id = $2`,

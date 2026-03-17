@@ -171,6 +171,59 @@ func GetPaymentRecipients(paymentClient pb.PaymentServiceClient) gin.HandlerFunc
 	}
 }
 
+type UpdatePaymentRecipientRequest struct {
+	Name          string `json:"name"          binding:"required"`
+	AccountNumber string `json:"accountNumber" binding:"required"`
+}
+
+func UpdatePaymentRecipient(paymentClient pb.PaymentServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		recipientID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid recipient id"})
+			return
+		}
+
+		var req UpdatePaymentRecipientRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		clientID, err := middleware.GetUserIDFromToken(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "could not extract identity from token"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+
+		resp, err := paymentClient.UpdatePaymentRecipient(ctx, &pb.UpdatePaymentRecipientRequest{
+			Id:            recipientID,
+			ClientId:      clientID,
+			Name:          req.Name,
+			AccountNumber: req.AccountNumber,
+		})
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": status.Convert(err).Message()})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		r := resp.Recipient
+		c.JSON(http.StatusOK, gin.H{
+			"id":            r.Id,
+			"clientId":      r.ClientId,
+			"name":          r.Name,
+			"accountNumber": r.AccountNumber,
+		})
+	}
+}
+
 func DeletePaymentRecipient(paymentClient pb.PaymentServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		recipientID, err := strconv.ParseInt(c.Param("id"), 10, 64)
