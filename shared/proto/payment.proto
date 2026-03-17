@@ -27,6 +27,38 @@ message CreatePaymentResponse {
   string timestamp        = 9;
 }
 
+message PaymentRecipient {
+  int64  id             = 1;
+  int64  client_id      = 2;
+  string name           = 3;
+  string account_number = 4;
+}
+
+message CreatePaymentRecipientRequest {
+  int64  client_id      = 1;
+  string name           = 2;
+  string account_number = 3;
+}
+message CreatePaymentRecipientResponse { PaymentRecipient recipient = 1; }
+
+message GetPaymentRecipientsRequest  { int64 client_id = 1; }
+message GetPaymentRecipientsResponse { repeated PaymentRecipient recipients = 1; }
+
+message DeletePaymentRecipientRequest  { int64 id = 1; int64 client_id = 2; }
+message DeletePaymentRecipientResponse {}
+
+message UpdatePaymentRecipientRequest {
+  int64  id             = 1;
+  int64  client_id      = 2;
+  string name           = 3;
+  string account_number = 4;
+}
+message UpdatePaymentRecipientResponse { PaymentRecipient recipient = 1; }
+
 service PaymentService {
-  rpc CreatePayment(CreatePaymentRequest) returns (CreatePaymentResponse);
+  rpc CreatePayment(CreatePaymentRequest)                     returns (CreatePaymentResponse);
+  rpc CreatePaymentRecipient(CreatePaymentRecipientRequest)   returns (CreatePaymentRecipientResponse);
+  rpc GetPaymentRecipients(GetPaymentRecipientsRequest)       returns (GetPaymentRecipientsResponse);
+  rpc UpdatePaymentRecipient(UpdatePaymentRecipientRequest)   returns (UpdatePaymentRecipientResponse);
+  rpc DeletePaymentRecipient(DeletePaymentRecipientRequest)   returns (DeletePaymentRecipientResponse);
 }

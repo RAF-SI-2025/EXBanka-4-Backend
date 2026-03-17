@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	database, err := exdb.Connect("postgres://exchange_user:exchange_pass@localhost:5435/exchange_db?sslmode=disable")
+	database, err := exdb.Connect("postgres://exchange_user:exchange_pass@localhost:5438/exchange_db?sslmode=disable")
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}

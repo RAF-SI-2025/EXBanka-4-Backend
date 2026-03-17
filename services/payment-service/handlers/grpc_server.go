@@ -140,3 +140,80 @@ func (s *PaymentServer) CreatePayment(ctx context.Context, req *pb.CreatePayment
 		Timestamp:     now.Format(time.RFC3339),
 	}, nil
 }
+
+func (s *PaymentServer) CreatePaymentRecipient(ctx context.Context, req *pb.CreatePaymentRecipientRequest) (*pb.CreatePaymentRecipientResponse, error) {
+	var id int64
+	err := s.DB.QueryRowContext(ctx, `
+		INSERT INTO payment_recipients (client_id, name, account_number)
+		VALUES ($1, $2, $3)
+		RETURNING id`,
+		req.ClientId, req.Name, req.AccountNumber,
+	).Scan(&id)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create payment recipient: %v", err)
+	}
+	return &pb.CreatePaymentRecipientResponse{
+		Recipient: &pb.PaymentRecipient{
+			Id:            id,
+			ClientId:      req.ClientId,
+			Name:          req.Name,
+			AccountNumber: req.AccountNumber,
+		},
+	}, nil
+}
+
+func (s *PaymentServer) GetPaymentRecipients(ctx context.Context, req *pb.GetPaymentRecipientsRequest) (*pb.GetPaymentRecipientsResponse, error) {
+	rows, err := s.DB.QueryContext(ctx, `
+		SELECT id, client_id, name, account_number
+		FROM payment_recipients
+		WHERE client_id = $1`, req.ClientId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to query payment recipients: %v", err)
+	}
+	defer rows.Close()
+
+	var recipients []*pb.PaymentRecipient
+	for rows.Next() {
+		var r pb.PaymentRecipient
+		if err := rows.Scan(&r.Id, &r.ClientId, &r.Name, &r.AccountNumber); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to scan payment recipient: %v", err)
+		}
+		recipients = append(recipients, &r)
+	}
+	return &pb.GetPaymentRecipientsResponse{Recipients: recipients}, nil
+}
+
+func (s *PaymentServer) UpdatePaymentRecipient(ctx context.Context, req *pb.UpdatePaymentRecipientRequest) (*pb.UpdatePaymentRecipientResponse, error) {
+	var r pb.PaymentRecipient
+	err := s.DB.QueryRowContext(ctx, `
+		UPDATE payment_recipients
+		SET name = $3, account_number = $4
+		WHERE id = $1 AND client_id = $2
+		RETURNING id, client_id, name, account_number`,
+		req.Id, req.ClientId, req.Name, req.AccountNumber,
+	).Scan(&r.Id, &r.ClientId, &r.Name, &r.AccountNumber)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "payment recipient not found")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update payment recipient: %v", err)
+	}
+	return &pb.UpdatePaymentRecipientResponse{Recipient: &r}, nil
+}
+
+func (s *PaymentServer) DeletePaymentRecipient(ctx context.Context, req *pb.DeletePaymentRecipientRequest) (*pb.DeletePaymentRecipientResponse, error) {
+	result, err := s.DB.ExecContext(ctx, `
+		DELETE FROM payment_recipients WHERE id = $1 AND client_id = $2`,
+		req.Id, req.ClientId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete payment recipient: %v", err)
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check rows affected: %v", err)
+	}
+	if rows == 0 {
+		return nil, status.Error(codes.NotFound, "payment recipient not found")
+	}
+	return &pb.DeletePaymentRecipientResponse{}, nil
+}

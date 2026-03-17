@@ -18,6 +18,27 @@ definitions:
     - password
     - token
     type: object
+  handlers.CreateAccountRequest:
+    properties:
+      accountName:
+        type: string
+      accountType:
+        type: string
+      clientId:
+        type: integer
+      companyData:
+        $ref: '#/definitions/handlers.companyReq'
+      createCard:
+        type: boolean
+      currencyCode:
+        type: string
+      initialBalance:
+        type: number
+    required:
+    - accountType
+    - clientId
+    - currencyCode
+    type: object
   handlers.CreateEmployeeRequest:
     properties:
       address:
@@ -65,6 +86,38 @@ definitions:
     - phone_number
     - position
     - username
+    type: object
+  handlers.CreatePaymentRecipientRequest:
+    properties:
+      accountNumber:
+        type: string
+      name:
+        type: string
+    required:
+    - accountNumber
+    - name
+    type: object
+  handlers.CreatePaymentRequest:
+    properties:
+      amount:
+        type: number
+      fromAccount:
+        type: string
+      paymentCode:
+        type: string
+      purpose:
+        type: string
+      recipientAccount:
+        type: string
+      recipientName:
+        type: string
+      referenceNumber:
+        type: string
+    required:
+    - amount
+    - fromAccount
+    - recipientAccount
+    - recipientName
     type: object
   handlers.EmployeeListResponse:
     properties:
@@ -152,6 +205,85 @@ definitions:
     - position
     - username
     type: object
+  handlers.UpdatePaymentRecipientRequest:
+    properties:
+      accountNumber:
+        type: string
+      name:
+        type: string
+    required:
+    - accountNumber
+    - name
+    type: object
+  handlers.clientResponse:
+    properties:
+      active:
+        type: boolean
+      address:
+        type: string
+      date_of_birth:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      gender:
+        type: string
+      id:
+        type: integer
+      jmbg:
+        type: string
+      last_name:
+        type: string
+      phone_number:
+        type: string
+      username:
+        type: string
+    type: object
+  handlers.companyReq:
+    properties:
+      activityCode:
+        type: string
+      address:
+        type: string
+      name:
+        type: string
+      pib:
+        type: string
+      registrationNumber:
+        type: string
+    type: object
+  handlers.createClientRequest:
+    properties:
+      address:
+        type: string
+      date_of_birth:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      gender:
+        type: string
+      jmbg:
+        type: string
+      last_name:
+        type: string
+      phone_number:
+        type: string
+      username:
+        type: string
+    required:
+    - address
+    - date_of_birth
+    - email
+    - first_name
+    - gender
+    - jmbg
+    - last_name
+    - phone_number
+    - username
+    type: object
   handlers.employeeResponse:
     properties:
       adresa:
@@ -185,6 +317,34 @@ definitions:
       username:
         type: string
     type: object
+  handlers.updateClientRequest:
+    properties:
+      active:
+        type: boolean
+      address:
+        type: string
+      date_of_birth:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      gender:
+        type: string
+      jmbg:
+        type: string
+      last_name:
+        type: string
+      phone_number:
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - username
+    type: object
 host: localhost:8081
 info:
   contact: {}
@@ -192,6 +352,400 @@ info:
   title: EXBanka API Gateway
   version: "1.0"
 paths:
+  /api/accounts:
+    get:
+      description: Returns all bank accounts. Requires employee authentication.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all accounts
+      tags:
+      - accounts
+  /api/accounts/{accountId}:
+    get:
+      description: Returns detailed info for a single account. The account must belong
+        to the authenticated user.
+      parameters:
+      - description: Account ID
+        in: path
+        name: accountId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get account details
+      tags:
+      - accounts
+  /api/accounts/{accountId}/name:
+    put:
+      consumes:
+      - application/json
+      description: Changes the name of the account. The account must belong to the
+        authenticated user.
+      parameters:
+      - description: Account ID
+        in: path
+        name: accountId
+        required: true
+        type: integer
+      - description: New name
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Rename account
+      tags:
+      - accounts
+  /api/accounts/create:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new bank account for a client. Requires employee authentication.
+      parameters:
+      - description: Account creation data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create bank account
+      tags:
+      - accounts
+  /api/accounts/my:
+    get:
+      description: Returns all accounts for the currently authenticated client, sorted
+        by available balance descending.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get my accounts
+      tags:
+      - accounts
+  /api/payments/create:
+    post:
+      consumes:
+      - application/json
+      description: Initiates a payment from client's account to a recipient account.
+      parameters:
+      - description: Payment data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreatePaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new payment
+      tags:
+      - payments
+  /api/recipients:
+    get:
+      description: Returns all saved payment recipients for the authenticated client.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List payment recipients
+      tags:
+      - recipients
+    post:
+      consumes:
+      - application/json
+      description: Saves a new payment recipient for the authenticated client.
+      parameters:
+      - description: Recipient data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreatePaymentRecipientRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a payment recipient
+      tags:
+      - recipients
+  /api/recipients/{id}:
+    delete:
+      description: Deletes a saved payment recipient. Only the owning client can delete.
+      parameters:
+      - description: Recipient ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a payment recipient
+      tags:
+      - recipients
+    put:
+      consumes:
+      - application/json
+      description: Updates a saved payment recipient. Only the owning client can update.
+      parameters:
+      - description: Recipient ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Recipient data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdatePaymentRecipientRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update a payment recipient
+      tags:
+      - recipients
   /auth/activate:
     post:
       consumes:
@@ -331,6 +885,305 @@ paths:
       summary: Reset password
       tags:
       - auth
+  /client/activate:
+    post:
+      consumes:
+      - application/json
+      description: Activate a new client account using an activation token and set
+        a password.
+      parameters:
+      - description: Activation payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ActivateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Activate client account
+      tags:
+      - auth
+  /client/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a client with email and password, receive JWT tokens.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Client login
+      tags:
+      - auth
+  /client/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Exchange a valid client refresh token for a new access token.
+      parameters:
+      - description: Refresh token
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.AccessTokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh client access token
+      tags:
+      - auth
+  /clients:
+    get:
+      description: Returns a paginated list of clients. Requires employee authentication.
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all clients
+      tags:
+      - clients
+    post:
+      consumes:
+      - application/json
+      description: Creates a new client and sends an activation email. Requires employee
+        authentication.
+      parameters:
+      - description: Client data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.createClientRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.clientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a client
+      tags:
+      - clients
+  /clients/{id}:
+    get:
+      description: Returns a single client by ID. Requires employee authentication.
+      parameters:
+      - description: Client ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.clientResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get client by ID
+      tags:
+      - clients
+    put:
+      consumes:
+      - application/json
+      description: Updates an existing client. Requires employee authentication.
+      parameters:
+      - description: Client ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Client data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.updateClientRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.clientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update a client
+      tags:
+      - clients
   /employees:
     get:
       description: Retrieve a paginated list of all employees.

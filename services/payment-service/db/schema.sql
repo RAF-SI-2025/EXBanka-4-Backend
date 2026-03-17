@@ -1,3 +1,10 @@
+CREATE TABLE payment_recipients (
+    id             BIGSERIAL PRIMARY KEY,
+    client_id      BIGINT    NOT NULL,
+    name           VARCHAR   NOT NULL,
+    account_number VARCHAR   NOT NULL
+);
+
 CREATE TABLE payments (
     id               BIGSERIAL PRIMARY KEY,
     order_number     VARCHAR     NOT NULL UNIQUE,

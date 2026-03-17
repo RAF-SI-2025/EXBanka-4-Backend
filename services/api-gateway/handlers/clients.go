@@ -31,6 +31,31 @@ type clientResponse struct {
 	Active      bool   `json:"active"`
 }
 
+type createClientRequest struct {
+	FirstName   string `json:"first_name"    binding:"required"`
+	LastName    string `json:"last_name"     binding:"required"`
+	Jmbg        string `json:"jmbg"          binding:"required"`
+	DateOfBirth string `json:"date_of_birth" binding:"required"`
+	Gender      string `json:"gender"        binding:"required"`
+	Email       string `json:"email"         binding:"required"`
+	PhoneNumber string `json:"phone_number"  binding:"required"`
+	Address     string `json:"address"       binding:"required"`
+	Username    string `json:"username"      binding:"required"`
+}
+
+type updateClientRequest struct {
+	FirstName   string `json:"first_name"    binding:"required"`
+	LastName    string `json:"last_name"     binding:"required"`
+	Jmbg        string `json:"jmbg"`
+	DateOfBirth string `json:"date_of_birth"`
+	Gender      string `json:"gender"`
+	Email       string `json:"email"         binding:"required"`
+	PhoneNumber string `json:"phone_number"`
+	Address     string `json:"address"`
+	Username    string `json:"username"      binding:"required"`
+	Active      bool   `json:"active"`
+}
+
 func toClientResponse(c *pb.Client) clientResponse {
 	return clientResponse{
 		Id:          c.Id,
@@ -47,6 +72,18 @@ func toClientResponse(c *pb.Client) clientResponse {
 	}
 }
 
+// GetClients godoc
+// @Summary      List all clients
+// @Description  Returns a paginated list of clients. Requires employee authentication.
+// @Tags         clients
+// @Produce      json
+// @Param        page      query  int  false  "Page number"
+// @Param        page_size query  int  false  "Page size"
+// @Success      200  {object}  map[string]interface{}
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /clients [get]
 func GetClients(client pb.ClientServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 32)
@@ -69,6 +106,18 @@ func GetClients(client pb.ClientServiceClient) gin.HandlerFunc {
 	}
 }
 
+// GetClientById godoc
+// @Summary      Get client by ID
+// @Description  Returns a single client by ID. Requires employee authentication.
+// @Tags         clients
+// @Produce      json
+// @Param        id   path  int  true  "Client ID"
+// @Success      200  {object}  clientResponse
+// @Failure      401  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /clients/{id} [get]
 func GetClientById(client pb.ClientServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -91,19 +140,23 @@ func GetClientById(client pb.ClientServiceClient) gin.HandlerFunc {
 	}
 }
 
+// CreateClient godoc
+// @Summary      Create a client
+// @Description  Creates a new client and sends an activation email. Requires employee authentication.
+// @Tags         clients
+// @Accept       json
+// @Produce      json
+// @Param        body  body      createClientRequest  true  "Client data"
+// @Success      201   {object}  clientResponse
+// @Failure      400   {object}  map[string]string
+// @Failure      401   {object}  map[string]string
+// @Failure      409   {object}  map[string]string
+// @Failure      500   {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /clients [post]
 func CreateClient(clientSvc pb.ClientServiceClient, authClient authpb.AuthServiceClient, emailClient emailpb.EmailServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var req struct {
-			FirstName   string `json:"first_name"    binding:"required"`
-			LastName    string `json:"last_name"     binding:"required"`
-			Jmbg        string `json:"jmbg"          binding:"required"`
-			DateOfBirth string `json:"date_of_birth" binding:"required"`
-			Gender      string `json:"gender"        binding:"required"`
-			Email       string `json:"email"         binding:"required"`
-			PhoneNumber string `json:"phone_number"  binding:"required"`
-			Address     string `json:"address"       binding:"required"`
-			Username    string `json:"username"      binding:"required"`
-		}
+		var req createClientRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -161,6 +214,22 @@ func CreateClient(clientSvc pb.ClientServiceClient, authClient authpb.AuthServic
 	}
 }
 
+// UpdateClient godoc
+// @Summary      Update a client
+// @Description  Updates an existing client. Requires employee authentication.
+// @Tags         clients
+// @Accept       json
+// @Produce      json
+// @Param        id    path  int                  true  "Client ID"
+// @Param        body  body  updateClientRequest  true  "Client data"
+// @Success      200   {object}  clientResponse
+// @Failure      400   {object}  map[string]string
+// @Failure      401   {object}  map[string]string
+// @Failure      404   {object}  map[string]string
+// @Failure      409   {object}  map[string]string
+// @Failure      500   {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /clients/{id} [put]
 func UpdateClient(client pb.ClientServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id, err := strconv.ParseInt(c.Param("id"), 10, 64)
@@ -168,18 +237,7 @@ func UpdateClient(client pb.ClientServiceClient) gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 			return
 		}
-		var req struct {
-			FirstName   string `json:"first_name"    binding:"required"`
-			LastName    string `json:"last_name"     binding:"required"`
-			Jmbg        string `json:"jmbg"`
-			DateOfBirth string `json:"date_of_birth"`
-			Gender      string `json:"gender"`
-			Email       string `json:"email"         binding:"required"`
-			PhoneNumber string `json:"phone_number"`
-			Address     string `json:"address"`
-			Username    string `json:"username"      binding:"required"`
-			Active      bool   `json:"active"`
-		}
+		var req updateClientRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
