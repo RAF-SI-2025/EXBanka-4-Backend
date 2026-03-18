@@ -29,6 +29,21 @@ func newPaymentServer(t *testing.T) (*PaymentServer, sqlmock.Sqlmock, sqlmock.Sq
 	return s, dbMock, accountMock
 }
 
+// newTransferServer returns a PaymentServer backed by three independent sqlmock DBs
+// (payment_db, account_db, exchange_db) for CreateTransfer tests.
+func newTransferServer(t *testing.T) (*PaymentServer, sqlmock.Sqlmock, sqlmock.Sqlmock, sqlmock.Sqlmock) {
+	t.Helper()
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	accountDB, accountMock, err := sqlmock.New()
+	require.NoError(t, err)
+	exchangeDB, exchangeMock, err := sqlmock.New()
+	require.NoError(t, err)
+	s := &PaymentServer{DB: db, AccountDB: accountDB, ExchangeDB: exchangeDB}
+	t.Cleanup(func() { db.Close(); accountDB.Close(); exchangeDB.Close() })
+	return s, dbMock, accountMock, exchangeMock
+}
+
 // newMockServer is an alias used by GetPaymentById and GetPayments tests.
 func newMockServer(t *testing.T) (*PaymentServer, sqlmock.Sqlmock, sqlmock.Sqlmock) {
 	t.Helper()
@@ -762,4 +777,202 @@ func TestGetPayments_AllFilters(t *testing.T) {
 	assert.Equal(t, 400.0, p.InitialAmount)
 	assert.Equal(t, 5.0, p.Fee)
 	assert.Equal(t, "salary", p.Purpose)
+}
+
+// ---- CreateTransfer ----
+
+func TestCreateTransfer_SameAccount(t *testing.T) {
+	s, _, _, _ := newTransferServer(t)
+	_, err := s.CreateTransfer(context.Background(), &pb.CreateTransferRequest{
+		ClientId: 1, FromAccount: "ACC1", ToAccount: "ACC1", Amount: 100,
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+func TestCreateTransfer_SourceNotFound(t *testing.T) {
+	s, _, accountMock, _ := newTransferServer(t)
+	accountMock.ExpectQuery("SELECT id, owner_id, available_balance, currency_id").
+		WillReturnError(sql.ErrNoRows)
+	_, err := s.CreateTransfer(context.Background(), &pb.CreateTransferRequest{
+		ClientId: 1, FromAccount: "ACC1", ToAccount: "ACC2", Amount: 100,
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+func TestCreateTransfer_SourceNotOwned(t *testing.T) {
+	s, _, accountMock, _ := newTransferServer(t)
+	accountMock.ExpectQuery("SELECT id, owner_id, available_balance, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "available_balance", "currency_id"}).
+			AddRow(int64(1), int64(99), float64(500), int64(1)))
+	_, err := s.CreateTransfer(context.Background(), &pb.CreateTransferRequest{
+		ClientId: 1, FromAccount: "ACC1", ToAccount: "ACC2", Amount: 100,
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+}
+
+func TestCreateTransfer_DestNotFound(t *testing.T) {
+	s, _, accountMock, _ := newTransferServer(t)
+	accountMock.ExpectQuery("SELECT id, owner_id, available_balance, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "available_balance", "currency_id"}).
+			AddRow(int64(1), int64(1), float64(500), int64(1)))
+	accountMock.ExpectQuery("SELECT id, owner_id, currency_id").
+		WillReturnError(sql.ErrNoRows)
+	_, err := s.CreateTransfer(context.Background(), &pb.CreateTransferRequest{
+		ClientId: 1, FromAccount: "ACC1", ToAccount: "ACC2", Amount: 100,
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+func TestCreateTransfer_DestNotOwned(t *testing.T) {
+	s, _, accountMock, _ := newTransferServer(t)
+	accountMock.ExpectQuery("SELECT id, owner_id, available_balance, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "available_balance", "currency_id"}).
+			AddRow(int64(1), int64(1), float64(500), int64(1)))
+	accountMock.ExpectQuery("SELECT id, owner_id, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "currency_id"}).
+			AddRow(int64(2), int64(99), int64(1)))
+	_, err := s.CreateTransfer(context.Background(), &pb.CreateTransferRequest{
+		ClientId: 1, FromAccount: "ACC1", ToAccount: "ACC2", Amount: 100,
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+}
+
+func TestCreateTransfer_InsufficientFunds(t *testing.T) {
+	s, _, accountMock, _ := newTransferServer(t)
+	accountMock.ExpectQuery("SELECT id, owner_id, available_balance, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "available_balance", "currency_id"}).
+			AddRow(int64(1), int64(1), float64(50), int64(1)))
+	accountMock.ExpectQuery("SELECT id, owner_id, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "currency_id"}).
+			AddRow(int64(2), int64(1), int64(1)))
+	_, err := s.CreateTransfer(context.Background(), &pb.CreateTransferRequest{
+		ClientId: 1, FromAccount: "ACC1", ToAccount: "ACC2", Amount: 100,
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.FailedPrecondition, status.Code(err))
+}
+
+func TestCreateTransfer_SameCurrency_Happy(t *testing.T) {
+	s, dbMock, accountMock, _ := newTransferServer(t)
+	accountMock.ExpectQuery("SELECT id, owner_id, available_balance, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "available_balance", "currency_id"}).
+			AddRow(int64(1), int64(1), float64(500), int64(1)))
+	accountMock.ExpectQuery("SELECT id, owner_id, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "currency_id"}).
+			AddRow(int64(2), int64(1), int64(1)))
+	accountMock.ExpectBegin()
+	accountMock.ExpectExec("UPDATE accounts SET").WillReturnResult(sqlmock.NewResult(1, 1))
+	accountMock.ExpectExec("UPDATE accounts SET").WillReturnResult(sqlmock.NewResult(1, 1))
+	accountMock.ExpectCommit()
+	dbMock.ExpectQuery("INSERT INTO transfers").
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(10)))
+
+	resp, err := s.CreateTransfer(context.Background(), &pb.CreateTransferRequest{
+		ClientId: 1, FromAccount: "ACC1", ToAccount: "ACC2", Amount: 200,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(10), resp.Id)
+	assert.Equal(t, 200.0, resp.InitialAmount)
+	assert.Equal(t, 200.0, resp.FinalAmount)
+	assert.Equal(t, 1.0, resp.ExchangeRate)
+	assert.Equal(t, 0.0, resp.Fee)
+}
+
+func TestCreateTransfer_DifferentCurrency_Happy(t *testing.T) {
+	s, dbMock, accountMock, exchangeMock := newTransferServer(t)
+	accountMock.ExpectQuery("SELECT id, owner_id, available_balance, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "available_balance", "currency_id"}).
+			AddRow(int64(1), int64(1), float64(1000), int64(1)))
+	accountMock.ExpectQuery("SELECT id, owner_id, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "currency_id"}).
+			AddRow(int64(2), int64(1), int64(2)))
+	// resolve from currency code
+	exchangeMock.ExpectQuery("SELECT code FROM currencies").
+		WillReturnRows(sqlmock.NewRows([]string{"code"}).AddRow("RSD"))
+	// resolve to currency code
+	exchangeMock.ExpectQuery("SELECT code FROM currencies").
+		WillReturnRows(sqlmock.NewRows([]string{"code"}).AddRow("EUR"))
+	// fetch rate
+	exchangeMock.ExpectQuery("SELECT rate FROM exchange_rates").
+		WillReturnRows(sqlmock.NewRows([]string{"rate"}).AddRow(0.008547))
+	accountMock.ExpectBegin()
+	accountMock.ExpectExec("UPDATE accounts SET").WillReturnResult(sqlmock.NewResult(1, 1))
+	accountMock.ExpectExec("UPDATE accounts SET").WillReturnResult(sqlmock.NewResult(1, 1))
+	accountMock.ExpectCommit()
+	dbMock.ExpectQuery("INSERT INTO transfers").
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(11)))
+
+	resp, err := s.CreateTransfer(context.Background(), &pb.CreateTransferRequest{
+		ClientId: 1, FromAccount: "ACC1", ToAccount: "ACC2", Amount: 1000,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, int64(11), resp.Id)
+	assert.Equal(t, 1000.0, resp.InitialAmount)
+	assert.InDelta(t, 8.547, resp.FinalAmount, 0.001)
+	assert.Equal(t, 0.008547, resp.ExchangeRate)
+}
+
+func TestCreateTransfer_RateNotFound(t *testing.T) {
+	s, _, accountMock, exchangeMock := newTransferServer(t)
+	accountMock.ExpectQuery("SELECT id, owner_id, available_balance, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "available_balance", "currency_id"}).
+			AddRow(int64(1), int64(1), float64(1000), int64(1)))
+	accountMock.ExpectQuery("SELECT id, owner_id, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "currency_id"}).
+			AddRow(int64(2), int64(1), int64(2)))
+	exchangeMock.ExpectQuery("SELECT code FROM currencies").
+		WillReturnRows(sqlmock.NewRows([]string{"code"}).AddRow("RSD"))
+	exchangeMock.ExpectQuery("SELECT code FROM currencies").
+		WillReturnRows(sqlmock.NewRows([]string{"code"}).AddRow("JPY"))
+	exchangeMock.ExpectQuery("SELECT rate FROM exchange_rates").
+		WillReturnError(sql.ErrNoRows)
+	_, err := s.CreateTransfer(context.Background(), &pb.CreateTransferRequest{
+		ClientId: 1, FromAccount: "ACC1", ToAccount: "ACC2", Amount: 500,
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+func TestCreateTransfer_CommitError(t *testing.T) {
+	s, _, accountMock, _ := newTransferServer(t)
+	accountMock.ExpectQuery("SELECT id, owner_id, available_balance, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "available_balance", "currency_id"}).
+			AddRow(int64(1), int64(1), float64(500), int64(1)))
+	accountMock.ExpectQuery("SELECT id, owner_id, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "currency_id"}).
+			AddRow(int64(2), int64(1), int64(1)))
+	accountMock.ExpectBegin()
+	accountMock.ExpectExec("UPDATE accounts SET").WillReturnResult(sqlmock.NewResult(1, 1))
+	accountMock.ExpectExec("UPDATE accounts SET").WillReturnResult(sqlmock.NewResult(1, 1))
+	accountMock.ExpectCommit().WillReturnError(sql.ErrConnDone)
+	_, err := s.CreateTransfer(context.Background(), &pb.CreateTransferRequest{
+		ClientId: 1, FromAccount: "ACC1", ToAccount: "ACC2", Amount: 200,
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+func TestCreateTransfer_PersistError(t *testing.T) {
+	s, dbMock, accountMock, _ := newTransferServer(t)
+	accountMock.ExpectQuery("SELECT id, owner_id, available_balance, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "available_balance", "currency_id"}).
+			AddRow(int64(1), int64(1), float64(500), int64(1)))
+	accountMock.ExpectQuery("SELECT id, owner_id, currency_id").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "owner_id", "currency_id"}).
+			AddRow(int64(2), int64(1), int64(1)))
+	accountMock.ExpectBegin()
+	accountMock.ExpectExec("UPDATE accounts SET").WillReturnResult(sqlmock.NewResult(1, 1))
+	accountMock.ExpectExec("UPDATE accounts SET").WillReturnResult(sqlmock.NewResult(1, 1))
+	accountMock.ExpectCommit()
+	dbMock.ExpectQuery("INSERT INTO transfers").WillReturnError(sql.ErrConnDone)
+	_, err := s.CreateTransfer(context.Background(), &pb.CreateTransferRequest{
+		ClientId: 1, FromAccount: "ACC1", ToAccount: "ACC2", Amount: 200,
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
 }
