@@ -393,3 +393,22 @@ func TestDeletePaymentRecipient_ExecError(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, codes.Internal, status.Code(err))
 }
+
+func TestCreatePayment_CommitError(t *testing.T) {
+	s, _, accountMock := newPaymentServer(t)
+
+	accountMock.ExpectQuery("SELECT id, owner_id").WillReturnRows(
+		sqlmock.NewRows([]string{"id", "owner_id", "available_balance", "daily_limit", "monthly_limit", "daily_spent", "monthly_spent", "currency_id"}).
+			AddRow(int64(1), int64(1), float64(1000), nil, nil, float64(0), float64(0), int64(1)),
+	)
+	accountMock.ExpectQuery("SELECT id, currency_id").WillReturnError(sql.ErrNoRows)
+	accountMock.ExpectBegin()
+	accountMock.ExpectExec("UPDATE accounts SET").WillReturnResult(sqlmock.NewResult(1, 1))
+	accountMock.ExpectCommit().WillReturnError(sql.ErrConnDone)
+
+	_, err := s.CreatePayment(context.Background(), &pb.CreatePaymentRequest{
+		FromAccount: "ACC1", RecipientAccount: "EXTERNAL", ClientId: 1, Amount: 100,
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
