@@ -15,8 +15,9 @@ import (
 
 type PaymentServer struct {
 	pb.UnimplementedPaymentServiceServer
-	DB        *sql.DB // payment_db
-	AccountDB *sql.DB // account_db
+	DB         *sql.DB // payment_db
+	AccountDB  *sql.DB // account_db
+	ExchangeDB *sql.DB // exchange_db
 }
 
 func (s *PaymentServer) CreatePayment(ctx context.Context, req *pb.CreatePaymentRequest) (*pb.CreatePaymentResponse, error) {
@@ -325,4 +326,142 @@ func (s *PaymentServer) GetPayments(ctx context.Context, req *pb.GetPaymentsRequ
 		payments = append(payments, &p)
 	}
 	return &pb.GetPaymentsResponse{Payments: payments}, nil
+}
+
+func (s *PaymentServer) CreateTransfer(ctx context.Context, req *pb.CreateTransferRequest) (*pb.CreateTransferResponse, error) {
+	if req.FromAccount == req.ToAccount {
+		return nil, status.Error(codes.InvalidArgument, "from and to accounts must be different")
+	}
+
+	// 1. Load fromAccount – verify ownership and balance
+	var fromID int64
+	var fromOwnerID int64
+	var availableBalance float64
+	var fromCurrencyID int64
+
+	err := s.AccountDB.QueryRowContext(ctx,
+		`SELECT id, owner_id, available_balance, currency_id
+		 FROM accounts WHERE account_number = $1`, req.FromAccount,
+	).Scan(&fromID, &fromOwnerID, &availableBalance, &fromCurrencyID)
+	if err == sql.ErrNoRows {
+		return nil, status.Errorf(codes.NotFound, "source account %s not found", req.FromAccount)
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to load source account: %v", err)
+	}
+	if fromOwnerID != req.ClientId {
+		return nil, status.Errorf(codes.PermissionDenied, "source account does not belong to this client")
+	}
+
+	// 2. Load toAccount – verify ownership
+	var toID int64
+	var toOwnerID int64
+	var toCurrencyID int64
+
+	err = s.AccountDB.QueryRowContext(ctx,
+		`SELECT id, owner_id, currency_id
+		 FROM accounts WHERE account_number = $1`, req.ToAccount,
+	).Scan(&toID, &toOwnerID, &toCurrencyID)
+	if err == sql.ErrNoRows {
+		return nil, status.Errorf(codes.NotFound, "destination account %s not found", req.ToAccount)
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to load destination account: %v", err)
+	}
+	if toOwnerID != req.ClientId {
+		return nil, status.Errorf(codes.PermissionDenied, "destination account does not belong to this client")
+	}
+
+	// 3. Check balance
+	if availableBalance < req.Amount {
+		return nil, status.Error(codes.FailedPrecondition, "insufficient funds")
+	}
+
+	// 4. Determine exchange rate and final amount
+	exchangeRate := 1.0
+	finalAmount := req.Amount
+
+	if fromCurrencyID != toCurrencyID {
+		// Resolve currency codes
+		var fromCode, toCode string
+		if err := s.ExchangeDB.QueryRowContext(ctx,
+			`SELECT code FROM currencies WHERE id = $1`, fromCurrencyID,
+		).Scan(&fromCode); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to resolve source currency: %v", err)
+		}
+		if err := s.ExchangeDB.QueryRowContext(ctx,
+			`SELECT code FROM currencies WHERE id = $1`, toCurrencyID,
+		).Scan(&toCode); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to resolve destination currency: %v", err)
+		}
+
+		if err := s.ExchangeDB.QueryRowContext(ctx,
+			`SELECT rate FROM exchange_rates WHERE from_currency = $1 AND to_currency = $2`,
+			fromCode, toCode,
+		).Scan(&exchangeRate); err == sql.ErrNoRows {
+			return nil, status.Errorf(codes.NotFound, "no exchange rate for %s → %s", fromCode, toCode)
+		} else if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to fetch exchange rate: %v", err)
+		}
+
+		finalAmount = req.Amount * exchangeRate
+	}
+
+	// 5. Execute balance update in account_db transaction
+	tx, err := s.AccountDB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to begin transaction: %v", err)
+	}
+	defer tx.Rollback()
+
+	_, err = tx.ExecContext(ctx, `
+		UPDATE accounts SET
+			balance           = balance - $1,
+			available_balance = available_balance - $1
+		WHERE id = $2`, req.Amount, fromID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to debit source account: %v", err)
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		UPDATE accounts SET
+			balance           = balance + $1,
+			available_balance = available_balance + $1
+		WHERE id = $2`, finalAmount, toID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to credit destination account: %v", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to commit transaction: %v", err)
+	}
+
+	// 6. Persist transfer record
+	orderNumber := fmt.Sprintf("TRF-%d-%04d", time.Now().UnixMilli(), rand.Intn(10000))
+	now := time.Now()
+
+	var transferID int64
+	err = s.DB.QueryRowContext(ctx, `
+		INSERT INTO transfers
+			(order_number, from_account, to_account, initial_amount, final_amount, exchange_rate, fee, timestamp)
+		VALUES ($1, $2, $3, $4, $5, $6, 0, $7)
+		RETURNING id`,
+		orderNumber, req.FromAccount, req.ToAccount,
+		req.Amount, finalAmount, exchangeRate, now,
+	).Scan(&transferID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to persist transfer: %v", err)
+	}
+
+	return &pb.CreateTransferResponse{
+		Id:            transferID,
+		OrderNumber:   orderNumber,
+		FromAccount:   req.FromAccount,
+		ToAccount:     req.ToAccount,
+		InitialAmount: req.Amount,
+		FinalAmount:   finalAmount,
+		ExchangeRate:  exchangeRate,
+		Fee:           0,
+		Timestamp:     now.Format(time.RFC3339),
+	}, nil
 }

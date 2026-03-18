@@ -767,6 +767,73 @@
                 }
             }
         },
+        "/api/transfers": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Transfers funds between two accounts belonging to the authenticated client. Applies currency conversion when accounts have different currencies.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transfers"
+                ],
+                "summary": "Transfer between own accounts",
+                "parameters": [
+                    {
+                        "description": "Transfer data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateTransferRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/activate": {
             "post": {
                 "description": "Activate a new employee account using an activation token and set a password.",
@@ -2038,6 +2105,25 @@
                     "type": "string"
                 },
                 "referenceNumber": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.CreateTransferRequest": {
+            "type": "object",
+            "required": [
+                "amount",
+                "fromAccount",
+                "toAccount"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "fromAccount": {
+                    "type": "string"
+                },
+                "toAccount": {
                     "type": "string"
                 }
             }

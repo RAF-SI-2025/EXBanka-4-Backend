@@ -119,6 +119,19 @@ definitions:
     - recipientAccount
     - recipientName
     type: object
+  handlers.CreateTransferRequest:
+    properties:
+      amount:
+        type: number
+      fromAccount:
+        type: string
+      toAccount:
+        type: string
+    required:
+    - amount
+    - fromAccount
+    - toAccount
+    type: object
   handlers.EmployeeListResponse:
     properties:
       employees:
@@ -845,6 +858,50 @@ paths:
       summary: Update a payment recipient
       tags:
       - recipients
+  /api/transfers:
+    post:
+      consumes:
+      - application/json
+      description: Transfers funds between two accounts belonging to the authenticated
+        client. Applies currency conversion when accounts have different currencies.
+      parameters:
+      - description: Transfer data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateTransferRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Transfer between own accounts
+      tags:
+      - transfers
   /auth/activate:
     post:
       consumes:

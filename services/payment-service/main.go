@@ -24,6 +24,12 @@ func main() {
 	}
 	defer accountDB.Close()
 
+	exchangeDB, err := pmdb.Connect("postgres://exchange_user:exchange_pass@localhost:5438/exchange_db?sslmode=disable")
+	if err != nil {
+		log.Fatalf("failed to connect to exchange_db: %v", err)
+	}
+	defer exchangeDB.Close()
+
 	lis, err := net.Listen("tcp", ":50055")
 	if err != nil {
 		log.Fatalf("failed to listen on :50055: %v", err)
@@ -31,8 +37,9 @@ func main() {
 
 	s := grpc.NewServer()
 	pb.RegisterPaymentServiceServer(s, &handlers.PaymentServer{
-		DB:        db,
-		AccountDB: accountDB,
+		DB:         db,
+		AccountDB:  accountDB,
+		ExchangeDB: exchangeDB,
 	})
 
 	log.Println("payment-service gRPC server listening on :50055")

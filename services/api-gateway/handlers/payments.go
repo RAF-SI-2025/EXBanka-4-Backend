@@ -402,6 +402,78 @@ func GetPayments(paymentClient pb.PaymentServiceClient) gin.HandlerFunc {
 	}
 }
 
+type CreateTransferRequest struct {
+	FromAccount string  `json:"fromAccount" binding:"required"`
+	ToAccount   string  `json:"toAccount"   binding:"required"`
+	Amount      float64 `json:"amount"      binding:"required,gt=0"`
+}
+
+// CreateTransfer godoc
+// @Summary      Transfer between own accounts
+// @Description  Transfers funds between two accounts belonging to the authenticated client. Applies currency conversion when accounts have different currencies.
+// @Tags         transfers
+// @Accept       json
+// @Produce      json
+// @Param        body  body      CreateTransferRequest  true  "Transfer data"
+// @Success      201   {object}  map[string]interface{}
+// @Failure      400   {object}  map[string]string
+// @Failure      403   {object}  map[string]string
+// @Failure      404   {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /api/transfers [post]
+func CreateTransfer(paymentClient pb.PaymentServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req CreateTransferRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		clientID, err := middleware.GetUserIDFromToken(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "could not extract identity from token"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+		defer cancel()
+
+		resp, err := paymentClient.CreateTransfer(ctx, &pb.CreateTransferRequest{
+			ClientId:    clientID,
+			FromAccount: req.FromAccount,
+			ToAccount:   req.ToAccount,
+			Amount:      req.Amount,
+		})
+		if err != nil {
+			switch status.Code(err) {
+			case codes.InvalidArgument:
+				c.JSON(http.StatusBadRequest, gin.H{"error": status.Convert(err).Message()})
+			case codes.NotFound:
+				c.JSON(http.StatusNotFound, gin.H{"error": status.Convert(err).Message()})
+			case codes.PermissionDenied:
+				c.JSON(http.StatusForbidden, gin.H{"error": status.Convert(err).Message()})
+			case codes.FailedPrecondition:
+				c.JSON(http.StatusBadRequest, gin.H{"error": status.Convert(err).Message()})
+			default:
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return
+		}
+
+		c.JSON(http.StatusCreated, gin.H{
+			"id":            resp.Id,
+			"orderNumber":   resp.OrderNumber,
+			"fromAccount":   resp.FromAccount,
+			"toAccount":     resp.ToAccount,
+			"initialAmount": resp.InitialAmount,
+			"finalAmount":   resp.FinalAmount,
+			"exchangeRate":  resp.ExchangeRate,
+			"fee":           resp.Fee,
+			"timestamp":     resp.Timestamp,
+		})
+	}
+}
+
 // DeletePaymentRecipient godoc
 // @Summary      Delete a payment recipient
 // @Description  Deletes a saved payment recipient. Only the owning client can delete.

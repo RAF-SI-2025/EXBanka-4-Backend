@@ -18,3 +18,26 @@ INSERT INTO currencies (name, code, symbol, country, description, status) VALUES
   ('Canadian Dollar',   'CAD', 'CA$',  'Canada',         'Canadian national currency',   'ACTIVE'),
   ('Australian Dollar', 'AUD', 'AU$',  'Australia',      'Australian national currency', 'ACTIVE')
 ON CONFLICT (code) DO NOTHING;
+
+CREATE TABLE exchange_rates (
+    from_currency VARCHAR NOT NULL,
+    to_currency   VARCHAR NOT NULL,
+    rate          NUMERIC(20, 6) NOT NULL,
+    PRIMARY KEY (from_currency, to_currency)
+);
+
+INSERT INTO exchange_rates (from_currency, to_currency, rate) VALUES
+  ('RSD', 'EUR', 0.008547), ('EUR', 'RSD', 117.0),
+  ('RSD', 'USD', 0.009259), ('USD', 'RSD', 108.0),
+  ('RSD', 'CHF', 0.008621), ('CHF', 'RSD', 116.0),
+  ('RSD', 'GBP', 0.007353), ('GBP', 'RSD', 136.0),
+  ('RSD', 'JPY', 1.380000), ('JPY', 'RSD', 0.724638),
+  ('RSD', 'CAD', 0.012500), ('CAD', 'RSD', 80.0),
+  ('RSD', 'AUD', 0.014286), ('AUD', 'RSD', 70.0),
+  ('EUR', 'USD', 1.083),    ('USD', 'EUR', 0.923),
+  ('EUR', 'CHF', 1.008),    ('CHF', 'EUR', 0.992),
+  ('EUR', 'GBP', 0.860),    ('GBP', 'EUR', 1.163),
+  ('USD', 'CHF', 0.931),    ('CHF', 'USD', 1.074),
+  ('USD', 'GBP', 0.794),    ('GBP', 'USD', 1.259),
+  ('CHF', 'GBP', 0.854),    ('GBP', 'CHF', 1.170)
+ON CONFLICT DO NOTHING;
