@@ -312,7 +312,9 @@ func GetPaymentById(paymentClient pb.PaymentServiceClient) gin.HandlerFunc {
 			"orderNumber":     p.OrderNumber,
 			"fromAccount":     p.FromAccount,
 			"toAccount":       p.ToAccount,
-			"recipient":       p.RecipientName,
+			"recipientName":   p.RecipientName,
+			"senderName":      p.SenderName,
+			"senderAddress":   p.SenderAddress,
 			"initialAmount":   p.InitialAmount,
 			"finalAmount":     p.FinalAmount,
 			"fee":             p.Fee,
@@ -372,6 +374,9 @@ func GetPayments(paymentClient pb.PaymentServiceClient) gin.HandlerFunc {
 			OrderNumber     string  `json:"orderNumber"`
 			FromAccount     string  `json:"fromAccount"`
 			ToAccount       string  `json:"toAccount"`
+			RecipientName   string  `json:"recipientName,omitempty"`
+			SenderName      string  `json:"senderName,omitempty"`
+			SenderAddress   string  `json:"senderAddress,omitempty"`
 			InitialAmount   float64 `json:"initialAmount"`
 			FinalAmount     float64 `json:"finalAmount"`
 			Fee             float64 `json:"fee"`
@@ -388,6 +393,9 @@ func GetPayments(paymentClient pb.PaymentServiceClient) gin.HandlerFunc {
 				OrderNumber:     p.OrderNumber,
 				FromAccount:     p.FromAccount,
 				ToAccount:       p.ToAccount,
+				RecipientName:   p.RecipientName,
+				SenderName:      p.SenderName,
+				SenderAddress:   p.SenderAddress,
 				InitialAmount:   p.InitialAmount,
 				FinalAmount:     p.FinalAmount,
 				Fee:             p.Fee,

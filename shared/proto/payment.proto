@@ -69,6 +69,8 @@ message Payment {
   string timestamp        = 11;
   string status           = 12;
   string recipient_name   = 13;
+  string sender_name      = 14;
+  string sender_address   = 15;
 }
 
 message GetPaymentByIdRequest {

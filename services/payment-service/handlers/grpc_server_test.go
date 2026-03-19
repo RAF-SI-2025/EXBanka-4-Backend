@@ -58,6 +58,20 @@ func newMockServer(t *testing.T) (*PaymentServer, sqlmock.Sqlmock, sqlmock.Sqlmo
 	return &PaymentServer{DB: paymentDB, AccountDB: accountDB}, paymentMock, accountMock
 }
 
+// newMockServerWithClientDB returns a PaymentServer backed by three sqlmock DBs:
+// payment_db, account_db, and client_db — for tests that exercise sender info lookup.
+func newMockServerWithClientDB(t *testing.T) (*PaymentServer, sqlmock.Sqlmock, sqlmock.Sqlmock, sqlmock.Sqlmock) {
+	t.Helper()
+	paymentDB, paymentMock, err := sqlmock.New()
+	require.NoError(t, err)
+	accountDB, accountMock, err := sqlmock.New()
+	require.NoError(t, err)
+	clientDB, clientMock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { paymentDB.Close(); accountDB.Close(); clientDB.Close() })
+	return &PaymentServer{DB: paymentDB, AccountDB: accountDB, ClientDB: clientDB}, paymentMock, accountMock, clientMock
+}
+
 // ---- CreatePayment ----
 
 func TestCreatePayment_SourceNotFound(t *testing.T) {
@@ -533,6 +547,67 @@ func TestGetPaymentById_PaymentDBError(t *testing.T) {
 	assert.Equal(t, codes.Internal, status.Code(err))
 }
 
+func TestGetPaymentById_IncomingPayment_SenderInfo(t *testing.T) {
+	s, paymentMock, accountMock, clientMock := newMockServerWithClientDB(t)
+
+	ts := time.Now()
+	paymentMock.ExpectQuery("SELECT p.id, p.order_number").
+		WithArgs(int64(10)).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"id", "order_number", "from_account", "to_account",
+			"initial_amount", "final_amount", "fee",
+			"payment_code", "reference_number", "purpose",
+			"timestamp", "status", "name",
+		}).AddRow(10, "ORD-010", "EXT-001", "ACC-100", 500.0, 500.0, 0.0, "", "", "gift", ts, "COMPLETED", nil))
+
+	// EXT-001 belongs to owner 55 (not client 42)
+	accountMock.ExpectQuery("SELECT owner_id FROM accounts").
+		WithArgs("EXT-001").
+		WillReturnRows(sqlmock.NewRows([]string{"owner_id"}).AddRow(int64(55)))
+	// ACC-100 belongs to owner 42 (our client)
+	accountMock.ExpectQuery("SELECT owner_id FROM accounts").
+		WithArgs("ACC-100").
+		WillReturnRows(sqlmock.NewRows([]string{"owner_id"}).AddRow(int64(42)))
+	// Client lookup for sender (owner 55)
+	clientMock.ExpectQuery("SELECT first_name").
+		WithArgs(int64(55)).
+		WillReturnRows(sqlmock.NewRows([]string{"name", "address"}).AddRow("Marko Marković", "Bulevar 1"))
+
+	resp, err := s.GetPaymentById(context.Background(), &pb.GetPaymentByIdRequest{PaymentId: 10, ClientId: 42})
+	require.NoError(t, err)
+	assert.Equal(t, "Marko Marković", resp.Payment.SenderName)
+	assert.Equal(t, "Bulevar 1", resp.Payment.SenderAddress)
+}
+
+func TestGetPaymentById_IncomingPayment_ClientDBError(t *testing.T) {
+	s, paymentMock, accountMock, clientMock := newMockServerWithClientDB(t)
+
+	ts := time.Now()
+	paymentMock.ExpectQuery("SELECT p.id, p.order_number").
+		WithArgs(int64(11)).
+		WillReturnRows(sqlmock.NewRows([]string{
+			"id", "order_number", "from_account", "to_account",
+			"initial_amount", "final_amount", "fee",
+			"payment_code", "reference_number", "purpose",
+			"timestamp", "status", "name",
+		}).AddRow(11, "ORD-011", "EXT-002", "ACC-100", 100.0, 100.0, 0.0, "", "", "", ts, "COMPLETED", nil))
+
+	accountMock.ExpectQuery("SELECT owner_id FROM accounts").
+		WithArgs("EXT-002").
+		WillReturnRows(sqlmock.NewRows([]string{"owner_id"}).AddRow(int64(77)))
+	accountMock.ExpectQuery("SELECT owner_id FROM accounts").
+		WithArgs("ACC-100").
+		WillReturnRows(sqlmock.NewRows([]string{"owner_id"}).AddRow(int64(42)))
+	// ClientDB lookup fails — payment still returned, sender info empty
+	clientMock.ExpectQuery("SELECT first_name").
+		WithArgs(int64(77)).
+		WillReturnError(sql.ErrConnDone)
+
+	resp, err := s.GetPaymentById(context.Background(), &pb.GetPaymentByIdRequest{PaymentId: 11, ClientId: 42})
+	require.NoError(t, err)
+	assert.Equal(t, "", resp.Payment.SenderName)
+}
+
 // ---- GetPayments ----
 
 func TestGetPayments_NoAccounts(t *testing.T) {
@@ -569,13 +644,13 @@ func TestGetPayments_NoFilters(t *testing.T) {
 			AddRow("ACC-001").AddRow("ACC-002"))
 
 	ts := time.Date(2025, 6, 1, 10, 0, 0, 0, time.UTC)
-	paymentMock.ExpectQuery("SELECT id, order_number").
+	paymentMock.ExpectQuery("FROM payments p").
 		WillReturnRows(sqlmock.NewRows([]string{
 			"id", "order_number", "from_account", "to_account",
 			"initial_amount", "final_amount", "fee",
 			"payment_code", "reference_number", "purpose",
-			"timestamp", "status",
-		}).AddRow(1, "ORD-001", "ACC-001", "EXT-999", 500.0, 500.0, 0.0, "289", "RF001", "rent", ts, "COMPLETED"))
+			"timestamp", "status", "name",
+		}).AddRow(1, "ORD-001", "ACC-001", "EXT-999", 500.0, 500.0, 0.0, "289", "RF001", "rent", ts, "COMPLETED", nil))
 
 	resp, err := s.GetPayments(context.Background(), &pb.GetPaymentsRequest{ClientId: 1})
 	require.NoError(t, err)
@@ -606,12 +681,12 @@ func TestGetPayments_MultiplePayments(t *testing.T) {
 		"id", "order_number", "from_account", "to_account",
 		"initial_amount", "final_amount", "fee",
 		"payment_code", "reference_number", "purpose",
-		"timestamp", "status",
+		"timestamp", "status", "name",
 	}).
-		AddRow(10, "ORD-010", "ACC-100", "EXT-111", 200.0, 200.0, 0.0, "", "", "electricity", ts1, "COMPLETED").
-		AddRow(9, "ORD-009", "ACC-100", "EXT-222", 100.0, 99.5, 0.5, "", "", "phone", ts2, "COMPLETED")
+		AddRow(10, "ORD-010", "ACC-100", "EXT-111", 200.0, 200.0, 0.0, "", "", "electricity", ts1, "COMPLETED", nil).
+		AddRow(9, "ORD-009", "ACC-100", "EXT-222", 100.0, 99.5, 0.5, "", "", "phone", ts2, "COMPLETED", nil)
 
-	paymentMock.ExpectQuery("SELECT id, order_number").WillReturnRows(rows)
+	paymentMock.ExpectQuery("FROM payments p").WillReturnRows(rows)
 
 	resp, err := s.GetPayments(context.Background(), &pb.GetPaymentsRequest{ClientId: 2})
 	require.NoError(t, err)
@@ -628,13 +703,13 @@ func TestGetPayments_FilterByStatus(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"account_number"}).AddRow("ACC-300"))
 
 	ts := time.Date(2025, 3, 15, 8, 0, 0, 0, time.UTC)
-	paymentMock.ExpectQuery("SELECT id, order_number").
+	paymentMock.ExpectQuery("FROM payments p").
 		WillReturnRows(sqlmock.NewRows([]string{
 			"id", "order_number", "from_account", "to_account",
 			"initial_amount", "final_amount", "fee",
 			"payment_code", "reference_number", "purpose",
-			"timestamp", "status",
-		}).AddRow(5, "ORD-005", "ACC-300", "EXT-400", 150.0, 150.0, 0.0, "", "", "", ts, "PROCESSING"))
+			"timestamp", "status", "name",
+		}).AddRow(5, "ORD-005", "ACC-300", "EXT-400", 150.0, 150.0, 0.0, "", "", "", ts, "PROCESSING", nil))
 
 	resp, err := s.GetPayments(context.Background(), &pb.GetPaymentsRequest{
 		ClientId: 3,
@@ -653,13 +728,13 @@ func TestGetPayments_FilterByDateRange(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"account_number"}).AddRow("ACC-400"))
 
 	ts := time.Date(2025, 2, 10, 12, 0, 0, 0, time.UTC)
-	paymentMock.ExpectQuery("SELECT id, order_number").
+	paymentMock.ExpectQuery("FROM payments p").
 		WillReturnRows(sqlmock.NewRows([]string{
 			"id", "order_number", "from_account", "to_account",
 			"initial_amount", "final_amount", "fee",
 			"payment_code", "reference_number", "purpose",
-			"timestamp", "status",
-		}).AddRow(7, "ORD-007", "ACC-400", "EXT-500", 300.0, 300.0, 0.0, "", "", "", ts, "COMPLETED"))
+			"timestamp", "status", "name",
+		}).AddRow(7, "ORD-007", "ACC-400", "EXT-500", 300.0, 300.0, 0.0, "", "", "", ts, "COMPLETED", nil))
 
 	resp, err := s.GetPayments(context.Background(), &pb.GetPaymentsRequest{
 		ClientId: 4,
@@ -678,13 +753,13 @@ func TestGetPayments_FilterByAmountRange(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"account_number"}).AddRow("ACC-500"))
 
 	ts := time.Now()
-	paymentMock.ExpectQuery("SELECT id, order_number").
+	paymentMock.ExpectQuery("FROM payments p").
 		WillReturnRows(sqlmock.NewRows([]string{
 			"id", "order_number", "from_account", "to_account",
 			"initial_amount", "final_amount", "fee",
 			"payment_code", "reference_number", "purpose",
-			"timestamp", "status",
-		}).AddRow(8, "ORD-008", "ACC-500", "EXT-600", 250.0, 250.0, 0.0, "", "", "", ts, "COMPLETED"))
+			"timestamp", "status", "name",
+		}).AddRow(8, "ORD-008", "ACC-500", "EXT-600", 250.0, 250.0, 0.0, "", "", "", ts, "COMPLETED", nil))
 
 	resp, err := s.GetPayments(context.Background(), &pb.GetPaymentsRequest{
 		ClientId:  5,
@@ -703,12 +778,12 @@ func TestGetPayments_EmptyResult(t *testing.T) {
 		WithArgs(int64(6)).
 		WillReturnRows(sqlmock.NewRows([]string{"account_number"}).AddRow("ACC-600"))
 
-	paymentMock.ExpectQuery("SELECT id, order_number").
+	paymentMock.ExpectQuery("FROM payments p").
 		WillReturnRows(sqlmock.NewRows([]string{
 			"id", "order_number", "from_account", "to_account",
 			"initial_amount", "final_amount", "fee",
 			"payment_code", "reference_number", "purpose",
-			"timestamp", "status",
+			"timestamp", "status", "name",
 		}))
 
 	resp, err := s.GetPayments(context.Background(), &pb.GetPaymentsRequest{ClientId: 6})
@@ -723,7 +798,7 @@ func TestGetPayments_PaymentDBError(t *testing.T) {
 		WithArgs(int64(7)).
 		WillReturnRows(sqlmock.NewRows([]string{"account_number"}).AddRow("ACC-700"))
 
-	paymentMock.ExpectQuery("SELECT id, order_number").
+	paymentMock.ExpectQuery("FROM payments p").
 		WillReturnError(fmt.Errorf("query timeout"))
 
 	_, err := s.GetPayments(context.Background(), &pb.GetPaymentsRequest{ClientId: 7})
@@ -738,7 +813,7 @@ func TestGetPayments_ScanError(t *testing.T) {
 		WithArgs(int64(8)).
 		WillReturnRows(sqlmock.NewRows([]string{"account_number"}).AddRow("ACC-800"))
 
-	paymentMock.ExpectQuery("SELECT id, order_number").
+	paymentMock.ExpectQuery("FROM payments p").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
 	_, err := s.GetPayments(context.Background(), &pb.GetPaymentsRequest{ClientId: 8})
@@ -754,13 +829,13 @@ func TestGetPayments_AllFilters(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"account_number"}).AddRow("ACC-900"))
 
 	ts := time.Date(2025, 7, 20, 0, 0, 0, 0, time.UTC)
-	paymentMock.ExpectQuery("SELECT id, order_number").
+	paymentMock.ExpectQuery("FROM payments p").
 		WillReturnRows(sqlmock.NewRows([]string{
 			"id", "order_number", "from_account", "to_account",
 			"initial_amount", "final_amount", "fee",
 			"payment_code", "reference_number", "purpose",
-			"timestamp", "status",
-		}).AddRow(20, "ORD-020", "ACC-900", "EXT-999", 400.0, 395.0, 5.0, "221", "RF020", "salary", ts, "COMPLETED"))
+			"timestamp", "status", "name",
+		}).AddRow(20, "ORD-020", "ACC-900", "EXT-999", 400.0, 395.0, 5.0, "221", "RF020", "salary", ts, "COMPLETED", nil))
 
 	resp, err := s.GetPayments(context.Background(), &pb.GetPaymentsRequest{
 		ClientId:  9,
@@ -777,6 +852,38 @@ func TestGetPayments_AllFilters(t *testing.T) {
 	assert.Equal(t, 400.0, p.InitialAmount)
 	assert.Equal(t, 5.0, p.Fee)
 	assert.Equal(t, "salary", p.Purpose)
+}
+
+func TestGetPayments_IncomingPayment_SenderInfo(t *testing.T) {
+	s, paymentMock, accountMock, clientMock := newMockServerWithClientDB(t)
+
+	accountMock.ExpectQuery("SELECT account_number FROM accounts").
+		WithArgs(int64(42)).
+		WillReturnRows(sqlmock.NewRows([]string{"account_number"}).AddRow("ACC-100"))
+
+	ts := time.Now()
+	paymentMock.ExpectQuery("FROM payments p").
+		WillReturnRows(sqlmock.NewRows([]string{
+			"id", "order_number", "from_account", "to_account",
+			"initial_amount", "final_amount", "fee",
+			"payment_code", "reference_number", "purpose",
+			"timestamp", "status", "name",
+		}).AddRow(20, "ORD-020", "EXT-999", "ACC-100", 300.0, 300.0, 0.0, "", "", "salary", ts, "COMPLETED", nil))
+
+	// Incoming: EXT-999 → owner 55
+	accountMock.ExpectQuery("SELECT owner_id FROM accounts").
+		WithArgs("EXT-999").
+		WillReturnRows(sqlmock.NewRows([]string{"owner_id"}).AddRow(int64(55)))
+	// Client lookup for owner 55
+	clientMock.ExpectQuery("SELECT first_name").
+		WithArgs(int64(55)).
+		WillReturnRows(sqlmock.NewRows([]string{"name", "address"}).AddRow("Ana Anić", "Ulica 5"))
+
+	resp, err := s.GetPayments(context.Background(), &pb.GetPaymentsRequest{ClientId: 42})
+	require.NoError(t, err)
+	require.Len(t, resp.Payments, 1)
+	assert.Equal(t, "Ana Anić", resp.Payments[0].SenderName)
+	assert.Equal(t, "Ulica 5", resp.Payments[0].SenderAddress)
 }
 
 // ---- CreateTransfer ----

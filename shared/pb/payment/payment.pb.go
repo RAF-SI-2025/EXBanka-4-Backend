@@ -704,6 +704,8 @@ type Payment struct {
 	Timestamp       string                 `protobuf:"bytes,11,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Status          string                 `protobuf:"bytes,12,opt,name=status,proto3" json:"status,omitempty"`
 	RecipientName   string                 `protobuf:"bytes,13,opt,name=recipient_name,json=recipientName,proto3" json:"recipient_name,omitempty"`
+	SenderName      string                 `protobuf:"bytes,14,opt,name=sender_name,json=senderName,proto3" json:"sender_name,omitempty"`
+	SenderAddress   string                 `protobuf:"bytes,15,opt,name=sender_address,json=senderAddress,proto3" json:"sender_address,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -825,6 +827,20 @@ func (x *Payment) GetStatus() string {
 func (x *Payment) GetRecipientName() string {
 	if x != nil {
 		return x.RecipientName
+	}
+	return ""
+}
+
+func (x *Payment) GetSenderName() string {
+	if x != nil {
+		return x.SenderName
+	}
+	return ""
+}
+
+func (x *Payment) GetSenderAddress() string {
+	if x != nil {
+		return x.SenderAddress
 	}
 	return ""
 }
@@ -1281,7 +1297,7 @@ const file_payment_proto_rawDesc = "" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12%\n" +
 	"\x0eaccount_number\x18\x04 \x01(\tR\raccountNumber\"Y\n" +
 	"\x1eUpdatePaymentRecipientResponse\x127\n" +
-	"\trecipient\x18\x01 \x01(\v2\x19.payment.PaymentRecipientR\trecipient\"\x9f\x03\n" +
+	"\trecipient\x18\x01 \x01(\v2\x19.payment.PaymentRecipientR\trecipient\"\xe7\x03\n" +
 	"\aPayment\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12!\n" +
 	"\forder_number\x18\x02 \x01(\tR\vorderNumber\x12!\n" +
@@ -1297,7 +1313,10 @@ const file_payment_proto_rawDesc = "" +
 	" \x01(\tR\apurpose\x12\x1c\n" +
 	"\ttimestamp\x18\v \x01(\tR\ttimestamp\x12\x16\n" +
 	"\x06status\x18\f \x01(\tR\x06status\x12%\n" +
-	"\x0erecipient_name\x18\r \x01(\tR\rrecipientName\"S\n" +
+	"\x0erecipient_name\x18\r \x01(\tR\rrecipientName\x12\x1f\n" +
+	"\vsender_name\x18\x0e \x01(\tR\n" +
+	"senderName\x12%\n" +
+	"\x0esender_address\x18\x0f \x01(\tR\rsenderAddress\"S\n" +
 	"\x15GetPaymentByIdRequest\x12\x1d\n" +
 	"\n" +
 	"payment_id\x18\x01 \x01(\x03R\tpaymentId\x12\x1b\n" +

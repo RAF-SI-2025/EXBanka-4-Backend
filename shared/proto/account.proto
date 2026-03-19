@@ -35,6 +35,7 @@ message AccountResponse {
   double balance           = 9;
   double available_balance = 10;
   string created_date      = 11;
+  string category          = 12;
 }
 
 message CreateAccountResponse {

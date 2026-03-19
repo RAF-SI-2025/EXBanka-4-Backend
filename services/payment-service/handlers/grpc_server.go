@@ -18,6 +18,7 @@ type PaymentServer struct {
 	DB         *sql.DB // payment_db
 	AccountDB  *sql.DB // account_db
 	ExchangeDB *sql.DB // exchange_db
+	ClientDB   *sql.DB // client_db
 }
 
 func (s *PaymentServer) CreatePayment(ctx context.Context, req *pb.CreatePaymentRequest) (*pb.CreatePaymentResponse, error) {
@@ -249,12 +250,18 @@ func (s *PaymentServer) GetPaymentById(ctx context.Context, req *pb.GetPaymentBy
 		return nil, status.Errorf(codes.Internal, "failed to query payment: %v", err)
 	}
 
-	// Verify ownership: from_account must belong to this client
-	var ownerID int64
-	err = s.AccountDB.QueryRowContext(ctx,
+	// Verify ownership: client must be either sender or receiver
+	var fromOwnerID int64
+	_ = s.AccountDB.QueryRowContext(ctx,
 		`SELECT owner_id FROM accounts WHERE account_number = $1`, p.FromAccount,
-	).Scan(&ownerID)
-	if err != nil || ownerID != req.ClientId {
+	).Scan(&fromOwnerID)
+
+	var toOwnerID int64
+	_ = s.AccountDB.QueryRowContext(ctx,
+		`SELECT owner_id FROM accounts WHERE account_number = $1`, p.ToAccount,
+	).Scan(&toOwnerID)
+
+	if fromOwnerID != req.ClientId && toOwnerID != req.ClientId {
 		return nil, status.Error(codes.PermissionDenied, "payment does not belong to this client")
 	}
 
@@ -262,6 +269,20 @@ func (s *PaymentServer) GetPaymentById(ctx context.Context, req *pb.GetPaymentBy
 	if recipientName.Valid {
 		p.RecipientName = recipientName.String
 	}
+
+	// For incoming payments, resolve sender name and address from client_db
+	if toOwnerID == req.ClientId && fromOwnerID != req.ClientId && s.ClientDB != nil {
+		var senderName, senderAddress string
+		err := s.ClientDB.QueryRowContext(ctx,
+			`SELECT first_name || ' ' || last_name, address
+			 FROM clients WHERE id = $1`, fromOwnerID,
+		).Scan(&senderName, &senderAddress)
+		if err == nil {
+			p.SenderName = senderName
+			p.SenderAddress = senderAddress
+		}
+	}
+
 	return &pb.GetPaymentByIdResponse{Payment: &p}, nil
 }
 
@@ -286,20 +307,21 @@ func (s *PaymentServer) GetPayments(ctx context.Context, req *pb.GetPaymentsRequ
 		return &pb.GetPaymentsResponse{Payments: []*pb.Payment{}}, nil
 	}
 
-	// 2. Query payments with optional filters
+	// 2. Query payments (outgoing and incoming) with optional filters
 	pmRows, err := s.DB.QueryContext(ctx, `
-		SELECT id, order_number, from_account, to_account,
-		       initial_amount, final_amount, fee,
-		       payment_code, reference_number, purpose,
-		       timestamp, status
-		FROM payments
-		WHERE (from_account = ANY($1) OR to_account = ANY($1))
-		  AND ($2 = '' OR timestamp >= $2::timestamptz)
-		  AND ($3 = '' OR timestamp <= $3::timestamptz)
-		  AND ($4 = 0 OR initial_amount >= $4)
-		  AND ($5 = 0 OR initial_amount <= $5)
-		  AND ($6 = '' OR status = $6)
-		ORDER BY timestamp DESC`,
+		SELECT p.id, p.order_number, p.from_account, p.to_account,
+		       p.initial_amount, p.final_amount, p.fee,
+		       p.payment_code, p.reference_number, p.purpose,
+		       p.timestamp, p.status, r.name
+		FROM payments p
+		LEFT JOIN payment_recipients r ON p.recipient_id = r.id
+		WHERE (p.from_account = ANY($1) OR p.to_account = ANY($1))
+		  AND ($2 = '' OR p.timestamp >= $2::timestamptz)
+		  AND ($3 = '' OR p.timestamp <= $3::timestamptz)
+		  AND ($4 = 0 OR p.initial_amount >= $4)
+		  AND ($5 = 0 OR p.initial_amount <= $5)
+		  AND ($6 = '' OR p.status = $6)
+		ORDER BY p.timestamp DESC`,
 		pq.Array(accountNumbers),
 		req.DateFrom, req.DateTo,
 		req.AmountMin, req.AmountMax,
@@ -310,19 +332,46 @@ func (s *PaymentServer) GetPayments(ctx context.Context, req *pb.GetPaymentsRequ
 	}
 	defer pmRows.Close()
 
+	accountSet := make(map[string]bool, len(accountNumbers))
+	for _, an := range accountNumbers {
+		accountSet[an] = true
+	}
+
 	var payments []*pb.Payment
 	for pmRows.Next() {
 		var p pb.Payment
 		var ts time.Time
+		var recipientName sql.NullString
 		if err := pmRows.Scan(
 			&p.Id, &p.OrderNumber, &p.FromAccount, &p.ToAccount,
 			&p.InitialAmount, &p.FinalAmount, &p.Fee,
 			&p.PaymentCode, &p.ReferenceNumber, &p.Purpose,
-			&ts, &p.Status,
+			&ts, &p.Status, &recipientName,
 		); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to scan payment: %v", err)
 		}
 		p.Timestamp = ts.Format(time.RFC3339)
+		if recipientName.Valid {
+			p.RecipientName = recipientName.String
+		}
+
+		// For incoming payments, resolve sender info from client_db
+		isIncoming := !accountSet[p.FromAccount] && accountSet[p.ToAccount]
+		if isIncoming && s.ClientDB != nil {
+			var fromOwnerID int64
+			if err := s.AccountDB.QueryRowContext(ctx,
+				`SELECT owner_id FROM accounts WHERE account_number = $1`, p.FromAccount,
+			).Scan(&fromOwnerID); err == nil {
+				var senderName, senderAddress string
+				if err := s.ClientDB.QueryRowContext(ctx,
+					`SELECT first_name || ' ' || last_name, address FROM clients WHERE id = $1`, fromOwnerID,
+				).Scan(&senderName, &senderAddress); err == nil {
+					p.SenderName = senderName
+					p.SenderAddress = senderAddress
+				}
+			}
+		}
+
 		payments = append(payments, &p)
 	}
 	return &pb.GetPaymentsResponse{Payments: payments}, nil
