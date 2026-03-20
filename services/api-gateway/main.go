@@ -92,6 +92,7 @@ func main() {
 	r.POST("/refresh", handlers.Refresh(authClient))
 	r.POST("/client/login", handlers.ClientLogin(authClient))
 	r.POST("/client/refresh", handlers.ClientRefresh(authClient))
+	r.GET("/client/me", handlers.GetMe(clientClient))
 	r.POST("/auth/activate", handlers.Activate(authClient))
 	r.POST("/auth/forgot-password", handlers.ForgotPassword(authClient, emailClient))
 	r.POST("/auth/reset-password", handlers.ResetPassword(authClient))

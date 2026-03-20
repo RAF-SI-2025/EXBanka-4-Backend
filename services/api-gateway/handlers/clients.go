@@ -13,6 +13,7 @@ import (
 	authpb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
 	emailpb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
+	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/middleware"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -69,6 +70,39 @@ func toClientResponse(c *pb.Client) clientResponse {
 		Address:     c.Address,
 		Username:    c.Username,
 		Active:      c.Active,
+	}
+}
+
+// GetMe godoc
+// @Summary      Get current client profile
+// @Description  Returns the profile of the currently authenticated client.
+// @Tags         clients
+// @Produce      json
+// @Success      200  {object}  clientResponse
+// @Failure      401  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /client/me [get]
+func GetMe(client pb.ClientServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, err := middleware.GetUserIDFromToken(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "could not extract identity from token"})
+			return
+		}
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		resp, err := client.GetClientById(ctx, &pb.GetClientByIdRequest{Id: userID})
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": "client not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, toClientResponse(resp.Client))
 	}
 }
 
