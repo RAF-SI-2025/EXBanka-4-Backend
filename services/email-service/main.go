@@ -11,9 +11,9 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"google.golang.org/grpc"
 
-	pb "github.com/exbanka/backend/shared/pb/email"
-	"github.com/exbanka/backend/services/email-service/handlers"
-	"github.com/exbanka/backend/services/email-service/queue"
+	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
+	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/email-service/handlers"
+	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/email-service/queue"
 )
 
 func mustEnv(key string) string {
@@ -78,6 +78,12 @@ func main() {
 	}
 	defer confirmConsumeCh.Close()
 
+	accountCreatedConsumeCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to open account created consume channel: %v", err)
+	}
+	defer accountCreatedConsumeCh.Close()
+
 	producer, err := queue.NewProducer(publishCh)
 	if err != nil {
 		log.Fatalf("failed to create producer: %v", err)
@@ -98,9 +104,15 @@ func main() {
 		log.Fatalf("failed to parse password confirmation email template: %v", err)
 	}
 
+	accountCreatedTmpl, err := template.ParseFiles("templates/account_created.html")
+	if err != nil {
+		log.Fatalf("failed to parse account created email template: %v", err)
+	}
+
 	go queue.Consume(consumeCh, smtpCfg, tmpl)
 	go queue.ConsumePasswordReset(resetConsumeCh, smtpCfg, resetTmpl)
 	go queue.ConsumePasswordConfirmation(confirmConsumeCh, smtpCfg, confirmTmpl)
+	go queue.ConsumeAccountCreated(accountCreatedConsumeCh, smtpCfg, accountCreatedTmpl)
 
 	lis, err := net.Listen("tcp", ":50053")
 	if err != nil {

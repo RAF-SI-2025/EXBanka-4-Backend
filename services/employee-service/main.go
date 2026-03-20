@@ -5,9 +5,9 @@ import (
 	"net"
 
 	"google.golang.org/grpc"
-	empdb "github.com/exbanka/backend/services/employee-service/db"
-	"github.com/exbanka/backend/services/employee-service/handlers"
-	pb "github.com/exbanka/backend/shared/pb/employee"
+	empdb "github.com/RAF-SI-2025/EXBanka-4-Backend/services/employee-service/db"
+	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/employee-service/handlers"
+	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
 )
 
 func main() {

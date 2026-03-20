@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Account Created</title>
+</head>
+<body style="font-family: sans-serif; background: #f8f9fa; padding: 40px;">
+  <div style="max-width: 520px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+    <h2 style="color: #4f46e5; margin-bottom: 8px;">AnkaBanka</h2>
+    <p>Dear {{.FirstName}},</p>
+    <p>Your bank account has been successfully created. Here are the details:</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
+      <tr>
+        <td style="padding: 10px; border: 1px solid #e5e7eb; color: #6b7280; width: 40%;">Account Name</td>
+        <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">{{.AccountName}}</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px; border: 1px solid #e5e7eb; color: #6b7280;">Account Number</td>
+        <td style="padding: 10px; border: 1px solid #e5e7eb; font-family: monospace; font-weight: bold;">{{.AccountNumber}}</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px; border: 1px solid #e5e7eb; color: #6b7280;">Currency</td>
+        <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: bold;">{{.CurrencyCode}}</td>
+      </tr>
+    </table>
+    <p style="color: #6b7280; font-size: 14px;">If you have any questions, please contact your nearest branch.</p>
+    <p style="color: #6b7280; font-size: 14px;">Best regards,<br><strong>AnkaBanka Team</strong></p>
+  </div>
+</body>
+</html>

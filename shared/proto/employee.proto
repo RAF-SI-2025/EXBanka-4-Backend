@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package employee;
 
-option go_package = "github.com/exbanka/backend/shared/pb/employee";
+option go_package = "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee";
 
 message Employee {
   int64  id              = 1;

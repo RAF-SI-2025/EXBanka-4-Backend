@@ -95,3 +95,78 @@ func TestRequireRole_RoleCheckIsCaseInsensitive(t *testing.T) {
 	tokenStr, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(jwtSecret))
 	assert.Equal(t, http.StatusOK, runMiddleware("Bearer "+tokenStr, "OPERATOR"))
 }
+
+// ---- GetUserIDFromToken tests ----
+
+func runGetUserID(authHeader string) (int64, error) {
+	gin.SetMode(gin.TestMode)
+	var (
+		id  int64
+		err error
+	)
+	router := gin.New()
+	router.GET("/test", func(c *gin.Context) {
+		id, err = GetUserIDFromToken(c)
+		c.Status(http.StatusOK)
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/test", nil)
+	if authHeader != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
+	router.ServeHTTP(w, req)
+	return id, err
+}
+
+func TestGetUserIDFromToken_MissingHeader(t *testing.T) {
+	id, err := runGetUserID("")
+	assert.Error(t, err)
+	assert.Equal(t, int64(0), id)
+}
+
+func TestGetUserIDFromToken_InvalidToken(t *testing.T) {
+	id, err := runGetUserID("Bearer not.a.token")
+	assert.Error(t, err)
+	assert.Equal(t, int64(0), id)
+}
+
+func TestGetUserIDFromToken_HappyPath(t *testing.T) {
+	token := makeToken("access", []string{"ADMIN"}, time.Hour)
+	id, err := runGetUserID("Bearer " + token)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), id)
+}
+
+func TestRequireRole_InvalidSigningMethod(t *testing.T) {
+	claims := jwt.MapClaims{
+		"user_id": float64(1), "username": "user@example.com",
+		"type": "access", "dozvole": []string{"ADMIN"},
+		"exp": time.Now().Add(time.Hour).Unix(),
+	}
+	tokenStr, _ := jwt.NewWithClaims(jwt.SigningMethodNone, claims).SignedString(jwt.UnsafeAllowNoneSignatureType)
+	assert.Equal(t, http.StatusUnauthorized, runMiddleware("Bearer "+tokenStr, "ADMIN"))
+}
+
+func TestGetUserIDFromToken_InvalidSigningMethod(t *testing.T) {
+	claims := jwt.MapClaims{
+		"user_id": float64(1), "username": "user@example.com",
+		"type": "access", "exp": time.Now().Add(time.Hour).Unix(),
+	}
+	tokenStr, _ := jwt.NewWithClaims(jwt.SigningMethodNone, claims).SignedString(jwt.UnsafeAllowNoneSignatureType)
+	id, err := runGetUserID("Bearer " + tokenStr)
+	assert.Error(t, err)
+	assert.Equal(t, int64(0), id)
+}
+
+func TestGetUserIDFromToken_MissingUserIdClaim(t *testing.T) {
+	claims := jwt.MapClaims{
+		"username": "user@example.com",
+		"type":     "access",
+		"exp":      time.Now().Add(time.Hour).Unix(),
+		// user_id intentionally omitted
+	}
+	tokenStr, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(jwtSecret))
+	id, err := runGetUserID("Bearer " + tokenStr)
+	assert.Error(t, err)
+	assert.Equal(t, int64(0), id)
+}

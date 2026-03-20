@@ -1,7 +1,7 @@
 package grpc
 
 import (
-	pb "github.com/exbanka/backend/shared/pb/employee"
+	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

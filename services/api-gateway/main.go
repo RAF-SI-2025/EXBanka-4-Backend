@@ -6,10 +6,10 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	gwgrpc "github.com/exbanka/backend/services/api-gateway/grpc"
-	"github.com/exbanka/backend/services/api-gateway/handlers"
-	"github.com/exbanka/backend/services/api-gateway/middleware"
-	_ "github.com/exbanka/backend/services/api-gateway/docs"
+	gwgrpc "github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/grpc"
+	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/handlers"
+	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/middleware"
+	_ "github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/docs"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -23,11 +23,29 @@ import (
 // @in              header
 // @name            Authorization
 func main() {
+	clientClient, clientConn, err := gwgrpc.NewClientClient("localhost:50056")
+	if err != nil {
+		log.Fatalf("failed to connect to client-service: %v", err)
+	}
+	defer clientConn.Close()
+
 	employeeClient, empConn, err := gwgrpc.NewEmployeeClient("localhost:50051")
 	if err != nil {
 		log.Fatalf("failed to connect to employee-service: %v", err)
 	}
 	defer empConn.Close()
+
+	paymentClient, pmConn, err := gwgrpc.NewPaymentClient("localhost:50055")
+	if err != nil {
+		log.Fatalf("failed to connect to payment-service: %v", err)
+	}
+	defer pmConn.Close()
+
+	accountClient, accConn, err := gwgrpc.NewAccountClient("localhost:50054")
+	if err != nil {
+		log.Fatalf("failed to connect to account-service: %v", err)
+	}
+	defer accConn.Close()
 
 	authClient, authConn, err := gwgrpc.NewAuthClient("localhost:50052")
 	if err != nil {
@@ -57,11 +75,31 @@ func main() {
 	r.GET("/employees/search", middleware.RequireRole("ADMIN"), handlers.SearchEmployees(employeeClient))
 	r.PUT("/employees/:id", middleware.RequireRole("ADMIN"), handlers.UpdateEmployee(employeeClient))
 	r.POST("/employees", middleware.RequireRole("ADMIN"), handlers.CreateEmployee(employeeClient, authClient, emailClient))
+	r.POST("/api/payments/create", handlers.CreatePayment(paymentClient))
+	r.GET("/api/payments", handlers.GetPayments(paymentClient))
+	r.GET("/api/payments/:paymentId", handlers.GetPaymentById(paymentClient))
+	r.POST("/api/transfers", handlers.CreateTransfer(paymentClient))
+	r.POST("/api/recipients", handlers.CreatePaymentRecipient(paymentClient))
+	r.GET("/api/recipients", handlers.GetPaymentRecipients(paymentClient))
+	r.PUT("/api/recipients/:id", handlers.UpdatePaymentRecipient(paymentClient))
+	r.DELETE("/api/recipients/:id", handlers.DeletePaymentRecipient(paymentClient))
+	r.GET("/api/accounts", middleware.RequireRole("EMPLOYEE"), handlers.GetAllAccounts(accountClient))
+	r.GET("/api/accounts/my", handlers.GetMyAccounts(accountClient))
+	r.GET("/api/accounts/:accountId", handlers.GetAccount(accountClient))
+	r.PUT("/api/accounts/:accountId/name", handlers.RenameAccount(accountClient))
+	r.POST("/api/accounts/create", middleware.RequireRole("EMPLOYEE"), handlers.CreateAccount(accountClient))
 	r.POST("/login", handlers.Login(authClient))
 	r.POST("/refresh", handlers.Refresh(authClient))
+	r.POST("/client/login", handlers.ClientLogin(authClient))
+	r.POST("/client/refresh", handlers.ClientRefresh(authClient))
 	r.POST("/auth/activate", handlers.Activate(authClient))
 	r.POST("/auth/forgot-password", handlers.ForgotPassword(authClient, emailClient))
 	r.POST("/auth/reset-password", handlers.ResetPassword(authClient))
+	r.GET("/clients", middleware.RequireRole("EMPLOYEE"), handlers.GetClients(clientClient))
+	r.GET("/clients/:id", middleware.RequireRole("EMPLOYEE"), handlers.GetClientById(clientClient))
+	r.POST("/clients", middleware.RequireRole("EMPLOYEE"), handlers.CreateClient(clientClient, authClient, emailClient))
+	r.PUT("/clients/:id", middleware.RequireRole("EMPLOYEE"), handlers.UpdateClient(clientClient))
+	r.POST("/client/activate", handlers.ActivateClient(authClient))
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run(":8081")
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
@@ -11,7 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "github.com/exbanka/backend/shared/pb/employee"
+	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
 )
 
 // ---- paginate tests ----
@@ -471,4 +472,225 @@ func TestSearchEmployees_HappyPath_WithEmailFilter(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int32(1), resp.TotalCount)
 	assert.Equal(t, "Bob", resp.Employees[0].Ime)
+}
+
+// ---- Additional DB error / scan error tests ----
+
+func TestGetAllEmployees_QueryFails(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("SELECT COUNT").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int32(1)))
+	dbMock.ExpectQuery("LIMIT").
+		WillReturnError(sql.ErrConnDone)
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.GetAllEmployees(context.Background(), &pb.GetAllEmployeesRequest{Page: 1, PageSize: 10})
+	require.Error(t, err)
+}
+
+func TestGetAllEmployees_ScanFails(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("SELECT COUNT").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int32(1)))
+	// wrong column type for id to trigger scan error
+	dbMock.ExpectQuery("LIMIT").
+		WillReturnRows(sqlmock.NewRows(employeeColumns()).
+			AddRow("not-an-int", "John", "Doe", "1990-01-01", "M", "john@example.com",
+				"060111", "Addr", "johndoe", "Dev", "IT", true, pq.StringArray{}, "1111111111111"))
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.GetAllEmployees(context.Background(), &pb.GetAllEmployeesRequest{Page: 1, PageSize: 10})
+	require.Error(t, err)
+}
+
+func TestSearchEmployees_CountFails(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("SELECT COUNT").
+		WillReturnError(sql.ErrConnDone)
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.SearchEmployees(context.Background(), &pb.SearchEmployeesRequest{Page: 1, PageSize: 10})
+	require.Error(t, err)
+}
+
+func TestSearchEmployees_QueryFails(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("SELECT COUNT").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int32(1)))
+	dbMock.ExpectQuery("LIMIT").
+		WillReturnError(sql.ErrConnDone)
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.SearchEmployees(context.Background(), &pb.SearchEmployeesRequest{Page: 1, PageSize: 10})
+	require.Error(t, err)
+}
+
+func TestSearchEmployees_ScanFails(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("SELECT COUNT").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int32(1)))
+	dbMock.ExpectQuery("LIMIT").
+		WillReturnRows(sqlmock.NewRows(employeeColumns()).
+			AddRow("not-an-int", "X", "Y", "2000-01-01", "M", "x@example.com",
+				"000", "Addr", "xy", "Dev", "IT", false, pq.StringArray{}, "0000000000000"))
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.SearchEmployees(context.Background(), &pb.SearchEmployeesRequest{Page: 1, PageSize: 10})
+	require.Error(t, err)
+}
+
+func TestGetEmployeeCredentials_DBError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("SELECT id, password").WillReturnError(sql.ErrConnDone)
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.GetEmployeeCredentials(context.Background(), &pb.GetEmployeeCredentialsRequest{Email: "user@example.com"})
+	require.Error(t, err)
+}
+
+func TestGetEmployeeById_DBError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("SELECT id, ime").WillReturnError(sql.ErrConnDone)
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.GetEmployeeById(context.Background(), &pb.GetEmployeeByIdRequest{Id: 1})
+	require.Error(t, err)
+}
+
+func TestUpdateEmployee_ActivateNotFound(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("SELECT password FROM employees").
+		WillReturnRows(sqlmock.NewRows([]string{"password"})) // ErrNoRows
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.UpdateEmployee(context.Background(), &pb.UpdateEmployeeRequest{Id: 99, Aktivan: true})
+	require.Error(t, err)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+func TestUpdateEmployee_ActivateDBError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("SELECT password FROM employees").WillReturnError(sql.ErrConnDone)
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.UpdateEmployee(context.Background(), &pb.UpdateEmployeeRequest{Id: 1, Aktivan: true})
+	require.Error(t, err)
+}
+
+func TestUpdateEmployee_GenericError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("UPDATE employees").WillReturnError(sql.ErrConnDone)
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.UpdateEmployee(context.Background(), &pb.UpdateEmployeeRequest{Id: 1, Aktivan: false})
+	require.Error(t, err)
+}
+
+func TestActivateEmployee_DBError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("SELECT aktivan").WillReturnError(sql.ErrConnDone)
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.ActivateEmployee(context.Background(), &pb.ActivateEmployeeRequest{EmployeeId: 1})
+	require.Error(t, err)
+}
+
+func TestActivateEmployee_ExecError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("SELECT aktivan").
+		WillReturnRows(sqlmock.NewRows([]string{"aktivan", "password"}).AddRow(false, ""))
+	dbMock.ExpectExec("UPDATE employees SET password").WillReturnError(sql.ErrConnDone)
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.ActivateEmployee(context.Background(), &pb.ActivateEmployeeRequest{EmployeeId: 1, PasswordHash: "hash"})
+	require.Error(t, err)
+}
+
+func TestGetEmployeeByEmail_DBError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("SELECT id, ime, email").WillReturnError(sql.ErrConnDone)
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.GetEmployeeByEmail(context.Background(), &pb.GetEmployeeByEmailRequest{Email: "user@example.com"})
+	require.Error(t, err)
+}
+
+func TestUpdatePassword_ExecError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectExec("UPDATE employees SET password").WillReturnError(sql.ErrConnDone)
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.UpdatePassword(context.Background(), &pb.UpdatePasswordRequest{EmployeeId: 1, PasswordHash: "hash"})
+	require.Error(t, err)
+}
+
+func TestCreateEmployee_GenericError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("INSERT INTO employees").WillReturnError(sql.ErrConnDone)
+
+	s := &EmployeeServer{DB: db}
+	_, err = s.CreateEmployee(context.Background(), &pb.CreateEmployeeRequest{Ime: "X"})
+	require.Error(t, err)
+}
+
+func TestUpdateEmployee_HappyPath(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("UPDATE employees").
+		WillReturnRows(sqlmock.NewRows(employeeColumns()).
+			AddRow(int64(1), "John", "Doe", "1990-01-01", "M", "john@example.com",
+				"060111", "Addr", "johndoe", "Dev", "IT", false, pq.StringArray{"ADMIN"}, "1111111111111"))
+
+	s := &EmployeeServer{DB: db}
+	resp, err := s.UpdateEmployee(context.Background(), &pb.UpdateEmployeeRequest{Id: 1, Aktivan: false, Dozvole: []string{"ADMIN"}})
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), resp.Employee.Id)
+	assert.Equal(t, "John", resp.Employee.Ime)
 }

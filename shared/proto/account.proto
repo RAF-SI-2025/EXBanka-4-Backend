@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package account;
+
+option go_package = "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/account";
+
+message CompanyData {
+  string name                = 1;
+  string registration_number = 2;
+  string pib                 = 3;
+  string activity_code       = 4;
+  string address             = 5;
+}
+
+message CreateAccountRequest {
+  int64       client_id       = 1;
+  string      account_type    = 2;
+  string      currency_code   = 3;
+  double      initial_balance = 4;
+  string      account_name    = 5;
+  bool        create_card     = 6;
+  int64       employee_id     = 7;
+  CompanyData company_data    = 8;
+}
+
+message AccountResponse {
+  int64  id                = 1;
+  string account_number    = 2;
+  string account_name      = 3;
+  int64  owner_id          = 4;
+  int64  employee_id       = 5;
+  string currency_code     = 6;
+  string account_type      = 7;
+  string status            = 8;
+  double balance           = 9;
+  double available_balance = 10;
+  string created_date      = 11;
+  string category          = 12;
+}
+
+message CreateAccountResponse {
+  AccountResponse account = 1;
+}
+
+message GetMyAccountsRequest {
+  int64 owner_id = 1;
+}
+
+message AccountSummary {
+  int64  id                = 1;
+  string account_name      = 2;
+  string account_number    = 3;
+  double available_balance = 4;
+  string currency_code     = 5;
+}
+
+message GetMyAccountsResponse {
+  repeated AccountSummary accounts = 1;
+}
+
+message GetAccountRequest {
+  int64 account_id = 1;
+  int64 owner_id   = 2;
+}
+
+message AccountDetails {
+  int64  id                = 1;
+  string account_name      = 2;
+  string account_number    = 3;
+  string owner             = 4;
+  double balance           = 5;
+  double available_balance = 6;
+  double reserved_funds    = 7;
+  string currency_code     = 8;
+  string status            = 9;
+  string account_type      = 10;
+  double daily_limit       = 11;
+  double monthly_limit     = 12;
+  double daily_spent       = 13;
+  double monthly_spent     = 14;
+}
+
+message GetAccountResponse {
+  AccountDetails account = 1;
+}
+
+message RenameAccountRequest {
+  int64  account_id    = 1;
+  int64  owner_id      = 2;
+  string new_name      = 3;
+}
+
+message RenameAccountResponse {}
+
+message GetAllAccountsRequest {}
+
+message AccountListItem {
+  int64  id                = 1;
+  string account_number    = 2;
+  string account_name      = 3;
+  int64  owner_id          = 4;
+  string owner_first_name  = 5;
+  string owner_last_name   = 6;
+  string account_type      = 7;
+  string currency_code     = 8;
+  double available_balance = 9;
+}
+
+message GetAllAccountsResponse {
+  repeated AccountListItem accounts = 1;
+}
+
+service AccountService {
+  rpc CreateAccount(CreateAccountRequest)     returns (CreateAccountResponse);
+  rpc GetMyAccounts(GetMyAccountsRequest)     returns (GetMyAccountsResponse);
+  rpc GetAccount(GetAccountRequest)           returns (GetAccountResponse);
+  rpc RenameAccount(RenameAccountRequest)     returns (RenameAccountResponse);
+  rpc GetAllAccounts(GetAllAccountsRequest)   returns (GetAllAccountsResponse);
+}

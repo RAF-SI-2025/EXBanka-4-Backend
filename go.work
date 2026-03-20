@@ -1,0 +1,13 @@
+go 1.26.1
+
+use (
+	./services/account-service
+	./services/api-gateway
+	./services/auth-service
+	./services/client-service
+	./services/email-service
+	./services/employee-service
+	./services/exchange-service
+	./services/payment-service
+	./shared
+)

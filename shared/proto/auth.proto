@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package auth;
 
-option go_package = "github.com/exbanka/backend/shared/pb/auth";
+option go_package = "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth";
 
 message LoginRequest {
   string email    = 1;
@@ -46,6 +46,29 @@ message ResetPasswordRequest {
 }
 message ResetPasswordResponse {}
 
+message ClientLoginRequest {
+  string email    = 1;
+  string password = 2;
+}
+
+message ClientLoginResponse {
+  string access_token  = 1;
+  string refresh_token = 2;
+}
+
+message ClientRefreshRequest  { string refresh_token = 1; }
+message ClientRefreshResponse { string access_token  = 1; }
+
+message CreateClientActivationTokenRequest  { int64 client_id = 1; }
+message CreateClientActivationTokenResponse { string token = 1; }
+
+message ActivateClientRequest {
+  string token            = 1;
+  string password         = 2;
+  string confirm_password = 3;
+}
+message ActivateClientResponse {}
+
 service AuthService {
   rpc Login(LoginRequest)                                   returns (LoginResponse);
   rpc Refresh(RefreshRequest)                               returns (RefreshResponse);
@@ -53,4 +76,8 @@ service AuthService {
   rpc ActivateAccount(ActivateAccountRequest)               returns (ActivateAccountResponse);
   rpc RequestPasswordReset(RequestPasswordResetRequest)     returns (RequestPasswordResetResponse);
   rpc ResetPassword(ResetPasswordRequest)                   returns (ResetPasswordResponse);
+  rpc ClientLogin(ClientLoginRequest)                                     returns (ClientLoginResponse);
+  rpc ClientRefresh(ClientRefreshRequest)                                 returns (ClientRefreshResponse);
+  rpc CreateClientActivationToken(CreateClientActivationTokenRequest)     returns (CreateClientActivationTokenResponse);
+  rpc ActivateClient(ActivateClientRequest)                               returns (ActivateClientResponse);
 }

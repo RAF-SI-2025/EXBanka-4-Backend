@@ -8,9 +8,6 @@
 *.out
 __debug_bin*
 
-# Go workspace (not used here, but common)
-go.work
-go.work.sum
 
 # Environment / secrets
 .env

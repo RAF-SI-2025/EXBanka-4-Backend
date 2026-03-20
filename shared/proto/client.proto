@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package client;
+
+option go_package = "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client";
+
+message Client {
+  int64  id            = 1;
+  string first_name    = 2;
+  string last_name     = 3;
+  string jmbg          = 4;
+  string date_of_birth = 5;
+  string gender        = 6;
+  string email         = 7;
+  string phone_number  = 8;
+  string address       = 9;
+  string username      = 10;
+  bool   active        = 11;
+}
+
+// password is intentionally excluded — never returned over the API
+
+message GetAllClientsRequest {
+  int32 page      = 1;
+  int32 page_size = 2;
+}
+
+message GetAllClientsResponse {
+  repeated Client clients     = 1;
+  int32           total_count = 2;
+}
+
+message GetClientByIdRequest {
+  int64 id = 1;
+}
+
+message GetClientByIdResponse {
+  Client client = 1;
+}
+
+message CreateClientRequest {
+  string first_name    = 1;
+  string last_name     = 2;
+  string jmbg          = 3;
+  string date_of_birth = 4;
+  string gender        = 5;
+  string email         = 6;
+  string phone_number  = 7;
+  string address       = 8;
+  string username      = 9;
+}
+
+message CreateClientResponse {
+  Client client = 1;
+}
+
+message UpdateClientRequest {
+  int64  id            = 1;
+  string first_name    = 2;
+  string last_name     = 3;
+  string jmbg          = 4;
+  string date_of_birth = 5;
+  string gender        = 6;
+  string email         = 7;
+  string phone_number  = 8;
+  string address       = 9;
+  string username      = 10;
+  bool   active        = 11;
+}
+
+message UpdateClientResponse {
+  Client client = 1;
+}
+
+message GetClientCredentialsRequest {
+  string email = 1;
+}
+
+message GetClientCredentialsResponse {
+  int64  id            = 1;
+  string password_hash = 2;
+  bool   active        = 3;
+}
+
+message ActivateClientRequest {
+  int64  client_id     = 1;
+  string password_hash = 2;
+}
+message ActivateClientResponse {}
+
+service ClientService {
+  rpc GetAllClients(GetAllClientsRequest)               returns (GetAllClientsResponse);
+  rpc GetClientById(GetClientByIdRequest)               returns (GetClientByIdResponse);
+  rpc CreateClient(CreateClientRequest)                 returns (CreateClientResponse);
+  rpc UpdateClient(UpdateClientRequest)                 returns (UpdateClientResponse);
+  rpc GetClientCredentials(GetClientCredentialsRequest) returns (GetClientCredentialsResponse);
+  rpc ActivateClient(ActivateClientRequest)             returns (ActivateClientResponse);
+}

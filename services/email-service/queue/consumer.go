@@ -112,6 +112,57 @@ func sendPasswordResetEmail(cfg SMTPConfig, tmpl *template.Template, msg Passwor
 	return d.DialAndSend(m)
 }
 
+func ConsumeAccountCreated(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	if _, err := ch.QueueDeclare(AccountCreatedQueueName, true, false, false, false, nil); err != nil {
+		log.Fatalf("failed to declare account created queue: %v", err)
+	}
+
+	msgs, err := ch.Consume(AccountCreatedQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start account created consumer: %v", err)
+	}
+
+	log.Println("account created email consumer started, waiting for messages")
+
+	for d := range msgs {
+		var msg AccountCreatedMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode account created message: %v", err)
+			d.Ack(false)
+			continue
+		}
+
+		if err := sendAccountCreatedEmail(cfg, tmpl, msg); err != nil {
+			log.Printf("failed to send account created email to %s: %v", msg.Email, err)
+		} else {
+			log.Printf("account created email sent to %s", msg.Email)
+		}
+
+		d.Ack(false)
+	}
+}
+
+func sendAccountCreatedEmail(cfg SMTPConfig, tmpl *template.Template, msg AccountCreatedMessage) error {
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, map[string]string{
+		"FirstName":     msg.FirstName,
+		"AccountName":   msg.AccountName,
+		"AccountNumber": msg.AccountNumber,
+		"CurrencyCode":  msg.CurrencyCode,
+	}); err != nil {
+		return err
+	}
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", cfg.From)
+	m.SetHeader("To", msg.Email)
+	m.SetHeader("Subject", "Your AnkaBanka account has been created")
+	m.SetBody("text/html", buf.String())
+
+	d := gomail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password)
+	return d.DialAndSend(m)
+}
+
 func ConsumePasswordConfirmation(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
 	msgs, err := ch.Consume(ConfirmQueueName, "", false, false, false, false, nil)
 	if err != nil {

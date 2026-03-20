@@ -16,9 +16,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb_auth "github.com/exbanka/backend/shared/pb/auth"
-	pb_email "github.com/exbanka/backend/shared/pb/email"
-	pb_emp "github.com/exbanka/backend/shared/pb/employee"
+	pb_auth "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
+	pb_client "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
+	pb_email "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
+	pb_emp "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
 )
 
 // ---- Mock gRPC clients ----
@@ -125,6 +126,62 @@ func (m *mockEmailClient) SendPasswordConfirmationEmail(ctx context.Context, in 
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*pb_email.SendActivationEmailResponse), args.Error(1)
+}
+
+func (m *mockEmailClient) SendAccountCreatedEmail(ctx context.Context, in *pb_email.SendAccountCreatedEmailRequest, opts ...grpc.CallOption) (*pb_email.SendAccountCreatedEmailResponse, error) {
+	return &pb_email.SendAccountCreatedEmailResponse{}, nil
+}
+
+type mockClientClient struct {
+	mock.Mock
+}
+
+func (m *mockClientClient) GetAllClients(ctx context.Context, in *pb_client.GetAllClientsRequest, opts ...grpc.CallOption) (*pb_client.GetAllClientsResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*pb_client.GetAllClientsResponse), args.Error(1)
+}
+
+func (m *mockClientClient) GetClientById(ctx context.Context, in *pb_client.GetClientByIdRequest, opts ...grpc.CallOption) (*pb_client.GetClientByIdResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*pb_client.GetClientByIdResponse), args.Error(1)
+}
+
+func (m *mockClientClient) CreateClient(ctx context.Context, in *pb_client.CreateClientRequest, opts ...grpc.CallOption) (*pb_client.CreateClientResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*pb_client.CreateClientResponse), args.Error(1)
+}
+
+func (m *mockClientClient) UpdateClient(ctx context.Context, in *pb_client.UpdateClientRequest, opts ...grpc.CallOption) (*pb_client.UpdateClientResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*pb_client.UpdateClientResponse), args.Error(1)
+}
+
+func (m *mockClientClient) GetClientCredentials(ctx context.Context, in *pb_client.GetClientCredentialsRequest, opts ...grpc.CallOption) (*pb_client.GetClientCredentialsResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*pb_client.GetClientCredentialsResponse), args.Error(1)
+}
+
+func (m *mockClientClient) ActivateClient(ctx context.Context, in *pb_client.ActivateClientRequest, opts ...grpc.CallOption) (*pb_client.ActivateClientResponse, error) {
+	args := m.Called(ctx, in)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*pb_client.ActivateClientResponse), args.Error(1)
 }
 
 // ---- helpers ----
@@ -394,7 +451,7 @@ func TestActivateAccount_HappyPath(t *testing.T) {
 
 	emailClient := &mockEmailClient{}
 	emailClient.On("SendPasswordConfirmationEmail", mock.Anything, mock.Anything).
-		Maybe().Return(&pb_email.SendActivationEmailResponse{}, nil)
+		Return(&pb_email.SendActivationEmailResponse{}, nil)
 
 	s := newAuthServer(db, empClient, emailClient)
 	resp, err := s.ActivateAccount(context.Background(), &pb_auth.ActivateAccountRequest{
@@ -402,7 +459,9 @@ func TestActivateAccount_HappyPath(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.NotNil(t, resp)
+	time.Sleep(50 * time.Millisecond) // wait for email goroutine
 	empClient.AssertExpectations(t)
+	emailClient.AssertExpectations(t)
 }
 
 // ---- ResetPassword tests ----
@@ -570,6 +629,116 @@ func TestLogin_HappyPath(t *testing.T) {
 	empClient.AssertExpectations(t)
 }
 
+// ---- ClientLogin tests ----
+
+func TestClientLogin_CredentialsNotFound(t *testing.T) {
+	clientClient := &mockClientClient{}
+	clientClient.On("GetClientCredentials", mock.Anything, mock.Anything).
+		Return(nil, status.Error(codes.NotFound, "not found"))
+
+	s := &AuthServer{ClientClient: clientClient}
+	_, err := s.ClientLogin(context.Background(), &pb_auth.ClientLoginRequest{Email: "nobody@example.com", Password: "Abcdef12"})
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+func TestClientLogin_AccountNotActive(t *testing.T) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte("Abcdef12"), bcrypt.MinCost)
+	clientClient := &mockClientClient{}
+	clientClient.On("GetClientCredentials", mock.Anything, mock.Anything).Return(
+		&pb_client.GetClientCredentialsResponse{Id: 1, PasswordHash: string(hash), Active: false}, nil,
+	)
+
+	s := &AuthServer{ClientClient: clientClient}
+	_, err := s.ClientLogin(context.Background(), &pb_auth.ClientLoginRequest{Email: "ana@example.com", Password: "Abcdef12"})
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+func TestClientLogin_WrongPassword(t *testing.T) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte("OtherPass12"), bcrypt.MinCost)
+	clientClient := &mockClientClient{}
+	clientClient.On("GetClientCredentials", mock.Anything, mock.Anything).Return(
+		&pb_client.GetClientCredentialsResponse{Id: 1, PasswordHash: string(hash), Active: true}, nil,
+	)
+
+	s := &AuthServer{ClientClient: clientClient}
+	_, err := s.ClientLogin(context.Background(), &pb_auth.ClientLoginRequest{Email: "ana@example.com", Password: "Abcdef12"})
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+func TestClientLogin_HappyPath(t *testing.T) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte("Abcdef12"), bcrypt.MinCost)
+	clientClient := &mockClientClient{}
+	clientClient.On("GetClientCredentials", mock.Anything, mock.Anything).Return(
+		&pb_client.GetClientCredentialsResponse{Id: 1, PasswordHash: string(hash), Active: true}, nil,
+	)
+	clientClient.On("GetClientById", mock.Anything, mock.Anything).Return(
+		&pb_client.GetClientByIdResponse{Client: &pb_client.Client{
+			Id: 1, Email: "ana@example.com", FirstName: "Ana", LastName: "Anić",
+		}}, nil,
+	)
+
+	s := &AuthServer{ClientClient: clientClient}
+	resp, err := s.ClientLogin(context.Background(), &pb_auth.ClientLoginRequest{Email: "ana@example.com", Password: "Abcdef12"})
+	require.NoError(t, err)
+	assert.NotEmpty(t, resp.AccessToken)
+	assert.NotEmpty(t, resp.RefreshToken)
+
+	// access token must have role=CLIENT and no dozvole
+	token, _ := jwt.Parse(resp.AccessToken, func(t *jwt.Token) (interface{}, error) { return []byte(jwtSecret), nil })
+	claims, _ := token.Claims.(jwt.MapClaims)
+	assert.Equal(t, "CLIENT", claims["role"])
+	assert.Equal(t, "access", claims["type"])
+	_, hasDozvole := claims["dozvole"]
+	assert.False(t, hasDozvole)
+	clientClient.AssertExpectations(t)
+}
+
+// ---- ClientRefresh tests ----
+
+func TestClientRefresh_ValidToken(t *testing.T) {
+	refreshToken, err := generateClientToken(7, "ana@example.com", "refresh", "Ana", "Anić", 7*24*time.Hour)
+	require.NoError(t, err)
+
+	s := &AuthServer{}
+	resp, err := s.ClientRefresh(context.Background(), &pb_auth.ClientRefreshRequest{RefreshToken: refreshToken})
+	require.NoError(t, err)
+	assert.NotEmpty(t, resp.AccessToken)
+
+	token, _ := jwt.Parse(resp.AccessToken, func(t *jwt.Token) (interface{}, error) { return []byte(jwtSecret), nil })
+	claims, _ := token.Claims.(jwt.MapClaims)
+	assert.Equal(t, "CLIENT", claims["role"])
+	assert.Equal(t, "access", claims["type"])
+	assert.Equal(t, float64(7), claims["user_id"])
+}
+
+func TestClientRefresh_EmployeeTokenRejected(t *testing.T) {
+	// employee refresh token must not work on ClientRefresh
+	empToken, err := generateToken(1, "emp@example.com", "refresh", []string{"ADMIN"}, "John", "Doe", "emp@example.com", 7*24*time.Hour)
+	require.NoError(t, err)
+
+	s := &AuthServer{}
+	_, err = s.ClientRefresh(context.Background(), &pb_auth.ClientRefreshRequest{RefreshToken: empToken})
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+func TestClientRefresh_ExpiredToken(t *testing.T) {
+	claims := jwt.MapClaims{
+		"user_id": float64(1), "email": "ana@example.com",
+		"role": "CLIENT", "type": "refresh",
+		"exp": time.Now().Add(-time.Hour).Unix(),
+	}
+	tokenStr, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(jwtSecret))
+
+	s := &AuthServer{}
+	_, err := s.ClientRefresh(context.Background(), &pb_auth.ClientRefreshRequest{RefreshToken: tokenStr})
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
 // ---- CreateActivationToken tests ----
 
 func TestCreateActivationToken_DBFails(t *testing.T) {
@@ -656,4 +825,594 @@ func TestRequestPasswordReset_HappyPath(t *testing.T) {
 	assert.NotEmpty(t, resp.Token)
 	assert.Equal(t, "John", resp.FirstName)
 	assert.Equal(t, "john@example.com", resp.Email)
+}
+
+// ---- CreateClientActivationToken tests ----
+
+func TestCreateClientActivationToken_DBFails(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectExec("client_activation_tokens").
+		WillReturnError(status.Error(codes.Internal, "db error"))
+
+	s := &AuthServer{DB: db}
+	_, err = s.CreateClientActivationToken(context.Background(), &pb_auth.CreateClientActivationTokenRequest{ClientId: 1})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+func TestCreateClientActivationToken_HappyPath(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectExec("client_activation_tokens").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	s := &AuthServer{DB: db}
+	resp, err := s.CreateClientActivationToken(context.Background(), &pb_auth.CreateClientActivationTokenRequest{ClientId: 5})
+	require.NoError(t, err)
+	assert.Len(t, resp.Token, 64)
+}
+
+// ---- ActivateClient tests ----
+
+func TestActivateClientAuth_TokenNotFound(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("client_activation_tokens").
+		WillReturnRows(sqlmock.NewRows([]string{"client_id", "expires_at"}))
+
+	s := &AuthServer{DB: db, ClientClient: &mockClientClient{}}
+	_, err = s.ActivateClient(context.Background(), &pb_auth.ActivateClientRequest{
+		Token: "no-such-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+func TestActivateClientAuth_ExpiredToken(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("client_activation_tokens").
+		WillReturnRows(sqlmock.NewRows([]string{"client_id", "expires_at"}).
+			AddRow(int64(1), time.Now().Add(-time.Hour)))
+	dbMock.ExpectExec("DELETE FROM client_activation_tokens").WillReturnResult(sqlmock.NewResult(1, 1))
+
+	s := &AuthServer{DB: db, ClientClient: &mockClientClient{}}
+	_, err = s.ActivateClient(context.Background(), &pb_auth.ActivateClientRequest{
+		Token: "expired-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.FailedPrecondition, status.Code(err))
+}
+
+func TestActivateClientAuth_AlreadyActivated(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("client_activation_tokens").
+		WillReturnRows(sqlmock.NewRows([]string{"client_id", "expires_at"}).
+			AddRow(int64(1), time.Now().Add(time.Hour)))
+
+	clientClient := &mockClientClient{}
+	clientClient.On("GetClientById", mock.Anything, mock.Anything).Return(
+		&pb_client.GetClientByIdResponse{Client: &pb_client.Client{Id: 1, Active: true}}, nil,
+	)
+
+	s := &AuthServer{DB: db, ClientClient: clientClient}
+	_, err = s.ActivateClient(context.Background(), &pb_auth.ActivateClientRequest{
+		Token: "valid-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.FailedPrecondition, status.Code(err))
+}
+
+func TestActivateClientAuth_PasswordMismatch(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("client_activation_tokens").
+		WillReturnRows(sqlmock.NewRows([]string{"client_id", "expires_at"}).
+			AddRow(int64(1), time.Now().Add(time.Hour)))
+
+	clientClient := &mockClientClient{}
+	clientClient.On("GetClientById", mock.Anything, mock.Anything).Return(
+		&pb_client.GetClientByIdResponse{Client: &pb_client.Client{Id: 1, Active: false}}, nil,
+	)
+
+	s := &AuthServer{DB: db, ClientClient: clientClient}
+	_, err = s.ActivateClient(context.Background(), &pb_auth.ActivateClientRequest{
+		Token: "valid-token", Password: "Abcdef12", ConfirmPassword: "Different12",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+// ---- Additional edge-case tests ----
+
+// Login: GetEmployeeById returns error
+func TestLogin_GetEmployeeByIdError(t *testing.T) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte("Abcdef12"), bcrypt.MinCost)
+	empClient := &mockEmployeeClient{}
+	empClient.On("GetEmployeeCredentials", mock.Anything, mock.Anything).Return(
+		&pb_emp.GetEmployeeCredentialsResponse{Id: 1, PasswordHash: string(hash), Aktivan: true, Dozvole: []string{}}, nil,
+	)
+	empClient.On("GetEmployeeById", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Internal, "db down"))
+
+	s := &AuthServer{EmployeeClient: empClient, EmailClient: &mockEmailClient{}}
+	_, err := s.Login(context.Background(), &pb_auth.LoginRequest{Email: "user@example.com", Password: "Abcdef12"})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+// Refresh: non-HMAC signing method
+func TestRefresh_InvalidSigningMethod(t *testing.T) {
+	claims := jwt.MapClaims{
+		"user_id": float64(1), "username": "user@example.com",
+		"type": "refresh", "exp": time.Now().Add(time.Hour).Unix(),
+	}
+	tokenStr, _ := jwt.NewWithClaims(jwt.SigningMethodNone, claims).SignedString(jwt.UnsafeAllowNoneSignatureType)
+
+	s := &AuthServer{}
+	_, err := s.Refresh(context.Background(), &pb_auth.RefreshRequest{RefreshToken: tokenStr})
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+// Refresh: CLIENT role token rejected
+func TestRefresh_ClientRoleRejected(t *testing.T) {
+	clientToken, err := generateClientToken(1, "client@example.com", "refresh", "Ana", "Anić", 7*24*time.Hour)
+	require.NoError(t, err)
+
+	s := &AuthServer{}
+	_, err = s.Refresh(context.Background(), &pb_auth.RefreshRequest{RefreshToken: clientToken})
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+// Refresh: user_id claim is not a float64
+func TestRefresh_UserIdWrongType(t *testing.T) {
+	claims := jwt.MapClaims{
+		"user_id": "not-a-number", "username": "user@example.com",
+		"type": "refresh", "exp": time.Now().Add(time.Hour).Unix(),
+	}
+	tokenStr, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(jwtSecret))
+
+	s := &AuthServer{}
+	_, err := s.Refresh(context.Background(), &pb_auth.RefreshRequest{RefreshToken: tokenStr})
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+// Refresh: username claim is not a string
+func TestRefresh_UsernameWrongType(t *testing.T) {
+	claims := jwt.MapClaims{
+		"user_id": float64(1), "username": 12345,
+		"type": "refresh", "exp": time.Now().Add(time.Hour).Unix(),
+	}
+	tokenStr, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(jwtSecret))
+
+	s := &AuthServer{}
+	_, err := s.Refresh(context.Background(), &pb_auth.RefreshRequest{RefreshToken: tokenStr})
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+// ActivateAccount: DB returns unexpected error (not ErrNoRows)
+func TestActivateAccount_DBError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("activation_tokens").WillReturnError(sql.ErrConnDone)
+
+	s := newAuthServer(db, &mockEmployeeClient{}, &mockEmailClient{})
+	_, err = s.ActivateAccount(context.Background(), &pb_auth.ActivateAccountRequest{
+		Token: "some-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+// ActivateAccount: GetEmployeeById returns error
+func TestActivateAccount_GetEmployeeByIdError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"employee_id", "expires_at"}).
+		AddRow(int64(1), time.Now().Add(time.Hour))
+	dbMock.ExpectQuery("activation_tokens").WillReturnRows(rows)
+
+	empClient := &mockEmployeeClient{}
+	empClient.On("GetEmployeeById", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Internal, "db down"))
+
+	s := newAuthServer(db, empClient, &mockEmailClient{})
+	_, err = s.ActivateAccount(context.Background(), &pb_auth.ActivateAccountRequest{
+		Token: "valid-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+// ActivateAccount: ActivateEmployee returns error
+func TestActivateAccount_ActivateEmployeeError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"employee_id", "expires_at"}).
+		AddRow(int64(1), time.Now().Add(time.Hour))
+	dbMock.ExpectQuery("activation_tokens").WillReturnRows(rows)
+
+	empClient := &mockEmployeeClient{}
+	empClient.On("GetEmployeeById", mock.Anything, mock.Anything).Return(
+		&pb_emp.GetEmployeeByIdResponse{Employee: &pb_emp.Employee{Id: 1, Aktivan: false}}, nil,
+	)
+	empClient.On("ActivateEmployee", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Internal, "activate failed"))
+
+	s := newAuthServer(db, empClient, &mockEmailClient{})
+	_, err = s.ActivateAccount(context.Background(), &pb_auth.ActivateAccountRequest{
+		Token: "valid-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+// ResetPassword: DB returns unexpected error
+func TestResetPassword_DBError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("password_reset_tokens").WillReturnError(sql.ErrConnDone)
+
+	s := newAuthServer(db, &mockEmployeeClient{}, &mockEmailClient{})
+	_, err = s.ResetPassword(context.Background(), &pb_auth.ResetPasswordRequest{
+		Token: "some-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+// ResetPassword: UpdatePassword returns error
+func TestResetPassword_UpdatePasswordError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"employee_id", "expires_at"}).
+		AddRow(int64(1), time.Now().Add(time.Hour))
+	dbMock.ExpectQuery("password_reset_tokens").WillReturnRows(rows)
+
+	empClient := &mockEmployeeClient{}
+	empClient.On("UpdatePassword", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Internal, "update failed"))
+
+	s := newAuthServer(db, empClient, &mockEmailClient{})
+	_, err = s.ResetPassword(context.Background(), &pb_auth.ResetPasswordRequest{
+		Token: "good-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+// ClientLogin: GetClientById returns error
+func TestClientLogin_GetClientByIdError(t *testing.T) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte("Abcdef12"), bcrypt.MinCost)
+	clientClient := &mockClientClient{}
+	clientClient.On("GetClientCredentials", mock.Anything, mock.Anything).Return(
+		&pb_client.GetClientCredentialsResponse{Id: 1, PasswordHash: string(hash), Active: true}, nil,
+	)
+	clientClient.On("GetClientById", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Internal, "db down"))
+
+	s := &AuthServer{ClientClient: clientClient}
+	_, err := s.ClientLogin(context.Background(), &pb_auth.ClientLoginRequest{Email: "ana@example.com", Password: "Abcdef12"})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+// ClientRefresh: non-HMAC signing method
+func TestClientRefresh_InvalidSigningMethod(t *testing.T) {
+	claims := jwt.MapClaims{
+		"user_id": float64(1), "email": "ana@example.com",
+		"role": "CLIENT", "type": "refresh",
+		"exp": time.Now().Add(time.Hour).Unix(),
+	}
+	tokenStr, _ := jwt.NewWithClaims(jwt.SigningMethodNone, claims).SignedString(jwt.UnsafeAllowNoneSignatureType)
+
+	s := &AuthServer{}
+	_, err := s.ClientRefresh(context.Background(), &pb_auth.ClientRefreshRequest{RefreshToken: tokenStr})
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+// ClientRefresh: access token (type != refresh) rejected
+func TestClientRefresh_AccessTokenRejected(t *testing.T) {
+	accessToken, err := generateClientToken(1, "ana@example.com", "access", "Ana", "Anić", 15*time.Minute)
+	require.NoError(t, err)
+
+	s := &AuthServer{}
+	_, err = s.ClientRefresh(context.Background(), &pb_auth.ClientRefreshRequest{RefreshToken: accessToken})
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+// ClientRefresh: non-CLIENT role rejected
+func TestClientRefresh_NonClientRoleRejected(t *testing.T) {
+	empToken, err := generateToken(1, "emp@example.com", "refresh", []string{"ADMIN"}, "John", "Doe", "emp@example.com", 7*24*time.Hour)
+	require.NoError(t, err)
+
+	s := &AuthServer{}
+	_, err = s.ClientRefresh(context.Background(), &pb_auth.ClientRefreshRequest{RefreshToken: empToken})
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+// ClientRefresh: user_id not a float64
+func TestClientRefresh_UserIdWrongType(t *testing.T) {
+	claims := jwt.MapClaims{
+		"user_id": "not-a-number", "email": "ana@example.com",
+		"role": "CLIENT", "type": "refresh",
+		"exp": time.Now().Add(time.Hour).Unix(),
+	}
+	tokenStr, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(jwtSecret))
+
+	s := &AuthServer{}
+	_, err := s.ClientRefresh(context.Background(), &pb_auth.ClientRefreshRequest{RefreshToken: tokenStr})
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+// ActivateClient: DB returns unexpected error
+func TestActivateClient_DBError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("client_activation_tokens").WillReturnError(sql.ErrConnDone)
+
+	s := &AuthServer{DB: db, ClientClient: &mockClientClient{}}
+	_, err = s.ActivateClient(context.Background(), &pb_auth.ActivateClientRequest{
+		Token: "some-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+// ActivateClient: GetClientById returns error
+func TestActivateClient_GetClientByIdError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("client_activation_tokens").
+		WillReturnRows(sqlmock.NewRows([]string{"client_id", "expires_at"}).
+			AddRow(int64(1), time.Now().Add(time.Hour)))
+
+	clientClient := &mockClientClient{}
+	clientClient.On("GetClientById", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Internal, "db down"))
+
+	s := &AuthServer{DB: db, ClientClient: clientClient}
+	_, err = s.ActivateClient(context.Background(), &pb_auth.ActivateClientRequest{
+		Token: "valid-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+// ActivateClient: invalid password
+func TestActivateClient_InvalidPassword(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("client_activation_tokens").
+		WillReturnRows(sqlmock.NewRows([]string{"client_id", "expires_at"}).
+			AddRow(int64(1), time.Now().Add(time.Hour)))
+
+	clientClient := &mockClientClient{}
+	clientClient.On("GetClientById", mock.Anything, mock.Anything).Return(
+		&pb_client.GetClientByIdResponse{Client: &pb_client.Client{Id: 1, Active: false}}, nil,
+	)
+
+	s := &AuthServer{DB: db, ClientClient: clientClient}
+	_, err = s.ActivateClient(context.Background(), &pb_auth.ActivateClientRequest{
+		Token: "valid-token", Password: "weak", ConfirmPassword: "weak",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+// ActivateClient: ActivateClient gRPC call returns error
+func TestActivateClient_ActivateClientError(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("client_activation_tokens").
+		WillReturnRows(sqlmock.NewRows([]string{"client_id", "expires_at"}).
+			AddRow(int64(1), time.Now().Add(time.Hour)))
+
+	clientClient := &mockClientClient{}
+	clientClient.On("GetClientById", mock.Anything, mock.Anything).Return(
+		&pb_client.GetClientByIdResponse{Client: &pb_client.Client{Id: 1, Active: false}}, nil,
+	)
+	clientClient.On("ActivateClient", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Internal, "activate failed"))
+
+	s := &AuthServer{DB: db, ClientClient: clientClient}
+	_, err = s.ActivateClient(context.Background(), &pb_auth.ActivateClientRequest{
+		Token: "valid-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+// ClientLogin: empty password hash
+func TestClientLogin_EmptyPasswordHash(t *testing.T) {
+	clientClient := &mockClientClient{}
+	clientClient.On("GetClientCredentials", mock.Anything, mock.Anything).Return(
+		&pb_client.GetClientCredentialsResponse{Id: 1, PasswordHash: "", Active: true}, nil,
+	)
+
+	s := &AuthServer{ClientClient: clientClient}
+	_, err := s.ClientLogin(context.Background(), &pb_auth.ClientLoginRequest{Email: "ana@example.com", Password: "Abcdef12"})
+	require.Error(t, err)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
+}
+
+// ActivateAccount: expired token DELETE fails — op still returns FailedPrecondition
+func TestActivateAccount_ExpiredToken_DeleteFails(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"employee_id", "expires_at"}).
+		AddRow(int64(1), time.Now().Add(-time.Hour))
+	dbMock.ExpectQuery("activation_tokens").WillReturnRows(rows)
+	dbMock.ExpectExec("DELETE FROM activation_tokens").WillReturnError(sql.ErrConnDone) // logged, not returned
+
+	s := newAuthServer(db, &mockEmployeeClient{}, &mockEmailClient{})
+	_, err = s.ActivateAccount(context.Background(), &pb_auth.ActivateAccountRequest{
+		Token: "expired-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.FailedPrecondition, status.Code(err))
+}
+
+// ActivateAccount: used-token DELETE fails — op still succeeds
+func TestActivateAccount_DeleteUsedTokenFails(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"employee_id", "expires_at"}).
+		AddRow(int64(1), time.Now().Add(time.Hour))
+	dbMock.ExpectQuery("activation_tokens").WillReturnRows(rows)
+	dbMock.ExpectExec("DELETE FROM activation_tokens").WillReturnError(sql.ErrConnDone) // logged, not returned
+
+	empClient := &mockEmployeeClient{}
+	empClient.On("GetEmployeeById", mock.Anything, mock.Anything).Return(
+		&pb_emp.GetEmployeeByIdResponse{Employee: &pb_emp.Employee{
+			Id: 1, Aktivan: false, Email: "emp@example.com", Ime: "John",
+		}}, nil,
+	)
+	empClient.On("ActivateEmployee", mock.Anything, mock.Anything).Return(
+		&pb_emp.ActivateEmployeeResponse{}, nil,
+	)
+
+	emailClient := &mockEmailClient{}
+	emailClient.On("SendPasswordConfirmationEmail", mock.Anything, mock.Anything).
+		Return(&pb_email.SendActivationEmailResponse{}, nil)
+
+	s := newAuthServer(db, empClient, emailClient)
+	resp, err := s.ActivateAccount(context.Background(), &pb_auth.ActivateAccountRequest{
+		Token: "valid-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+	time.Sleep(50 * time.Millisecond)
+}
+
+// ResetPassword: used-token DELETE fails — op still succeeds
+func TestResetPassword_DeleteUsedTokenFails(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{"employee_id", "expires_at"}).
+		AddRow(int64(1), time.Now().Add(time.Hour))
+	dbMock.ExpectQuery("password_reset_tokens").WillReturnRows(rows)
+	dbMock.ExpectExec("DELETE FROM password_reset_tokens").WillReturnError(sql.ErrConnDone) // logged
+
+	empClient := &mockEmployeeClient{}
+	empClient.On("UpdatePassword", mock.Anything, mock.Anything).Return(
+		&pb_emp.UpdatePasswordResponse{}, nil,
+	)
+
+	s := newAuthServer(db, empClient, &mockEmailClient{})
+	resp, err := s.ResetPassword(context.Background(), &pb_auth.ResetPasswordRequest{
+		Token: "good-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+}
+
+// ActivateClient: used-token DELETE fails — op still succeeds
+func TestActivateClient_DeleteUsedTokenFails(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("client_activation_tokens").
+		WillReturnRows(sqlmock.NewRows([]string{"client_id", "expires_at"}).
+			AddRow(int64(1), time.Now().Add(time.Hour)))
+	dbMock.ExpectExec("DELETE FROM client_activation_tokens").WillReturnError(sql.ErrConnDone) // logged
+
+	clientClient := &mockClientClient{}
+	clientClient.On("GetClientById", mock.Anything, mock.Anything).Return(
+		&pb_client.GetClientByIdResponse{Client: &pb_client.Client{
+			Id: 1, Active: false, Email: "ana@example.com", FirstName: "Ana",
+		}}, nil,
+	)
+	clientClient.On("ActivateClient", mock.Anything, mock.Anything).Return(
+		&pb_client.ActivateClientResponse{}, nil,
+	)
+
+	emailClient := &mockEmailClient{}
+	emailClient.On("SendPasswordConfirmationEmail", mock.Anything, mock.Anything).Return(
+		&pb_email.SendActivationEmailResponse{}, nil,
+	)
+
+	s := &AuthServer{DB: db, ClientClient: clientClient, EmailClient: emailClient}
+	resp, err := s.ActivateClient(context.Background(), &pb_auth.ActivateClientRequest{
+		Token: "valid-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+	time.Sleep(50 * time.Millisecond)
+}
+
+func TestActivateClientAuth_HappyPath(t *testing.T) {
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer db.Close()
+
+	dbMock.ExpectQuery("client_activation_tokens").
+		WillReturnRows(sqlmock.NewRows([]string{"client_id", "expires_at"}).
+			AddRow(int64(1), time.Now().Add(time.Hour)))
+	dbMock.ExpectExec("DELETE FROM client_activation_tokens").WillReturnResult(sqlmock.NewResult(1, 1))
+
+	clientClient := &mockClientClient{}
+	clientClient.On("GetClientById", mock.Anything, mock.Anything).Return(
+		&pb_client.GetClientByIdResponse{Client: &pb_client.Client{
+			Id: 1, Active: false, Email: "ana@example.com", FirstName: "Ana",
+		}}, nil,
+	)
+	clientClient.On("ActivateClient", mock.Anything, mock.Anything).Return(
+		&pb_client.ActivateClientResponse{}, nil,
+	)
+
+	emailClient := &mockEmailClient{}
+	emailClient.On("SendPasswordConfirmationEmail", mock.Anything, mock.Anything).Return(
+		&pb_email.SendActivationEmailResponse{}, nil,
+	)
+
+	s := &AuthServer{DB: db, ClientClient: clientClient, EmailClient: emailClient}
+	resp, err := s.ActivateClient(context.Background(), &pb_auth.ActivateClientRequest{
+		Token: "valid-token", Password: "Abcdef12", ConfirmPassword: "Abcdef12",
+	})
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+	time.Sleep(50 * time.Millisecond) // wait for email goroutine
+	clientClient.AssertExpectations(t)
+	emailClient.AssertExpectations(t)
 }

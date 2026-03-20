@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package email;
 
-option go_package = "github.com/exbanka/backend/shared/pb/email";
+option go_package = "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email";
 
 message SendActivationEmailRequest {
   string email           = 1;
@@ -19,9 +19,20 @@ message SendPasswordResetEmailRequest {
 }
 message SendPasswordResetEmailResponse {}
 
+message SendAccountCreatedEmailRequest {
+  string email          = 1;
+  string first_name     = 2;
+  string account_name   = 3;
+  string account_number = 4;
+  string currency_code  = 5;
+}
+
+message SendAccountCreatedEmailResponse {}
+
 service EmailService {
   rpc SendActivationEmail(SendActivationEmailRequest)           returns (SendActivationEmailResponse);
   rpc SendPasswordResetEmail(SendPasswordResetEmailRequest)     returns (SendPasswordResetEmailResponse);
   // Reuses SendActivationEmailRequest (email + first_name); activation_link left empty.
   rpc SendPasswordConfirmationEmail(SendActivationEmailRequest) returns (SendActivationEmailResponse);
+  rpc SendAccountCreatedEmail(SendAccountCreatedEmailRequest)   returns (SendAccountCreatedEmailResponse);
 }

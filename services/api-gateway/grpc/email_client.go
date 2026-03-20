@@ -1,7 +1,7 @@
 package grpc
 
 import (
-	emailpb "github.com/exbanka/backend/shared/pb/email"
+	emailpb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

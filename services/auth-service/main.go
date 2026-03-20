@@ -7,11 +7,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	authdb "github.com/exbanka/backend/services/auth-service/db"
-	"github.com/exbanka/backend/services/auth-service/handlers"
-	pb_auth "github.com/exbanka/backend/shared/pb/auth"
-	pb_email "github.com/exbanka/backend/shared/pb/email"
-	pb_emp "github.com/exbanka/backend/shared/pb/employee"
+	authdb "github.com/RAF-SI-2025/EXBanka-4-Backend/services/auth-service/db"
+	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/auth-service/handlers"
+	pb_auth "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
+	pb_client "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
+	pb_email "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
+	pb_emp "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
 )
 
 func main() {
@@ -20,6 +21,14 @@ func main() {
 		log.Fatalf("failed to connect to auth-db: %v", err)
 	}
 	defer database.Close()
+
+	clientConn, err := grpc.NewClient("localhost:50056", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect to client-service: %v", err)
+	}
+	defer clientConn.Close()
+
+	clientClient := pb_client.NewClientServiceClient(clientConn)
 
 	empConn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -47,6 +56,7 @@ func main() {
 		DB:             database,
 		EmployeeClient: employeeClient,
 		EmailClient:    emailClient,
+		ClientClient:   clientClient,
 	})
 
 	log.Println("auth-service listening on :50052")

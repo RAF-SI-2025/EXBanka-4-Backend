@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	authpb "github.com/exbanka/backend/shared/pb/auth"
-	emailpb "github.com/exbanka/backend/shared/pb/email"
-	pb "github.com/exbanka/backend/shared/pb/employee"
+	authpb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
+	emailpb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
+	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

@@ -14,9 +14,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb_auth "github.com/exbanka/backend/shared/pb/auth"
-	pb_email "github.com/exbanka/backend/shared/pb/email"
-	pb_emp "github.com/exbanka/backend/shared/pb/employee"
+	pb_auth "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
+	pb_client "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
+	pb_email "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
+	pb_emp "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
 )
 
 const jwtSecret = "secret-key-change-in-production"
@@ -26,6 +27,7 @@ type AuthServer struct {
 	DB             *sql.DB
 	EmployeeClient pb_emp.EmployeeServiceClient
 	EmailClient    pb_email.EmailServiceClient
+	ClientClient   pb_client.ClientServiceClient
 }
 
 func (s *AuthServer) Login(ctx context.Context, req *pb_auth.LoginRequest) (*pb_auth.LoginResponse, error) {
@@ -86,6 +88,9 @@ func (s *AuthServer) Refresh(_ context.Context, req *pb_auth.RefreshRequest) (*p
 	}
 
 	if claims["type"] != "refresh" {
+		return nil, status.Error(codes.Unauthenticated, "invalid token type")
+	}
+	if claims["role"] == "CLIENT" {
 		return nil, status.Error(codes.Unauthenticated, "invalid token type")
 	}
 
@@ -318,6 +323,179 @@ func validatePassword(p string) error {
 		return status.Error(codes.InvalidArgument, "password must contain at least 1 lowercase letter")
 	}
 	return nil
+}
+
+func generateClientToken(userID int64, email, tokenType, firstName, lastName string, d time.Duration) (string, error) {
+	claims := jwt.MapClaims{
+		"user_id":    userID,
+		"email":      email,
+		"first_name": firstName,
+		"last_name":  lastName,
+		"role":       "CLIENT",
+		"type":       tokenType,
+		"exp":        time.Now().Add(d).Unix(),
+	}
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(jwtSecret))
+}
+
+func (s *AuthServer) ClientLogin(ctx context.Context, req *pb_auth.ClientLoginRequest) (*pb_auth.ClientLoginResponse, error) {
+	creds, err := s.ClientClient.GetClientCredentials(ctx, &pb_client.GetClientCredentialsRequest{
+		Email: req.Email,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
+	}
+
+	if creds.PasswordHash == "" {
+		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
+	}
+	if !creds.Active {
+		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(creds.PasswordHash), []byte(req.Password)); err != nil {
+		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
+	}
+
+	clientResp, err := s.ClientClient.GetClientById(ctx, &pb_client.GetClientByIdRequest{Id: creds.Id})
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to fetch client")
+	}
+	cl := clientResp.Client
+
+	accessToken, err := generateClientToken(creds.Id, cl.Email, "access", cl.FirstName, cl.LastName, 15*time.Minute)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate token")
+	}
+
+	refreshToken, err := generateClientToken(creds.Id, cl.Email, "refresh", cl.FirstName, cl.LastName, 7*24*time.Hour)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate token")
+	}
+
+	return &pb_auth.ClientLoginResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
+func (s *AuthServer) ClientRefresh(_ context.Context, req *pb_auth.ClientRefreshRequest) (*pb_auth.ClientRefreshResponse, error) {
+	token, err := jwt.Parse(req.RefreshToken, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(jwtSecret), nil
+	})
+	if err != nil || !token.Valid {
+		return nil, status.Error(codes.Unauthenticated, "invalid or expired refresh token")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "invalid token claims")
+	}
+	if claims["type"] != "refresh" {
+		return nil, status.Error(codes.Unauthenticated, "invalid token type")
+	}
+	if claims["role"] != "CLIENT" {
+		return nil, status.Error(codes.Unauthenticated, "invalid token type")
+	}
+
+	userIDRaw, ok := claims["user_id"].(float64)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "invalid token claims")
+	}
+	email, _ := claims["email"].(string)
+	firstName, _ := claims["first_name"].(string)
+	lastName, _ := claims["last_name"].(string)
+
+	accessToken, err := generateClientToken(int64(userIDRaw), email, "access", firstName, lastName, 15*time.Minute)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate token")
+	}
+
+	return &pb_auth.ClientRefreshResponse{AccessToken: accessToken}, nil
+}
+
+func (s *AuthServer) CreateClientActivationToken(ctx context.Context, req *pb_auth.CreateClientActivationTokenRequest) (*pb_auth.CreateClientActivationTokenResponse, error) {
+	token, err := generateActivationToken()
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate token")
+	}
+	_, err = s.DB.ExecContext(ctx,
+		`INSERT INTO client_activation_tokens (token, client_id, expires_at) VALUES ($1, $2, now() + interval '24 hours')`,
+		token, req.ClientId,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to store client activation token: %v", err)
+	}
+	return &pb_auth.CreateClientActivationTokenResponse{Token: token}, nil
+}
+
+func (s *AuthServer) ActivateClient(ctx context.Context, req *pb_auth.ActivateClientRequest) (*pb_auth.ActivateClientResponse, error) {
+	var clientID int64
+	var expiresAt time.Time
+	err := s.DB.QueryRowContext(ctx,
+		`SELECT client_id, expires_at FROM client_activation_tokens WHERE token = $1`,
+		req.Token,
+	).Scan(&clientID, &expiresAt)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "invalid or expired token")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to look up token: %v", err)
+	}
+
+	if time.Now().After(expiresAt) {
+		if _, err := s.DB.ExecContext(ctx, `DELETE FROM client_activation_tokens WHERE token = $1`, req.Token); err != nil {
+			log.Printf("failed to delete expired client activation token: %v", err)
+		}
+		return nil, status.Error(codes.FailedPrecondition, "activation token has expired")
+	}
+
+	clientResp, err := s.ClientClient.GetClientById(ctx, &pb_client.GetClientByIdRequest{Id: clientID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch client: %v", err)
+	}
+	if clientResp.Client.Active {
+		return nil, status.Error(codes.FailedPrecondition, "account already activated")
+	}
+
+	if req.Password != req.ConfirmPassword {
+		return nil, status.Error(codes.InvalidArgument, "passwords do not match")
+	}
+	if err := validatePassword(req.Password); err != nil {
+		return nil, err
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to hash password")
+	}
+
+	if _, err := s.ClientClient.ActivateClient(ctx, &pb_client.ActivateClientRequest{
+		ClientId:     clientID,
+		PasswordHash: string(hash),
+	}); err != nil {
+		return nil, err
+	}
+
+	if _, err := s.DB.ExecContext(ctx, `DELETE FROM client_activation_tokens WHERE token = $1`, req.Token); err != nil {
+		log.Printf("failed to delete used client activation token: %v", err)
+	}
+
+	cl := clientResp.Client
+	go func() {
+		_, err := s.EmailClient.SendPasswordConfirmationEmail(context.Background(), &pb_email.SendActivationEmailRequest{
+			Email:     cl.Email,
+			FirstName: cl.FirstName,
+		})
+		if err != nil {
+			log.Printf("failed to send password confirmation email to client: %v", err)
+		}
+	}()
+
+	return &pb_auth.ActivateClientResponse{}, nil
 }
 
 func generateActivationToken() (string, error) {

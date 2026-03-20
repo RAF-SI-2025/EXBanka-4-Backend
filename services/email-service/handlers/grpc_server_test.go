@@ -11,8 +11,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "github.com/exbanka/backend/shared/pb/email"
-	"github.com/exbanka/backend/services/email-service/queue"
+	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
+	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/email-service/queue"
 )
 
 // ---- mock Publisher ----
@@ -32,6 +32,11 @@ func (m *mockPublisher) PublishPasswordReset(msg queue.PasswordResetMessage) err
 }
 
 func (m *mockPublisher) PublishPasswordConfirmation(msg queue.PasswordConfirmationMessage) error {
+	args := m.Called(msg)
+	return args.Error(0)
+}
+
+func (m *mockPublisher) PublishAccountCreated(msg queue.AccountCreatedMessage) error {
 	args := m.Called(msg)
 	return args.Error(0)
 }
@@ -149,6 +154,51 @@ func TestSendPasswordConfirmationEmail_HappyPath(t *testing.T) {
 	s := &EmailServer{Producer: pub}
 	resp, err := s.SendPasswordConfirmationEmail(context.Background(), &pb.SendActivationEmailRequest{
 		Email: "user@example.com", FirstName: "Jane",
+	})
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+	pub.AssertExpectations(t)
+}
+
+// ---- SendAccountCreatedEmail tests ----
+
+func TestSendAccountCreatedEmail_InvalidEmail(t *testing.T) {
+	s := &EmailServer{Producer: &mockPublisher{}}
+	_, err := s.SendAccountCreatedEmail(context.Background(), &pb.SendAccountCreatedEmailRequest{
+		Email: "not-an-email",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+}
+
+func TestSendAccountCreatedEmail_PublisherFails(t *testing.T) {
+	pub := &mockPublisher{}
+	pub.On("PublishAccountCreated", mock.Anything).Return(errors.New("queue down"))
+
+	s := &EmailServer{Producer: pub}
+	_, err := s.SendAccountCreatedEmail(context.Background(), &pb.SendAccountCreatedEmailRequest{
+		Email: "client@example.com", FirstName: "Ana",
+		AccountName: "Tekuci", AccountNumber: "265000100000000101", CurrencyCode: "RSD",
+	})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+	pub.AssertExpectations(t)
+}
+
+func TestSendAccountCreatedEmail_HappyPath(t *testing.T) {
+	pub := &mockPublisher{}
+	pub.On("PublishAccountCreated", queue.AccountCreatedMessage{
+		Email:         "client@example.com",
+		FirstName:     "Ana",
+		AccountName:   "Tekuci",
+		AccountNumber: "265000100000000101",
+		CurrencyCode:  "RSD",
+	}).Return(nil)
+
+	s := &EmailServer{Producer: pub}
+	resp, err := s.SendAccountCreatedEmail(context.Background(), &pb.SendAccountCreatedEmailRequest{
+		Email: "client@example.com", FirstName: "Ana",
+		AccountName: "Tekuci", AccountNumber: "265000100000000101", CurrencyCode: "RSD",
 	})
 	require.NoError(t, err)
 	assert.NotNil(t, resp)
