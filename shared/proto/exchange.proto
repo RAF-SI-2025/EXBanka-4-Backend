@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package exchange;
+
+option go_package = "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/exchange";
+
+// --- GetExchangeRates ---
+
+message GetExchangeRatesRequest {}
+
+message ExchangeRate {
+  string currency_code = 1;
+  double buying_rate   = 2;
+  double selling_rate  = 3;
+  double middle_rate   = 4;
+  string date          = 5;
+}
+
+message GetExchangeRatesResponse {
+  repeated ExchangeRate rates = 1;
+}
+
+// --- ConvertAmount ---
+
+message ConvertAmountRequest {
+  int64  client_id    = 1;
+  string from_account = 2;
+  string to_account   = 3;
+  double amount       = 4;
+}
+
+message ConvertAmountResponse {
+  string from_currency    = 1;
+  string to_currency      = 2;
+  double from_amount      = 3;
+  double to_amount        = 4;
+  double rate             = 5;
+  double commission       = 6;
+  int64  transaction_id   = 7;
+}
+
+// --- GetExchangeHistory ---
+
+message GetExchangeHistoryRequest {
+  int64 client_id = 1;
+}
+
+message ExchangeTransaction {
+  int64  id            = 1;
+  string from_account  = 2;
+  string to_account    = 3;
+  string from_currency = 4;
+  string to_currency   = 5;
+  double from_amount   = 6;
+  double to_amount     = 7;
+  double rate          = 8;
+  double commission    = 9;
+  string timestamp     = 10;
+  string status        = 11;
+}
+
+message GetExchangeHistoryResponse {
+  repeated ExchangeTransaction transactions = 1;
+}
+
+service ExchangeService {
+  rpc GetExchangeRates   (GetExchangeRatesRequest)   returns (GetExchangeRatesResponse);
+  rpc ConvertAmount      (ConvertAmountRequest)       returns (ConvertAmountResponse);
+  rpc GetExchangeHistory (GetExchangeHistoryRequest)  returns (GetExchangeHistoryResponse);
+}

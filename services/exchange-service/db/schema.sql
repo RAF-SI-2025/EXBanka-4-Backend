@@ -41,3 +41,30 @@ INSERT INTO exchange_rates (from_currency, to_currency, rate) VALUES
   ('USD', 'GBP', 0.794),    ('GBP', 'USD', 1.259),
   ('CHF', 'GBP', 0.854),    ('GBP', 'CHF', 1.170)
 ON CONFLICT DO NOTHING;
+
+-- Daily buy/sell rates vs RSD — used by exchange-service (issue #72)
+CREATE TABLE daily_exchange_rates (
+    id            BIGSERIAL PRIMARY KEY,
+    currency_code VARCHAR NOT NULL REFERENCES currencies(code),
+    buying_rate   NUMERIC(20, 6) NOT NULL,
+    selling_rate  NUMERIC(20, 6) NOT NULL,
+    middle_rate   NUMERIC(20, 6) NOT NULL,
+    date          DATE NOT NULL DEFAULT CURRENT_DATE,
+    UNIQUE (currency_code, date)
+);
+
+-- Exchange transaction history (issue #76)
+CREATE TABLE exchange_transactions (
+    id            BIGSERIAL PRIMARY KEY,
+    client_id     BIGINT NOT NULL,
+    from_account  VARCHAR NOT NULL,
+    to_account    VARCHAR NOT NULL,
+    from_currency VARCHAR NOT NULL,
+    to_currency   VARCHAR NOT NULL,
+    from_amount   NUMERIC(20, 2) NOT NULL,
+    to_amount     NUMERIC(20, 2) NOT NULL,
+    rate          NUMERIC(20, 6) NOT NULL,
+    commission    NUMERIC(20, 2) NOT NULL,
+    timestamp     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    status        VARCHAR NOT NULL DEFAULT 'COMPLETED'
+);
