@@ -65,6 +65,12 @@ func main() {
 	}
 	defer loanConn.Close()
 
+	_, cardConn, err := gwgrpc.NewCardClient("localhost:50059")
+	if err != nil {
+		log.Fatalf("failed to connect to card-service: %v", err)
+	}
+	defer cardConn.Close()
+
 	exchangeClient, exchangeConn, err := gwgrpc.NewExchangeClient("localhost:50057")
 	if err != nil {
 		log.Fatalf("failed to connect to exchange-service: %v", err)

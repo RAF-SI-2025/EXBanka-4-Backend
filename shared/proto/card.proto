@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package card;
+
+option go_package = "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/card";
+
+service CardService {}
