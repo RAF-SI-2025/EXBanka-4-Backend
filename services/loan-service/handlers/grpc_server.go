@@ -348,7 +348,8 @@ func (s *LoanServer) GetAllLoanApplications(ctx context.Context, req *pb.GetAllL
 	query := `SELECT id, loan_number, account_number, loan_type, interest_rate_type,
 		         amount, currency, repayment_period, nominal_rate, effective_rate,
 		         agreed_date, maturity_date, next_installment_amount, next_installment_date,
-		         remaining_debt, status
+		         remaining_debt, status, purpose, monthly_salary, employment_status,
+		         employment_period, contact_phone
 		  FROM loans WHERE status = 'PENDING'`
 	args := []any{}
 	if req.LoanType != "" {
@@ -380,7 +381,8 @@ func (s *LoanServer) GetAllLoans(ctx context.Context, req *pb.GetAllLoansRequest
 	query := `SELECT id, loan_number, account_number, loan_type, interest_rate_type,
 		         amount, currency, repayment_period, nominal_rate, effective_rate,
 		         agreed_date, maturity_date, next_installment_amount, next_installment_date,
-		         remaining_debt, status
+		         remaining_debt, status, purpose, monthly_salary, employment_status,
+		         employment_period, contact_phone
 		  FROM loans WHERE 1=1`
 	args := []any{}
 	if req.LoanType != "" {
@@ -416,10 +418,13 @@ func scanLoanDetails(rows *sql.Rows) ([]*pb.LoanDetail, error) {
 		var l pb.LoanDetail
 		var agreedDate, maturityDate time.Time
 		var nextDate sql.NullTime
-		var nextAmt, remainingDebt sql.NullFloat64
+		var nextAmt, remainingDebt, monthlySalary sql.NullFloat64
+		var purpose, employmentStatus, contactPhone sql.NullString
+		var employmentPeriod sql.NullInt32
 		if err := rows.Scan(&l.Id, &l.LoanNumber, &l.AccountNumber, &l.LoanType, &l.InterestRateType,
 			&l.Amount, &l.Currency, &l.RepaymentPeriod, &l.NominalRate, &l.EffectiveRate,
-			&agreedDate, &maturityDate, &nextAmt, &nextDate, &remainingDebt, &l.Status); err != nil {
+			&agreedDate, &maturityDate, &nextAmt, &nextDate, &remainingDebt, &l.Status,
+			&purpose, &monthlySalary, &employmentStatus, &employmentPeriod, &contactPhone); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to scan loan: %v", err)
 		}
 		l.AgreedDate = agreedDate.Format("2006-01-02")
@@ -432,6 +437,21 @@ func scanLoanDetails(rows *sql.Rows) ([]*pb.LoanDetail, error) {
 		}
 		if remainingDebt.Valid {
 			l.RemainingDebt = remainingDebt.Float64
+		}
+		if purpose.Valid {
+			l.Purpose = purpose.String
+		}
+		if monthlySalary.Valid {
+			l.MonthlySalary = monthlySalary.Float64
+		}
+		if employmentStatus.Valid {
+			l.EmploymentStatus = employmentStatus.String
+		}
+		if employmentPeriod.Valid {
+			l.EmploymentPeriod = employmentPeriod.Int32
+		}
+		if contactPhone.Valid {
+			l.ContactPhone = contactPhone.String
 		}
 		loans = append(loans, &l)
 	}

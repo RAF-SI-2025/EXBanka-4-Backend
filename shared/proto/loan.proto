@@ -34,6 +34,12 @@ message LoanDetail {
   string next_installment_date   = 14;
   double remaining_debt          = 15;
   string status                  = 16;
+  // application-specific optional fields
+  string purpose           = 17;
+  double monthly_salary    = 18;
+  string employment_status = 19;
+  int32  employment_period = 20;
+  string contact_phone     = 21;
 }
 
 message Installment {

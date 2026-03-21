@@ -139,8 +139,14 @@ type LoanDetail struct {
 	NextInstallmentDate   string                 `protobuf:"bytes,14,opt,name=next_installment_date,json=nextInstallmentDate,proto3" json:"next_installment_date,omitempty"`
 	RemainingDebt         float64                `protobuf:"fixed64,15,opt,name=remaining_debt,json=remainingDebt,proto3" json:"remaining_debt,omitempty"`
 	Status                string                 `protobuf:"bytes,16,opt,name=status,proto3" json:"status,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	// application-specific optional fields
+	Purpose          string  `protobuf:"bytes,17,opt,name=purpose,proto3" json:"purpose,omitempty"`
+	MonthlySalary    float64 `protobuf:"fixed64,18,opt,name=monthly_salary,json=monthlySalary,proto3" json:"monthly_salary,omitempty"`
+	EmploymentStatus string  `protobuf:"bytes,19,opt,name=employment_status,json=employmentStatus,proto3" json:"employment_status,omitempty"`
+	EmploymentPeriod int32   `protobuf:"varint,20,opt,name=employment_period,json=employmentPeriod,proto3" json:"employment_period,omitempty"`
+	ContactPhone     string  `protobuf:"bytes,21,opt,name=contact_phone,json=contactPhone,proto3" json:"contact_phone,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *LoanDetail) Reset() {
@@ -281,6 +287,41 @@ func (x *LoanDetail) GetRemainingDebt() float64 {
 func (x *LoanDetail) GetStatus() string {
 	if x != nil {
 		return x.Status
+	}
+	return ""
+}
+
+func (x *LoanDetail) GetPurpose() string {
+	if x != nil {
+		return x.Purpose
+	}
+	return ""
+}
+
+func (x *LoanDetail) GetMonthlySalary() float64 {
+	if x != nil {
+		return x.MonthlySalary
+	}
+	return 0
+}
+
+func (x *LoanDetail) GetEmploymentStatus() string {
+	if x != nil {
+		return x.EmploymentStatus
+	}
+	return ""
+}
+
+func (x *LoanDetail) GetEmploymentPeriod() int32 {
+	if x != nil {
+		return x.EmploymentPeriod
+	}
+	return 0
+}
+
+func (x *LoanDetail) GetContactPhone() string {
+	if x != nil {
+		return x.ContactPhone
 	}
 	return ""
 }
@@ -1256,7 +1297,7 @@ const file_loan_proto_rawDesc = "" +
 	"\x06amount\x18\x05 \x01(\x01R\x06amount\x12\x1a\n" +
 	"\bcurrency\x18\x06 \x01(\tR\bcurrency\x12\x16\n" +
 	"\x06status\x18\a \x01(\tR\x06status\x12)\n" +
-	"\x10repayment_period\x18\b \x01(\x05R\x0frepaymentPeriod\"\xc9\x04\n" +
+	"\x10repayment_period\x18\b \x01(\x05R\x0frepaymentPeriod\"\x89\x06\n" +
 	"\n" +
 	"LoanDetail\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1f\n" +
@@ -1277,7 +1318,12 @@ const file_loan_proto_rawDesc = "" +
 	"\x17next_installment_amount\x18\r \x01(\x01R\x15nextInstallmentAmount\x122\n" +
 	"\x15next_installment_date\x18\x0e \x01(\tR\x13nextInstallmentDate\x12%\n" +
 	"\x0eremaining_debt\x18\x0f \x01(\x01R\rremainingDebt\x12\x16\n" +
-	"\x06status\x18\x10 \x01(\tR\x06status\"\x92\x02\n" +
+	"\x06status\x18\x10 \x01(\tR\x06status\x12\x18\n" +
+	"\apurpose\x18\x11 \x01(\tR\apurpose\x12%\n" +
+	"\x0emonthly_salary\x18\x12 \x01(\x01R\rmonthlySalary\x12+\n" +
+	"\x11employment_status\x18\x13 \x01(\tR\x10employmentStatus\x12+\n" +
+	"\x11employment_period\x18\x14 \x01(\x05R\x10employmentPeriod\x12#\n" +
+	"\rcontact_phone\x18\x15 \x01(\tR\fcontactPhone\"\x92\x02\n" +
 	"\vInstallment\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
 	"\aloan_id\x18\x02 \x01(\x03R\x06loanId\x12-\n" +

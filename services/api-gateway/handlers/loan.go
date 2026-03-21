@@ -380,8 +380,13 @@ func loanDetailsToJSON(loans []*pb.LoanDetail) []map[string]interface{} {
 			"nominalRate": l.NominalRate, "effectiveRate": l.EffectiveRate,
 			"agreedDate": l.AgreedDate, "maturityDate": l.MaturityDate,
 			"nextInstallmentAmount": l.NextInstallmentAmount,
-			"nextInstallmentDate": l.NextInstallmentDate,
+			"nextInstallmentDate":   l.NextInstallmentDate,
 			"remainingDebt": l.RemainingDebt, "status": l.Status,
+			"purpose":          l.Purpose,
+			"monthlySalary":    l.MonthlySalary,
+			"employmentStatus": l.EmploymentStatus,
+			"employmentPeriod": l.EmploymentPeriod,
+			"contactPhone":     l.ContactPhone,
 		})
 	}
 	return result
