@@ -949,6 +949,8 @@ type GetPaymentsRequest struct {
 	AmountMin     float64                `protobuf:"fixed64,4,opt,name=amount_min,json=amountMin,proto3" json:"amount_min,omitempty"`
 	AmountMax     float64                `protobuf:"fixed64,5,opt,name=amount_max,json=amountMax,proto3" json:"amount_max,omitempty"`
 	Status        string                 `protobuf:"bytes,6,opt,name=status,proto3" json:"status,omitempty"`
+	Limit         int32                  `protobuf:"varint,7,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset        int32                  `protobuf:"varint,8,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1023,6 +1025,20 @@ func (x *GetPaymentsRequest) GetStatus() string {
 		return x.Status
 	}
 	return ""
+}
+
+func (x *GetPaymentsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *GetPaymentsRequest) GetOffset() int32 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
 }
 
 type GetPaymentsResponse struct {
@@ -1245,6 +1261,202 @@ func (x *CreateTransferResponse) GetTimestamp() string {
 	return ""
 }
 
+type Transfer struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	OrderNumber   string                 `protobuf:"bytes,2,opt,name=order_number,json=orderNumber,proto3" json:"order_number,omitempty"`
+	FromAccount   string                 `protobuf:"bytes,3,opt,name=from_account,json=fromAccount,proto3" json:"from_account,omitempty"`
+	ToAccount     string                 `protobuf:"bytes,4,opt,name=to_account,json=toAccount,proto3" json:"to_account,omitempty"`
+	InitialAmount float64                `protobuf:"fixed64,5,opt,name=initial_amount,json=initialAmount,proto3" json:"initial_amount,omitempty"`
+	FinalAmount   float64                `protobuf:"fixed64,6,opt,name=final_amount,json=finalAmount,proto3" json:"final_amount,omitempty"`
+	ExchangeRate  float64                `protobuf:"fixed64,7,opt,name=exchange_rate,json=exchangeRate,proto3" json:"exchange_rate,omitempty"`
+	Fee           float64                `protobuf:"fixed64,8,opt,name=fee,proto3" json:"fee,omitempty"`
+	Timestamp     string                 `protobuf:"bytes,9,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Transfer) Reset() {
+	*x = Transfer{}
+	mi := &file_payment_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Transfer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Transfer) ProtoMessage() {}
+
+func (x *Transfer) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Transfer.ProtoReflect.Descriptor instead.
+func (*Transfer) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *Transfer) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Transfer) GetOrderNumber() string {
+	if x != nil {
+		return x.OrderNumber
+	}
+	return ""
+}
+
+func (x *Transfer) GetFromAccount() string {
+	if x != nil {
+		return x.FromAccount
+	}
+	return ""
+}
+
+func (x *Transfer) GetToAccount() string {
+	if x != nil {
+		return x.ToAccount
+	}
+	return ""
+}
+
+func (x *Transfer) GetInitialAmount() float64 {
+	if x != nil {
+		return x.InitialAmount
+	}
+	return 0
+}
+
+func (x *Transfer) GetFinalAmount() float64 {
+	if x != nil {
+		return x.FinalAmount
+	}
+	return 0
+}
+
+func (x *Transfer) GetExchangeRate() float64 {
+	if x != nil {
+		return x.ExchangeRate
+	}
+	return 0
+}
+
+func (x *Transfer) GetFee() float64 {
+	if x != nil {
+		return x.Fee
+	}
+	return 0
+}
+
+func (x *Transfer) GetTimestamp() string {
+	if x != nil {
+		return x.Timestamp
+	}
+	return ""
+}
+
+type GetTransfersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ClientId      int64                  `protobuf:"varint,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTransfersRequest) Reset() {
+	*x = GetTransfersRequest{}
+	mi := &file_payment_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTransfersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTransfersRequest) ProtoMessage() {}
+
+func (x *GetTransfersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTransfersRequest.ProtoReflect.Descriptor instead.
+func (*GetTransfersRequest) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *GetTransfersRequest) GetClientId() int64 {
+	if x != nil {
+		return x.ClientId
+	}
+	return 0
+}
+
+type GetTransfersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Transfers     []*Transfer            `protobuf:"bytes,1,rep,name=transfers,proto3" json:"transfers,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTransfersResponse) Reset() {
+	*x = GetTransfersResponse{}
+	mi := &file_payment_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTransfersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTransfersResponse) ProtoMessage() {}
+
+func (x *GetTransfersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTransfersResponse.ProtoReflect.Descriptor instead.
+func (*GetTransfersResponse) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *GetTransfersResponse) GetTransfers() []*Transfer {
+	if x != nil {
+		return x.Transfers
+	}
+	return nil
+}
+
 var File_payment_proto protoreflect.FileDescriptor
 
 const file_payment_proto_rawDesc = "" +
@@ -1322,7 +1534,7 @@ const file_payment_proto_rawDesc = "" +
 	"payment_id\x18\x01 \x01(\x03R\tpaymentId\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\x03R\bclientId\"D\n" +
 	"\x16GetPaymentByIdResponse\x12*\n" +
-	"\apayment\x18\x01 \x01(\v2\x10.payment.PaymentR\apayment\"\xbd\x01\n" +
+	"\apayment\x18\x01 \x01(\v2\x10.payment.PaymentR\apayment\"\xeb\x01\n" +
 	"\x12GetPaymentsRequest\x12\x1b\n" +
 	"\tclient_id\x18\x01 \x01(\x03R\bclientId\x12\x1b\n" +
 	"\tdate_from\x18\x02 \x01(\tR\bdateFrom\x12\x17\n" +
@@ -1331,7 +1543,9 @@ const file_payment_proto_rawDesc = "" +
 	"amount_min\x18\x04 \x01(\x01R\tamountMin\x12\x1d\n" +
 	"\n" +
 	"amount_max\x18\x05 \x01(\x01R\tamountMax\x12\x16\n" +
-	"\x06status\x18\x06 \x01(\tR\x06status\"C\n" +
+	"\x06status\x18\x06 \x01(\tR\x06status\x12\x14\n" +
+	"\x05limit\x18\a \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06offset\x18\b \x01(\x05R\x06offset\"C\n" +
 	"\x13GetPaymentsResponse\x12,\n" +
 	"\bpayments\x18\x01 \x03(\v2\x10.payment.PaymentR\bpayments\"\x8e\x01\n" +
 	"\x15CreateTransferRequest\x12\x1b\n" +
@@ -1350,7 +1564,22 @@ const file_payment_proto_rawDesc = "" +
 	"\ffinal_amount\x18\x06 \x01(\x01R\vfinalAmount\x12#\n" +
 	"\rexchange_rate\x18\a \x01(\x01R\fexchangeRate\x12\x10\n" +
 	"\x03fee\x18\b \x01(\x01R\x03fee\x12\x1c\n" +
-	"\ttimestamp\x18\t \x01(\tR\ttimestamp2\xf6\x05\n" +
+	"\ttimestamp\x18\t \x01(\tR\ttimestamp\"\x9e\x02\n" +
+	"\bTransfer\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12!\n" +
+	"\forder_number\x18\x02 \x01(\tR\vorderNumber\x12!\n" +
+	"\ffrom_account\x18\x03 \x01(\tR\vfromAccount\x12\x1d\n" +
+	"\n" +
+	"to_account\x18\x04 \x01(\tR\ttoAccount\x12%\n" +
+	"\x0einitial_amount\x18\x05 \x01(\x01R\rinitialAmount\x12!\n" +
+	"\ffinal_amount\x18\x06 \x01(\x01R\vfinalAmount\x12#\n" +
+	"\rexchange_rate\x18\a \x01(\x01R\fexchangeRate\x12\x10\n" +
+	"\x03fee\x18\b \x01(\x01R\x03fee\x12\x1c\n" +
+	"\ttimestamp\x18\t \x01(\tR\ttimestamp\"2\n" +
+	"\x13GetTransfersRequest\x12\x1b\n" +
+	"\tclient_id\x18\x01 \x01(\x03R\bclientId\"G\n" +
+	"\x14GetTransfersResponse\x12/\n" +
+	"\ttransfers\x18\x01 \x03(\v2\x11.payment.TransferR\ttransfers2\xc3\x06\n" +
 	"\x0ePaymentService\x12N\n" +
 	"\rCreatePayment\x12\x1d.payment.CreatePaymentRequest\x1a\x1e.payment.CreatePaymentResponse\x12H\n" +
 	"\vGetPayments\x12\x1b.payment.GetPaymentsRequest\x1a\x1c.payment.GetPaymentsResponse\x12Q\n" +
@@ -1359,7 +1588,8 @@ const file_payment_proto_rawDesc = "" +
 	"\x16CreatePaymentRecipient\x12&.payment.CreatePaymentRecipientRequest\x1a'.payment.CreatePaymentRecipientResponse\x12c\n" +
 	"\x14GetPaymentRecipients\x12$.payment.GetPaymentRecipientsRequest\x1a%.payment.GetPaymentRecipientsResponse\x12i\n" +
 	"\x16UpdatePaymentRecipient\x12&.payment.UpdatePaymentRecipientRequest\x1a'.payment.UpdatePaymentRecipientResponse\x12i\n" +
-	"\x16DeletePaymentRecipient\x12&.payment.DeletePaymentRecipientRequest\x1a'.payment.DeletePaymentRecipientResponseB<Z:github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/paymentb\x06proto3"
+	"\x16DeletePaymentRecipient\x12&.payment.DeletePaymentRecipientRequest\x1a'.payment.DeletePaymentRecipientResponse\x12K\n" +
+	"\fGetTransfers\x12\x1c.payment.GetTransfersRequest\x1a\x1d.payment.GetTransfersResponseB<Z:github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/paymentb\x06proto3"
 
 var (
 	file_payment_proto_rawDescOnce sync.Once
@@ -1373,7 +1603,7 @@ func file_payment_proto_rawDescGZIP() []byte {
 	return file_payment_proto_rawDescData
 }
 
-var file_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_payment_proto_goTypes = []any{
 	(*CreatePaymentRequest)(nil),           // 0: payment.CreatePaymentRequest
 	(*CreatePaymentResponse)(nil),          // 1: payment.CreatePaymentResponse
@@ -1393,6 +1623,9 @@ var file_payment_proto_goTypes = []any{
 	(*GetPaymentsResponse)(nil),            // 15: payment.GetPaymentsResponse
 	(*CreateTransferRequest)(nil),          // 16: payment.CreateTransferRequest
 	(*CreateTransferResponse)(nil),         // 17: payment.CreateTransferResponse
+	(*Transfer)(nil),                       // 18: payment.Transfer
+	(*GetTransfersRequest)(nil),            // 19: payment.GetTransfersRequest
+	(*GetTransfersResponse)(nil),           // 20: payment.GetTransfersResponse
 }
 var file_payment_proto_depIdxs = []int32{
 	2,  // 0: payment.CreatePaymentRecipientResponse.recipient:type_name -> payment.PaymentRecipient
@@ -1400,27 +1633,30 @@ var file_payment_proto_depIdxs = []int32{
 	2,  // 2: payment.UpdatePaymentRecipientResponse.recipient:type_name -> payment.PaymentRecipient
 	11, // 3: payment.GetPaymentByIdResponse.payment:type_name -> payment.Payment
 	11, // 4: payment.GetPaymentsResponse.payments:type_name -> payment.Payment
-	0,  // 5: payment.PaymentService.CreatePayment:input_type -> payment.CreatePaymentRequest
-	14, // 6: payment.PaymentService.GetPayments:input_type -> payment.GetPaymentsRequest
-	12, // 7: payment.PaymentService.GetPaymentById:input_type -> payment.GetPaymentByIdRequest
-	16, // 8: payment.PaymentService.CreateTransfer:input_type -> payment.CreateTransferRequest
-	3,  // 9: payment.PaymentService.CreatePaymentRecipient:input_type -> payment.CreatePaymentRecipientRequest
-	5,  // 10: payment.PaymentService.GetPaymentRecipients:input_type -> payment.GetPaymentRecipientsRequest
-	9,  // 11: payment.PaymentService.UpdatePaymentRecipient:input_type -> payment.UpdatePaymentRecipientRequest
-	7,  // 12: payment.PaymentService.DeletePaymentRecipient:input_type -> payment.DeletePaymentRecipientRequest
-	1,  // 13: payment.PaymentService.CreatePayment:output_type -> payment.CreatePaymentResponse
-	15, // 14: payment.PaymentService.GetPayments:output_type -> payment.GetPaymentsResponse
-	13, // 15: payment.PaymentService.GetPaymentById:output_type -> payment.GetPaymentByIdResponse
-	17, // 16: payment.PaymentService.CreateTransfer:output_type -> payment.CreateTransferResponse
-	4,  // 17: payment.PaymentService.CreatePaymentRecipient:output_type -> payment.CreatePaymentRecipientResponse
-	6,  // 18: payment.PaymentService.GetPaymentRecipients:output_type -> payment.GetPaymentRecipientsResponse
-	10, // 19: payment.PaymentService.UpdatePaymentRecipient:output_type -> payment.UpdatePaymentRecipientResponse
-	8,  // 20: payment.PaymentService.DeletePaymentRecipient:output_type -> payment.DeletePaymentRecipientResponse
-	13, // [13:21] is the sub-list for method output_type
-	5,  // [5:13] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	18, // 5: payment.GetTransfersResponse.transfers:type_name -> payment.Transfer
+	0,  // 6: payment.PaymentService.CreatePayment:input_type -> payment.CreatePaymentRequest
+	14, // 7: payment.PaymentService.GetPayments:input_type -> payment.GetPaymentsRequest
+	12, // 8: payment.PaymentService.GetPaymentById:input_type -> payment.GetPaymentByIdRequest
+	16, // 9: payment.PaymentService.CreateTransfer:input_type -> payment.CreateTransferRequest
+	3,  // 10: payment.PaymentService.CreatePaymentRecipient:input_type -> payment.CreatePaymentRecipientRequest
+	5,  // 11: payment.PaymentService.GetPaymentRecipients:input_type -> payment.GetPaymentRecipientsRequest
+	9,  // 12: payment.PaymentService.UpdatePaymentRecipient:input_type -> payment.UpdatePaymentRecipientRequest
+	7,  // 13: payment.PaymentService.DeletePaymentRecipient:input_type -> payment.DeletePaymentRecipientRequest
+	19, // 14: payment.PaymentService.GetTransfers:input_type -> payment.GetTransfersRequest
+	1,  // 15: payment.PaymentService.CreatePayment:output_type -> payment.CreatePaymentResponse
+	15, // 16: payment.PaymentService.GetPayments:output_type -> payment.GetPaymentsResponse
+	13, // 17: payment.PaymentService.GetPaymentById:output_type -> payment.GetPaymentByIdResponse
+	17, // 18: payment.PaymentService.CreateTransfer:output_type -> payment.CreateTransferResponse
+	4,  // 19: payment.PaymentService.CreatePaymentRecipient:output_type -> payment.CreatePaymentRecipientResponse
+	6,  // 20: payment.PaymentService.GetPaymentRecipients:output_type -> payment.GetPaymentRecipientsResponse
+	10, // 21: payment.PaymentService.UpdatePaymentRecipient:output_type -> payment.UpdatePaymentRecipientResponse
+	8,  // 22: payment.PaymentService.DeletePaymentRecipient:output_type -> payment.DeletePaymentRecipientResponse
+	20, // 23: payment.PaymentService.GetTransfers:output_type -> payment.GetTransfersResponse
+	15, // [15:24] is the sub-list for method output_type
+	6,  // [6:15] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_payment_proto_init() }
@@ -1434,7 +1670,7 @@ func file_payment_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_payment_proto_rawDesc), len(file_payment_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   18,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -87,6 +87,8 @@ message GetPaymentsRequest {
   double amount_min = 4;
   double amount_max = 5;
   string status     = 6;
+  int32  limit      = 7;
+  int32  offset     = 8;
 }
 
 message GetPaymentsResponse {
@@ -112,6 +114,21 @@ message CreateTransferResponse {
   string timestamp      = 9;
 }
 
+message Transfer {
+  int64  id             = 1;
+  string order_number   = 2;
+  string from_account   = 3;
+  string to_account     = 4;
+  double initial_amount = 5;
+  double final_amount   = 6;
+  double exchange_rate  = 7;
+  double fee            = 8;
+  string timestamp      = 9;
+}
+
+message GetTransfersRequest  { int64 client_id = 1; }
+message GetTransfersResponse { repeated Transfer transfers = 1; }
+
 service PaymentService {
   rpc CreatePayment(CreatePaymentRequest)                     returns (CreatePaymentResponse);
   rpc GetPayments(GetPaymentsRequest)                         returns (GetPaymentsResponse);
@@ -121,4 +138,5 @@ service PaymentService {
   rpc GetPaymentRecipients(GetPaymentRecipientsRequest)       returns (GetPaymentRecipientsResponse);
   rpc UpdatePaymentRecipient(UpdatePaymentRecipientRequest)   returns (UpdatePaymentRecipientResponse);
   rpc DeletePaymentRecipient(DeletePaymentRecipientRequest)   returns (DeletePaymentRecipientResponse);
+  rpc GetTransfers(GetTransfersRequest)                       returns (GetTransfersResponse);
 }

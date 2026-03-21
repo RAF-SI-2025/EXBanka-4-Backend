@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
 	pb_account "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/account"
+	pb_payment "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/payment"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/middleware"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -152,7 +153,7 @@ func GetMyApprovalById(authClient pb.AuthServiceClient) gin.HandlerFunc {
 }
 
 // ApproveApproval approves a pending two-factor approval.
-func ApproveApproval(authClient pb.AuthServiceClient, accountClient pb_account.AccountServiceClient) gin.HandlerFunc {
+func ApproveApproval(authClient pb.AuthServiceClient, accountClient pb_account.AccountServiceClient, paymentClient pb_payment.PaymentServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, err := middleware.GetUserIDFromToken(c)
 		if err != nil {
@@ -181,20 +182,61 @@ func ApproveApproval(authClient pb.AuthServiceClient, accountClient pb_account.A
 		}
 
 		// Post-approval side effects
-		if resp.Approval.ActionType == "LIMIT_CHANGE" {
-			var payload struct {
+		switch resp.Approval.ActionType {
+		case "LIMIT_CHANGE":
+			var p struct {
 				AccountID    int64   `json:"accountId"`
 				DailyLimit   float64 `json:"dailyLimit"`
 				MonthlyLimit float64 `json:"monthlyLimit"`
 			}
-			if json.Unmarshal([]byte(resp.Approval.Payload), &payload) == nil && payload.AccountID != 0 {
-				limCtx, limCancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer limCancel()
-				_, _ = accountClient.UpdateAccountLimits(limCtx, &pb_account.UpdateAccountLimitsRequest{
-					AccountId:    payload.AccountID,
+			if json.Unmarshal([]byte(resp.Approval.Payload), &p) == nil && p.AccountID != 0 {
+				sCtx, sCancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer sCancel()
+				_, _ = accountClient.UpdateAccountLimits(sCtx, &pb_account.UpdateAccountLimitsRequest{
+					AccountId:    p.AccountID,
 					OwnerId:      userID,
-					DailyLimit:   payload.DailyLimit,
-					MonthlyLimit: payload.MonthlyLimit,
+					DailyLimit:   p.DailyLimit,
+					MonthlyLimit: p.MonthlyLimit,
+				})
+			}
+		case "PAYMENT":
+			var p struct {
+				FromAccount     string  `json:"fromAccount"`
+				RecipientName   string  `json:"recipientName"`
+				RecipientAccount string `json:"recipientAccount"`
+				Amount          float64 `json:"amount"`
+				PaymentCode     string  `json:"paymentCode"`
+				ReferenceNumber string  `json:"referenceNumber"`
+				Purpose         string  `json:"purpose"`
+			}
+			if json.Unmarshal([]byte(resp.Approval.Payload), &p) == nil && p.FromAccount != "" {
+				sCtx, sCancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer sCancel()
+				_, _ = paymentClient.CreatePayment(sCtx, &pb_payment.CreatePaymentRequest{
+					ClientId:         userID,
+					FromAccount:      p.FromAccount,
+					RecipientName:    p.RecipientName,
+					RecipientAccount: p.RecipientAccount,
+					Amount:           p.Amount,
+					PaymentCode:      p.PaymentCode,
+					ReferenceNumber:  p.ReferenceNumber,
+					Purpose:          p.Purpose,
+				})
+			}
+		case "TRANSFER":
+			var p struct {
+				FromAccount string  `json:"fromAccount"`
+				ToAccount   string  `json:"toAccount"`
+				Amount      float64 `json:"amount"`
+			}
+			if json.Unmarshal([]byte(resp.Approval.Payload), &p) == nil && p.FromAccount != "" {
+				sCtx, sCancel := context.WithTimeout(context.Background(), 10*time.Second)
+				defer sCancel()
+				_, _ = paymentClient.CreateTransfer(sCtx, &pb_payment.CreateTransferRequest{
+					ClientId:    userID,
+					FromAccount: p.FromAccount,
+					ToAccount:   p.ToAccount,
+					Amount:      p.Amount,
 				})
 			}
 		}

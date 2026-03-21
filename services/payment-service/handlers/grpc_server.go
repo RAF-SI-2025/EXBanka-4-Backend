@@ -308,6 +308,23 @@ func (s *PaymentServer) GetPayments(ctx context.Context, req *pb.GetPaymentsRequ
 	}
 
 	// 2. Query payments (outgoing and incoming) with optional filters
+	var dateFrom, dateTo interface{}
+	if req.DateFrom != "" {
+		dateFrom = req.DateFrom
+	}
+	if req.DateTo != "" {
+		dateTo = req.DateTo
+	}
+
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 20
+	}
+	offset := req.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
 	pmRows, err := s.DB.QueryContext(ctx, `
 		SELECT p.id, p.order_number, p.from_account, p.to_account,
 		       p.initial_amount, p.final_amount, p.fee,
@@ -316,16 +333,18 @@ func (s *PaymentServer) GetPayments(ctx context.Context, req *pb.GetPaymentsRequ
 		FROM payments p
 		LEFT JOIN payment_recipients r ON p.recipient_id = r.id
 		WHERE (p.from_account = ANY($1) OR p.to_account = ANY($1))
-		  AND ($2 = '' OR p.timestamp >= $2::timestamptz)
-		  AND ($3 = '' OR p.timestamp <= $3::timestamptz)
+		  AND ($2::timestamptz IS NULL OR p.timestamp >= $2::timestamptz)
+		  AND ($3::timestamptz IS NULL OR p.timestamp <= $3::timestamptz)
 		  AND ($4 = 0 OR p.initial_amount >= $4)
 		  AND ($5 = 0 OR p.initial_amount <= $5)
 		  AND ($6 = '' OR p.status = $6)
-		ORDER BY p.timestamp DESC`,
+		ORDER BY p.timestamp DESC
+		LIMIT $7 OFFSET $8`,
 		pq.Array(accountNumbers),
-		req.DateFrom, req.DateTo,
+		dateFrom, dateTo,
 		req.AmountMin, req.AmountMax,
 		req.Status,
+		limit, offset,
 	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to query payments: %v", err)
@@ -513,4 +532,51 @@ func (s *PaymentServer) CreateTransfer(ctx context.Context, req *pb.CreateTransf
 		Fee:           0,
 		Timestamp:     now.Format(time.RFC3339),
 	}, nil
+}
+
+func (s *PaymentServer) GetTransfers(ctx context.Context, req *pb.GetTransfersRequest) (*pb.GetTransfersResponse, error) {
+	accRows, err := s.AccountDB.QueryContext(ctx,
+		`SELECT account_number FROM accounts WHERE owner_id = $1`, req.ClientId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to query accounts: %v", err)
+	}
+	defer accRows.Close()
+
+	var accountNumbers []string
+	for accRows.Next() {
+		var an string
+		if err := accRows.Scan(&an); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to scan account: %v", err)
+		}
+		accountNumbers = append(accountNumbers, an)
+	}
+	if len(accountNumbers) == 0 {
+		return &pb.GetTransfersResponse{Transfers: []*pb.Transfer{}}, nil
+	}
+
+	rows, err := s.DB.QueryContext(ctx, `
+		SELECT id, order_number, from_account, to_account,
+		       initial_amount, final_amount, exchange_rate, fee, timestamp
+		FROM transfers
+		WHERE from_account = ANY($1) OR to_account = ANY($1)
+		ORDER BY timestamp DESC`,
+		pq.Array(accountNumbers),
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to query transfers: %v", err)
+	}
+	defer rows.Close()
+
+	var transfers []*pb.Transfer
+	for rows.Next() {
+		var t pb.Transfer
+		var ts time.Time
+		if err := rows.Scan(&t.Id, &t.OrderNumber, &t.FromAccount, &t.ToAccount,
+			&t.InitialAmount, &t.FinalAmount, &t.ExchangeRate, &t.Fee, &ts); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to scan transfer: %v", err)
+		}
+		t.Timestamp = ts.Format(time.RFC3339)
+		transfers = append(transfers, &t)
+	}
+	return &pb.GetTransfersResponse{Transfers: transfers}, nil
 }
