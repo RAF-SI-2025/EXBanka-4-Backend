@@ -105,7 +105,7 @@ func main() {
 	r.POST("/api/mobile/approvals", handlers.CreateApproval(authClient))
 	r.GET("/api/mobile/approvals", handlers.GetMyApprovals(authClient))
 	r.GET("/api/mobile/approvals/:id", handlers.GetMyApprovalById(authClient))
-	r.PUT("/api/twofactor/:id/approve", handlers.ApproveApproval(authClient))
+	r.PUT("/api/twofactor/:id/approve", handlers.ApproveApproval(authClient, accountClient))
 	r.PUT("/api/twofactor/:id/reject", handlers.RejectApproval(authClient))
 	r.POST("/api/mobile/push-token", handlers.RegisterMobilePushToken(authClient))
 	r.DELETE("/api/mobile/push-token", handlers.UnregisterMobilePushToken(authClient))

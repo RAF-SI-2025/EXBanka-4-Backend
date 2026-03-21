@@ -358,3 +358,18 @@ func (s *AccountServer) CreateAccount(ctx context.Context, req *pb.CreateAccount
 		},
 	}, nil
 }
+
+func (s *AccountServer) UpdateAccountLimits(ctx context.Context, req *pb.UpdateAccountLimitsRequest) (*pb.UpdateAccountLimitsResponse, error) {
+	res, err := s.DB.ExecContext(ctx,
+		`UPDATE accounts SET daily_limit = $1, monthly_limit = $2 WHERE id = $3 AND owner_id = $4`,
+		req.DailyLimit, req.MonthlyLimit, req.AccountId, req.OwnerId,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update limits: %v", err)
+	}
+	rows, _ := res.RowsAffected()
+	if rows == 0 {
+		return nil, status.Errorf(codes.NotFound, "account not found or access denied")
+	}
+	return &pb.UpdateAccountLimitsResponse{}, nil
+}

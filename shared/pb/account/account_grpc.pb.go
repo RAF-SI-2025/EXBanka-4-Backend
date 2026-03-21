@@ -19,11 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AccountService_CreateAccount_FullMethodName  = "/account.AccountService/CreateAccount"
-	AccountService_GetMyAccounts_FullMethodName  = "/account.AccountService/GetMyAccounts"
-	AccountService_GetAccount_FullMethodName     = "/account.AccountService/GetAccount"
-	AccountService_RenameAccount_FullMethodName  = "/account.AccountService/RenameAccount"
-	AccountService_GetAllAccounts_FullMethodName = "/account.AccountService/GetAllAccounts"
+	AccountService_CreateAccount_FullMethodName       = "/account.AccountService/CreateAccount"
+	AccountService_GetMyAccounts_FullMethodName       = "/account.AccountService/GetMyAccounts"
+	AccountService_GetAccount_FullMethodName          = "/account.AccountService/GetAccount"
+	AccountService_RenameAccount_FullMethodName       = "/account.AccountService/RenameAccount"
+	AccountService_GetAllAccounts_FullMethodName      = "/account.AccountService/GetAllAccounts"
+	AccountService_UpdateAccountLimits_FullMethodName = "/account.AccountService/UpdateAccountLimits"
 )
 
 // AccountServiceClient is the client API for AccountService service.
@@ -35,6 +36,7 @@ type AccountServiceClient interface {
 	GetAccount(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*GetAccountResponse, error)
 	RenameAccount(ctx context.Context, in *RenameAccountRequest, opts ...grpc.CallOption) (*RenameAccountResponse, error)
 	GetAllAccounts(ctx context.Context, in *GetAllAccountsRequest, opts ...grpc.CallOption) (*GetAllAccountsResponse, error)
+	UpdateAccountLimits(ctx context.Context, in *UpdateAccountLimitsRequest, opts ...grpc.CallOption) (*UpdateAccountLimitsResponse, error)
 }
 
 type accountServiceClient struct {
@@ -95,6 +97,16 @@ func (c *accountServiceClient) GetAllAccounts(ctx context.Context, in *GetAllAcc
 	return out, nil
 }
 
+func (c *accountServiceClient) UpdateAccountLimits(ctx context.Context, in *UpdateAccountLimitsRequest, opts ...grpc.CallOption) (*UpdateAccountLimitsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateAccountLimitsResponse)
+	err := c.cc.Invoke(ctx, AccountService_UpdateAccountLimits_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AccountServiceServer is the server API for AccountService service.
 // All implementations must embed UnimplementedAccountServiceServer
 // for forward compatibility.
@@ -104,6 +116,7 @@ type AccountServiceServer interface {
 	GetAccount(context.Context, *GetAccountRequest) (*GetAccountResponse, error)
 	RenameAccount(context.Context, *RenameAccountRequest) (*RenameAccountResponse, error)
 	GetAllAccounts(context.Context, *GetAllAccountsRequest) (*GetAllAccountsResponse, error)
+	UpdateAccountLimits(context.Context, *UpdateAccountLimitsRequest) (*UpdateAccountLimitsResponse, error)
 	mustEmbedUnimplementedAccountServiceServer()
 }
 
@@ -128,6 +141,9 @@ func (UnimplementedAccountServiceServer) RenameAccount(context.Context, *RenameA
 }
 func (UnimplementedAccountServiceServer) GetAllAccounts(context.Context, *GetAllAccountsRequest) (*GetAllAccountsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetAllAccounts not implemented")
+}
+func (UnimplementedAccountServiceServer) UpdateAccountLimits(context.Context, *UpdateAccountLimitsRequest) (*UpdateAccountLimitsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateAccountLimits not implemented")
 }
 func (UnimplementedAccountServiceServer) mustEmbedUnimplementedAccountServiceServer() {}
 func (UnimplementedAccountServiceServer) testEmbeddedByValue()                        {}
@@ -240,6 +256,24 @@ func _AccountService_GetAllAccounts_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AccountService_UpdateAccountLimits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateAccountLimitsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountServiceServer).UpdateAccountLimits(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AccountService_UpdateAccountLimits_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountServiceServer).UpdateAccountLimits(ctx, req.(*UpdateAccountLimitsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AccountService_ServiceDesc is the grpc.ServiceDesc for AccountService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -266,6 +300,10 @@ var AccountService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAllAccounts",
 			Handler:    _AccountService_GetAllAccounts_Handler,
+		},
+		{
+			MethodName: "UpdateAccountLimits",
+			Handler:    _AccountService_UpdateAccountLimits_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

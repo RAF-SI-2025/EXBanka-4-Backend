@@ -92,6 +92,14 @@ message RenameAccountRequest {
 
 message RenameAccountResponse {}
 
+message UpdateAccountLimitsRequest {
+  int64  account_id    = 1;
+  int64  owner_id      = 2;
+  double daily_limit   = 3;
+  double monthly_limit = 4;
+}
+message UpdateAccountLimitsResponse {}
+
 message GetAllAccountsRequest {}
 
 message AccountListItem {
@@ -115,5 +123,6 @@ service AccountService {
   rpc GetMyAccounts(GetMyAccountsRequest)     returns (GetMyAccountsResponse);
   rpc GetAccount(GetAccountRequest)           returns (GetAccountResponse);
   rpc RenameAccount(RenameAccountRequest)     returns (RenameAccountResponse);
-  rpc GetAllAccounts(GetAllAccountsRequest)   returns (GetAllAccountsResponse);
+  rpc GetAllAccounts(GetAllAccountsRequest)       returns (GetAllAccountsResponse);
+  rpc UpdateAccountLimits(UpdateAccountLimitsRequest) returns (UpdateAccountLimitsResponse);
 }

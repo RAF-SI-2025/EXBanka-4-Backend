@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
+	pb_account "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/account"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/middleware"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -151,7 +152,7 @@ func GetMyApprovalById(authClient pb.AuthServiceClient) gin.HandlerFunc {
 }
 
 // ApproveApproval approves a pending two-factor approval.
-func ApproveApproval(authClient pb.AuthServiceClient) gin.HandlerFunc {
+func ApproveApproval(authClient pb.AuthServiceClient, accountClient pb_account.AccountServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, err := middleware.GetUserIDFromToken(c)
 		if err != nil {
@@ -178,6 +179,26 @@ func ApproveApproval(authClient pb.AuthServiceClient) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+
+		// Post-approval side effects
+		if resp.Approval.ActionType == "LIMIT_CHANGE" {
+			var payload struct {
+				AccountID    int64   `json:"accountId"`
+				DailyLimit   float64 `json:"dailyLimit"`
+				MonthlyLimit float64 `json:"monthlyLimit"`
+			}
+			if json.Unmarshal([]byte(resp.Approval.Payload), &payload) == nil && payload.AccountID != 0 {
+				limCtx, limCancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer limCancel()
+				_, _ = accountClient.UpdateAccountLimits(limCtx, &pb_account.UpdateAccountLimitsRequest{
+					AccountId:    payload.AccountID,
+					OwnerId:      userID,
+					DailyLimit:   payload.DailyLimit,
+					MonthlyLimit: payload.MonthlyLimit,
+				})
+			}
+		}
+
 		c.JSON(http.StatusOK, toApprovalResp(resp.Approval))
 	}
 }
