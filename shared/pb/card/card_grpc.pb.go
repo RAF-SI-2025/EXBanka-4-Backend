@@ -7,7 +7,10 @@
 package card
 
 import (
+	context "context"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -15,10 +18,27 @@ import (
 // Requires gRPC-Go v1.64.0 or later.
 const _ = grpc.SupportPackageIsVersion9
 
+const (
+	CardService_CreateCard_FullMethodName        = "/card.CardService/CreateCard"
+	CardService_GetCardsByAccount_FullMethodName = "/card.CardService/GetCardsByAccount"
+	CardService_GetCardByNumber_FullMethodName   = "/card.CardService/GetCardByNumber"
+	CardService_BlockCard_FullMethodName         = "/card.CardService/BlockCard"
+	CardService_UnblockCard_FullMethodName       = "/card.CardService/UnblockCard"
+	CardService_DeactivateCard_FullMethodName    = "/card.CardService/DeactivateCard"
+	CardService_UpdateCardLimit_FullMethodName   = "/card.CardService/UpdateCardLimit"
+)
+
 // CardServiceClient is the client API for CardService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CardServiceClient interface {
+	CreateCard(ctx context.Context, in *CreateCardRequest, opts ...grpc.CallOption) (*CreateCardResponse, error)
+	GetCardsByAccount(ctx context.Context, in *GetCardsByAccountRequest, opts ...grpc.CallOption) (*GetCardsByAccountResponse, error)
+	GetCardByNumber(ctx context.Context, in *GetCardByNumberRequest, opts ...grpc.CallOption) (*GetCardByNumberResponse, error)
+	BlockCard(ctx context.Context, in *BlockCardRequest, opts ...grpc.CallOption) (*BlockCardResponse, error)
+	UnblockCard(ctx context.Context, in *UnblockCardRequest, opts ...grpc.CallOption) (*UnblockCardResponse, error)
+	DeactivateCard(ctx context.Context, in *DeactivateCardRequest, opts ...grpc.CallOption) (*DeactivateCardResponse, error)
+	UpdateCardLimit(ctx context.Context, in *UpdateCardLimitRequest, opts ...grpc.CallOption) (*UpdateCardLimitResponse, error)
 }
 
 type cardServiceClient struct {
@@ -29,10 +49,87 @@ func NewCardServiceClient(cc grpc.ClientConnInterface) CardServiceClient {
 	return &cardServiceClient{cc}
 }
 
+func (c *cardServiceClient) CreateCard(ctx context.Context, in *CreateCardRequest, opts ...grpc.CallOption) (*CreateCardResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateCardResponse)
+	err := c.cc.Invoke(ctx, CardService_CreateCard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) GetCardsByAccount(ctx context.Context, in *GetCardsByAccountRequest, opts ...grpc.CallOption) (*GetCardsByAccountResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCardsByAccountResponse)
+	err := c.cc.Invoke(ctx, CardService_GetCardsByAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) GetCardByNumber(ctx context.Context, in *GetCardByNumberRequest, opts ...grpc.CallOption) (*GetCardByNumberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCardByNumberResponse)
+	err := c.cc.Invoke(ctx, CardService_GetCardByNumber_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) BlockCard(ctx context.Context, in *BlockCardRequest, opts ...grpc.CallOption) (*BlockCardResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BlockCardResponse)
+	err := c.cc.Invoke(ctx, CardService_BlockCard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) UnblockCard(ctx context.Context, in *UnblockCardRequest, opts ...grpc.CallOption) (*UnblockCardResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UnblockCardResponse)
+	err := c.cc.Invoke(ctx, CardService_UnblockCard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) DeactivateCard(ctx context.Context, in *DeactivateCardRequest, opts ...grpc.CallOption) (*DeactivateCardResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeactivateCardResponse)
+	err := c.cc.Invoke(ctx, CardService_DeactivateCard_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) UpdateCardLimit(ctx context.Context, in *UpdateCardLimitRequest, opts ...grpc.CallOption) (*UpdateCardLimitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateCardLimitResponse)
+	err := c.cc.Invoke(ctx, CardService_UpdateCardLimit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CardServiceServer is the server API for CardService service.
 // All implementations must embed UnimplementedCardServiceServer
 // for forward compatibility.
 type CardServiceServer interface {
+	CreateCard(context.Context, *CreateCardRequest) (*CreateCardResponse, error)
+	GetCardsByAccount(context.Context, *GetCardsByAccountRequest) (*GetCardsByAccountResponse, error)
+	GetCardByNumber(context.Context, *GetCardByNumberRequest) (*GetCardByNumberResponse, error)
+	BlockCard(context.Context, *BlockCardRequest) (*BlockCardResponse, error)
+	UnblockCard(context.Context, *UnblockCardRequest) (*UnblockCardResponse, error)
+	DeactivateCard(context.Context, *DeactivateCardRequest) (*DeactivateCardResponse, error)
+	UpdateCardLimit(context.Context, *UpdateCardLimitRequest) (*UpdateCardLimitResponse, error)
 	mustEmbedUnimplementedCardServiceServer()
 }
 
@@ -43,6 +140,27 @@ type CardServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedCardServiceServer struct{}
 
+func (UnimplementedCardServiceServer) CreateCard(context.Context, *CreateCardRequest) (*CreateCardResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateCard not implemented")
+}
+func (UnimplementedCardServiceServer) GetCardsByAccount(context.Context, *GetCardsByAccountRequest) (*GetCardsByAccountResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCardsByAccount not implemented")
+}
+func (UnimplementedCardServiceServer) GetCardByNumber(context.Context, *GetCardByNumberRequest) (*GetCardByNumberResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetCardByNumber not implemented")
+}
+func (UnimplementedCardServiceServer) BlockCard(context.Context, *BlockCardRequest) (*BlockCardResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BlockCard not implemented")
+}
+func (UnimplementedCardServiceServer) UnblockCard(context.Context, *UnblockCardRequest) (*UnblockCardResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UnblockCard not implemented")
+}
+func (UnimplementedCardServiceServer) DeactivateCard(context.Context, *DeactivateCardRequest) (*DeactivateCardResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeactivateCard not implemented")
+}
+func (UnimplementedCardServiceServer) UpdateCardLimit(context.Context, *UpdateCardLimitRequest) (*UpdateCardLimitResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateCardLimit not implemented")
+}
 func (UnimplementedCardServiceServer) mustEmbedUnimplementedCardServiceServer() {}
 func (UnimplementedCardServiceServer) testEmbeddedByValue()                     {}
 
@@ -64,13 +182,168 @@ func RegisterCardServiceServer(s grpc.ServiceRegistrar, srv CardServiceServer) {
 	s.RegisterService(&CardService_ServiceDesc, srv)
 }
 
+func _CardService_CreateCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateCardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).CreateCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CardService_CreateCard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).CreateCard(ctx, req.(*CreateCardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_GetCardsByAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCardsByAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).GetCardsByAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CardService_GetCardsByAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).GetCardsByAccount(ctx, req.(*GetCardsByAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_GetCardByNumber_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCardByNumberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).GetCardByNumber(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CardService_GetCardByNumber_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).GetCardByNumber(ctx, req.(*GetCardByNumberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_BlockCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BlockCardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).BlockCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CardService_BlockCard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).BlockCard(ctx, req.(*BlockCardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_UnblockCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnblockCardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).UnblockCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CardService_UnblockCard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).UnblockCard(ctx, req.(*UnblockCardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_DeactivateCard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeactivateCardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).DeactivateCard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CardService_DeactivateCard_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).DeactivateCard(ctx, req.(*DeactivateCardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_UpdateCardLimit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateCardLimitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).UpdateCardLimit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CardService_UpdateCardLimit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).UpdateCardLimit(ctx, req.(*UpdateCardLimitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CardService_ServiceDesc is the grpc.ServiceDesc for CardService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var CardService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "card.CardService",
 	HandlerType: (*CardServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams:     []grpc.StreamDesc{},
-	Metadata:    "card.proto",
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateCard",
+			Handler:    _CardService_CreateCard_Handler,
+		},
+		{
+			MethodName: "GetCardsByAccount",
+			Handler:    _CardService_GetCardsByAccount_Handler,
+		},
+		{
+			MethodName: "GetCardByNumber",
+			Handler:    _CardService_GetCardByNumber_Handler,
+		},
+		{
+			MethodName: "BlockCard",
+			Handler:    _CardService_BlockCard_Handler,
+		},
+		{
+			MethodName: "UnblockCard",
+			Handler:    _CardService_UnblockCard_Handler,
+		},
+		{
+			MethodName: "DeactivateCard",
+			Handler:    _CardService_DeactivateCard_Handler,
+		},
+		{
+			MethodName: "UpdateCardLimit",
+			Handler:    _CardService_UpdateCardLimit_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "card.proto",
 }

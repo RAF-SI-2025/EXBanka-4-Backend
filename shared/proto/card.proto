@@ -4,4 +4,73 @@ package card;
 
 option go_package = "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/card";
 
-service CardService {}
+message AuthorizedPersonData {
+  string first_name    = 1;
+  string last_name     = 2;
+  string date_of_birth = 3; // "YYYY-MM-DD"
+  string gender        = 4;
+  string email         = 5;
+  string phone_number  = 6;
+  string address       = 7;
+}
+
+message CardResponse {
+  int64  id             = 1;
+  string card_number    = 2; // masked in list responses, full in detail
+  string card_type      = 3;
+  string card_name      = 4;
+  string expiry_date    = 5; // "YYYY-MM-DD"
+  string account_number = 6;
+  double card_limit     = 7;
+  string status         = 8;
+  string created_at     = 9;
+  // CVV is never returned
+}
+
+// CreateCard
+message CreateCardRequest {
+  string               account_number    = 1;
+  string               card_name         = 2; // requested brand: VISA | MASTERCARD | DINACARD | AMERICAN_EXPRESS
+  int64                caller_client_id  = 3; // 0 for system/employee-initiated
+  bool                 for_self          = 4; // true = owner card, false = authorized person card
+  AuthorizedPersonData authorized_person = 5; // required when for_self = false
+}
+message CreateCardResponse { CardResponse card = 1; }
+
+// GetCardsByAccount
+message GetCardsByAccountRequest  { string account_number = 1; }
+message GetCardsByAccountResponse { repeated CardResponse cards = 1; }
+
+// GetCardByNumber
+message GetCardByNumberRequest  { string card_number = 1; }
+message GetCardByNumberResponse { CardResponse card = 1; }
+
+// BlockCard
+message BlockCardRequest {
+  string card_number      = 1;
+  int64  caller_client_id = 2; // 0 for employee
+  string caller_role      = 3; // "CLIENT" or "EMPLOYEE"
+}
+message BlockCardResponse {}
+
+// UnblockCard — employee only, enforced at gateway
+message UnblockCardRequest  { string card_number = 1; }
+message UnblockCardResponse {}
+
+// DeactivateCard — employee only, enforced at gateway
+message DeactivateCardRequest  { string card_number = 1; }
+message DeactivateCardResponse {}
+
+// UpdateCardLimit — employee only, enforced at gateway
+message UpdateCardLimitRequest  { string card_number = 1; double new_limit = 2; }
+message UpdateCardLimitResponse {}
+
+service CardService {
+  rpc CreateCard        (CreateCardRequest)        returns (CreateCardResponse);
+  rpc GetCardsByAccount (GetCardsByAccountRequest) returns (GetCardsByAccountResponse);
+  rpc GetCardByNumber   (GetCardByNumberRequest)   returns (GetCardByNumberResponse);
+  rpc BlockCard         (BlockCardRequest)         returns (BlockCardResponse);
+  rpc UnblockCard       (UnblockCardRequest)       returns (UnblockCardResponse);
+  rpc DeactivateCard    (DeactivateCardRequest)    returns (DeactivateCardResponse);
+  rpc UpdateCardLimit   (UpdateCardLimitRequest)   returns (UpdateCardLimitResponse);
+}
