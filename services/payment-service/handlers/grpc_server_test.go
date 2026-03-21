@@ -1086,3 +1086,70 @@ func TestCreateTransfer_PersistError(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, codes.Internal, status.Code(err))
 }
+
+// ---- GetTransfers ----
+
+func TestGetTransfers_NoAccounts(t *testing.T) {
+	s, _, accountMock, _ := newTransferServer(t)
+	accountMock.ExpectQuery("SELECT account_number FROM accounts").
+		WillReturnRows(sqlmock.NewRows([]string{"account_number"}))
+
+	resp, err := s.GetTransfers(context.Background(), &pb.GetTransfersRequest{ClientId: 1})
+	require.NoError(t, err)
+	assert.Empty(t, resp.Transfers)
+}
+
+func TestGetTransfers_AccountsQueryError(t *testing.T) {
+	s, _, accountMock, _ := newTransferServer(t)
+	accountMock.ExpectQuery("SELECT account_number FROM accounts").
+		WillReturnError(sql.ErrConnDone)
+
+	_, err := s.GetTransfers(context.Background(), &pb.GetTransfersRequest{ClientId: 1})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+func TestGetTransfers_HappyPath(t *testing.T) {
+	s, dbMock, accountMock, _ := newTransferServer(t)
+	ts := time.Date(2025, 6, 1, 10, 0, 0, 0, time.UTC)
+
+	accountMock.ExpectQuery("SELECT account_number FROM accounts").
+		WillReturnRows(sqlmock.NewRows([]string{"account_number"}).
+			AddRow("ACC-100").AddRow("ACC-200"))
+
+	dbMock.ExpectQuery("SELECT id, order_number, from_account, to_account").
+		WillReturnRows(sqlmock.NewRows([]string{
+			"id", "order_number", "from_account", "to_account",
+			"initial_amount", "final_amount", "exchange_rate", "fee", "timestamp",
+		}).AddRow(int64(1), "TRF-001", "ACC-100", "ACC-200", 500.0, 500.0, 1.0, 0.0, ts))
+
+	resp, err := s.GetTransfers(context.Background(), &pb.GetTransfersRequest{ClientId: 1})
+	require.NoError(t, err)
+	require.Len(t, resp.Transfers, 1)
+	assert.Equal(t, "TRF-001", resp.Transfers[0].OrderNumber)
+	assert.Equal(t, "ACC-100", resp.Transfers[0].FromAccount)
+	assert.Equal(t, ts.Format(time.RFC3339), resp.Transfers[0].Timestamp)
+}
+
+func TestGetTransfers_TransfersQueryError(t *testing.T) {
+	s, dbMock, accountMock, _ := newTransferServer(t)
+	accountMock.ExpectQuery("SELECT account_number FROM accounts").
+		WillReturnRows(sqlmock.NewRows([]string{"account_number"}).AddRow("ACC-100"))
+	dbMock.ExpectQuery("SELECT id, order_number, from_account, to_account").
+		WillReturnError(sql.ErrConnDone)
+
+	_, err := s.GetTransfers(context.Background(), &pb.GetTransfersRequest{ClientId: 1})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+// ---- DeletePaymentRecipient: UPDATE error path ----
+
+func TestDeletePaymentRecipient_UpdateRefsError(t *testing.T) {
+	s, dbMock, _ := newPaymentServer(t)
+	dbMock.ExpectExec("UPDATE payments SET recipient_id").WillReturnError(sql.ErrConnDone)
+
+	_, err := s.DeletePaymentRecipient(context.Background(), &pb.DeletePaymentRecipientRequest{Id: 1, ClientId: 1})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
