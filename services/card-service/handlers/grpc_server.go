@@ -2,10 +2,14 @@ package handlers
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"math/big"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/card-service/utils"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/card"
 	"google.golang.org/grpc/codes"
@@ -272,6 +276,152 @@ func (s *CardServer) UpdateCardLimit(ctx context.Context, req *pb.UpdateCardLimi
 		return nil, status.Errorf(codes.Internal, "failed to update card limit: %v", err)
 	}
 	return &pb.UpdateCardLimitResponse{}, nil
+}
+
+// ── InitiateCardRequest ───────────────────────────────────────────────────────
+
+func (s *CardServer) InitiateCardRequest(ctx context.Context, req *pb.InitiateCardRequestRequest) (*pb.InitiateCardRequestResponse, error) {
+	if req.AccountNumber == "" || req.CardName == "" {
+		return nil, status.Error(codes.InvalidArgument, "account_number and card_name are required")
+	}
+
+	accountType, err := s.getAccountType(ctx, req.AccountNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	// Pre-check limits (same logic as CreateCard)
+	var existingCount int
+	switch accountType {
+	case "PERSONAL":
+		existingCount, err = s.countAllCards(ctx, req.AccountNumber)
+		if err != nil {
+			return nil, err
+		}
+		if err := utils.CheckCardLimit("PERSONAL", true, existingCount); err != nil {
+			return nil, status.Error(codes.ResourceExhausted, err.Error())
+		}
+	case "BUSINESS":
+		if req.ForSelf {
+			existingCount, err = s.countOwnerCards(ctx, req.AccountNumber)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if err := utils.CheckCardLimit("BUSINESS", req.ForSelf, existingCount); err != nil {
+			return nil, status.Error(codes.ResourceExhausted, err.Error())
+		}
+	}
+
+	// Generate 6-digit confirmation code
+	code, err := generateConfirmationCode()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate code: %v", err)
+	}
+
+	// Serialize authorized person data if present
+	var apDataJSON []byte
+	if !req.ForSelf && req.AuthorizedPerson != nil {
+		apDataJSON, err = json.Marshal(req.AuthorizedPerson)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to serialize authorized person: %v", err)
+		}
+	}
+
+	token := uuid.New().String()
+	expiresAt := time.Now().Add(15 * time.Minute)
+
+	_, err = s.DB.ExecContext(ctx, `
+		INSERT INTO card_requests
+			(request_token, account_number, card_name, caller_client_id, for_self, authorized_person_data, confirmation_code, expires_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		token, req.AccountNumber, req.CardName, req.CallerClientId,
+		req.ForSelf, apDataJSON, code, expiresAt,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to store card request: %v", err)
+	}
+
+	return &pb.InitiateCardRequestResponse{
+		RequestToken:    token,
+		ConfirmationCode: code,
+	}, nil
+}
+
+// ── ConfirmCardRequest ────────────────────────────────────────────────────────
+
+func (s *CardServer) ConfirmCardRequest(ctx context.Context, req *pb.ConfirmCardRequestRequest) (*pb.ConfirmCardRequestResponse, error) {
+	if req.RequestToken == "" || req.Code == "" {
+		return nil, status.Error(codes.InvalidArgument, "request_token and code are required")
+	}
+
+	var (
+		accountNumber   string
+		cardName        string
+		callerClientID  int64
+		forSelf         bool
+		apDataJSON      []byte
+		storedCode      string
+		expiresAt       time.Time
+		used            bool
+	)
+	err := s.DB.QueryRowContext(ctx, `
+		SELECT account_number, card_name, caller_client_id, for_self,
+		       authorized_person_data, confirmation_code, expires_at, used
+		FROM card_requests WHERE request_token = $1`, req.RequestToken,
+	).Scan(&accountNumber, &cardName, &callerClientID, &forSelf,
+		&apDataJSON, &storedCode, &expiresAt, &used)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "card request not found")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch card request: %v", err)
+	}
+	if used {
+		return nil, status.Error(codes.FailedPrecondition, "confirmation code already used")
+	}
+	if time.Now().After(expiresAt) {
+		return nil, status.Error(codes.FailedPrecondition, "confirmation code expired")
+	}
+	if req.Code != storedCode {
+		return nil, status.Error(codes.PermissionDenied, "invalid confirmation code")
+	}
+
+	// Mark as used
+	if _, err := s.DB.ExecContext(ctx, `UPDATE card_requests SET used = true WHERE request_token = $1`, req.RequestToken); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to mark request as used: %v", err)
+	}
+
+	// Reconstruct AuthorizedPersonData if needed
+	var apData *pb.AuthorizedPersonData
+	if !forSelf && len(apDataJSON) > 0 {
+		apData = &pb.AuthorizedPersonData{}
+		if err := json.Unmarshal(apDataJSON, apData); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to deserialize authorized person: %v", err)
+		}
+	}
+
+	// Delegate to CreateCard
+	createResp, err := s.CreateCard(ctx, &pb.CreateCardRequest{
+		AccountNumber:   accountNumber,
+		CardName:        cardName,
+		CallerClientId:  callerClientID,
+		ForSelf:         forSelf,
+		AuthorizedPerson: apData,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ConfirmCardRequestResponse{Card: createResp.Card}, nil
+}
+
+// generateConfirmationCode returns a random 6-digit string (with leading zeros).
+func generateConfirmationCode() (string, error) {
+	n, err := rand.Int(rand.Reader, big.NewInt(1_000_000))
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%06d", n.Int64()), nil
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

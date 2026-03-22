@@ -16,6 +16,7 @@ type Publisher interface {
 	PublishPasswordReset(msg queue.PasswordResetMessage) error
 	PublishPasswordConfirmation(msg queue.PasswordConfirmationMessage) error
 	PublishAccountCreated(msg queue.AccountCreatedMessage) error
+	PublishCardConfirmation(msg queue.CardConfirmationMessage) error
 }
 
 type EmailServer struct {
@@ -82,4 +83,19 @@ func (s *EmailServer) SendPasswordConfirmationEmail(_ context.Context, req *pb.S
 		return nil, status.Errorf(codes.Internal, "failed to enqueue email: %v", err)
 	}
 	return &pb.SendActivationEmailResponse{}, nil
+}
+
+func (s *EmailServer) SendCardConfirmationEmail(_ context.Context, req *pb.SendCardConfirmationEmailRequest) (*pb.SendCardConfirmationEmailResponse, error) {
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email address: %v", err)
+	}
+	err := s.Producer.PublishCardConfirmation(queue.CardConfirmationMessage{
+		Email:            req.Email,
+		FirstName:        req.FirstName,
+		ConfirmationCode: req.ConfirmationCode,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to enqueue email: %v", err)
+	}
+	return &pb.SendCardConfirmationEmailResponse{}, nil
 }

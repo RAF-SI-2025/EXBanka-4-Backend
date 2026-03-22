@@ -325,6 +325,102 @@ func (*SendAccountCreatedEmailResponse) Descriptor() ([]byte, []int) {
 	return file_email_proto_rawDescGZIP(), []int{5}
 }
 
+type SendCardConfirmationEmailRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Email            string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	FirstName        string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	ConfirmationCode string                 `protobuf:"bytes,3,opt,name=confirmation_code,json=confirmationCode,proto3" json:"confirmation_code,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *SendCardConfirmationEmailRequest) Reset() {
+	*x = SendCardConfirmationEmailRequest{}
+	mi := &file_email_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendCardConfirmationEmailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendCardConfirmationEmailRequest) ProtoMessage() {}
+
+func (x *SendCardConfirmationEmailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_email_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendCardConfirmationEmailRequest.ProtoReflect.Descriptor instead.
+func (*SendCardConfirmationEmailRequest) Descriptor() ([]byte, []int) {
+	return file_email_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SendCardConfirmationEmailRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *SendCardConfirmationEmailRequest) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *SendCardConfirmationEmailRequest) GetConfirmationCode() string {
+	if x != nil {
+		return x.ConfirmationCode
+	}
+	return ""
+}
+
+type SendCardConfirmationEmailResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendCardConfirmationEmailResponse) Reset() {
+	*x = SendCardConfirmationEmailResponse{}
+	mi := &file_email_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendCardConfirmationEmailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendCardConfirmationEmailResponse) ProtoMessage() {}
+
+func (x *SendCardConfirmationEmailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_email_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendCardConfirmationEmailResponse.ProtoReflect.Descriptor instead.
+func (*SendCardConfirmationEmailResponse) Descriptor() ([]byte, []int) {
+	return file_email_proto_rawDescGZIP(), []int{7}
+}
+
 var File_email_proto protoreflect.FileDescriptor
 
 const file_email_proto_rawDesc = "" +
@@ -350,12 +446,19 @@ const file_email_proto_rawDesc = "" +
 	"\faccount_name\x18\x03 \x01(\tR\vaccountName\x12%\n" +
 	"\x0eaccount_number\x18\x04 \x01(\tR\raccountNumber\x12#\n" +
 	"\rcurrency_code\x18\x05 \x01(\tR\fcurrencyCode\"!\n" +
-	"\x1fSendAccountCreatedEmailResponse2\xa5\x03\n" +
+	"\x1fSendAccountCreatedEmailResponse\"\x84\x01\n" +
+	" SendCardConfirmationEmailRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\x02 \x01(\tR\tfirstName\x12+\n" +
+	"\x11confirmation_code\x18\x03 \x01(\tR\x10confirmationCode\"#\n" +
+	"!SendCardConfirmationEmailResponse2\x95\x04\n" +
 	"\fEmailService\x12\\\n" +
 	"\x13SendActivationEmail\x12!.email.SendActivationEmailRequest\x1a\".email.SendActivationEmailResponse\x12e\n" +
 	"\x16SendPasswordResetEmail\x12$.email.SendPasswordResetEmailRequest\x1a%.email.SendPasswordResetEmailResponse\x12f\n" +
 	"\x1dSendPasswordConfirmationEmail\x12!.email.SendActivationEmailRequest\x1a\".email.SendActivationEmailResponse\x12h\n" +
-	"\x17SendAccountCreatedEmail\x12%.email.SendAccountCreatedEmailRequest\x1a&.email.SendAccountCreatedEmailResponseB:Z8github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/emailb\x06proto3"
+	"\x17SendAccountCreatedEmail\x12%.email.SendAccountCreatedEmailRequest\x1a&.email.SendAccountCreatedEmailResponse\x12n\n" +
+	"\x19SendCardConfirmationEmail\x12'.email.SendCardConfirmationEmailRequest\x1a(.email.SendCardConfirmationEmailResponseB:Z8github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/emailb\x06proto3"
 
 var (
 	file_email_proto_rawDescOnce sync.Once
@@ -369,26 +472,30 @@ func file_email_proto_rawDescGZIP() []byte {
 	return file_email_proto_rawDescData
 }
 
-var file_email_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_email_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_email_proto_goTypes = []any{
-	(*SendActivationEmailRequest)(nil),      // 0: email.SendActivationEmailRequest
-	(*SendActivationEmailResponse)(nil),     // 1: email.SendActivationEmailResponse
-	(*SendPasswordResetEmailRequest)(nil),   // 2: email.SendPasswordResetEmailRequest
-	(*SendPasswordResetEmailResponse)(nil),  // 3: email.SendPasswordResetEmailResponse
-	(*SendAccountCreatedEmailRequest)(nil),  // 4: email.SendAccountCreatedEmailRequest
-	(*SendAccountCreatedEmailResponse)(nil), // 5: email.SendAccountCreatedEmailResponse
+	(*SendActivationEmailRequest)(nil),        // 0: email.SendActivationEmailRequest
+	(*SendActivationEmailResponse)(nil),       // 1: email.SendActivationEmailResponse
+	(*SendPasswordResetEmailRequest)(nil),     // 2: email.SendPasswordResetEmailRequest
+	(*SendPasswordResetEmailResponse)(nil),    // 3: email.SendPasswordResetEmailResponse
+	(*SendAccountCreatedEmailRequest)(nil),    // 4: email.SendAccountCreatedEmailRequest
+	(*SendAccountCreatedEmailResponse)(nil),   // 5: email.SendAccountCreatedEmailResponse
+	(*SendCardConfirmationEmailRequest)(nil),  // 6: email.SendCardConfirmationEmailRequest
+	(*SendCardConfirmationEmailResponse)(nil), // 7: email.SendCardConfirmationEmailResponse
 }
 var file_email_proto_depIdxs = []int32{
 	0, // 0: email.EmailService.SendActivationEmail:input_type -> email.SendActivationEmailRequest
 	2, // 1: email.EmailService.SendPasswordResetEmail:input_type -> email.SendPasswordResetEmailRequest
 	0, // 2: email.EmailService.SendPasswordConfirmationEmail:input_type -> email.SendActivationEmailRequest
 	4, // 3: email.EmailService.SendAccountCreatedEmail:input_type -> email.SendAccountCreatedEmailRequest
-	1, // 4: email.EmailService.SendActivationEmail:output_type -> email.SendActivationEmailResponse
-	3, // 5: email.EmailService.SendPasswordResetEmail:output_type -> email.SendPasswordResetEmailResponse
-	1, // 6: email.EmailService.SendPasswordConfirmationEmail:output_type -> email.SendActivationEmailResponse
-	5, // 7: email.EmailService.SendAccountCreatedEmail:output_type -> email.SendAccountCreatedEmailResponse
-	4, // [4:8] is the sub-list for method output_type
-	0, // [0:4] is the sub-list for method input_type
+	6, // 4: email.EmailService.SendCardConfirmationEmail:input_type -> email.SendCardConfirmationEmailRequest
+	1, // 5: email.EmailService.SendActivationEmail:output_type -> email.SendActivationEmailResponse
+	3, // 6: email.EmailService.SendPasswordResetEmail:output_type -> email.SendPasswordResetEmailResponse
+	1, // 7: email.EmailService.SendPasswordConfirmationEmail:output_type -> email.SendActivationEmailResponse
+	5, // 8: email.EmailService.SendAccountCreatedEmail:output_type -> email.SendAccountCreatedEmailResponse
+	7, // 9: email.EmailService.SendCardConfirmationEmail:output_type -> email.SendCardConfirmationEmailResponse
+	5, // [5:10] is the sub-list for method output_type
+	0, // [0:5] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -405,7 +512,7 @@ func file_email_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_email_proto_rawDesc), len(file_email_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

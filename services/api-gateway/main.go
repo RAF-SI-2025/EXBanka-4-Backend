@@ -65,7 +65,7 @@ func main() {
 	}
 	defer loanConn.Close()
 
-	_, cardConn, err := gwgrpc.NewCardClient("localhost:50059")
+	cardClient, cardConn, err := gwgrpc.NewCardClient("localhost:50059")
 	if err != nil {
 		log.Fatalf("failed to connect to card-service: %v", err)
 	}
@@ -143,6 +143,14 @@ func main() {
 	r.PUT("/admin/loans/:id/approve", middleware.RequireRole("ADMIN"), handlers.ApproveLoan(loanClient))
 	r.PUT("/admin/loans/:id/reject", middleware.RequireRole("ADMIN"), handlers.RejectLoan(loanClient))
 	r.GET("/admin/loans", middleware.RequireRole("ADMIN"), handlers.GetAllLoans(loanClient))
+	r.GET("/cards", handlers.GetMyCards(accountClient, cardClient))
+	r.POST("/cards/request", handlers.InitiateCardRequest(cardClient, clientClient, emailClient))
+	r.POST("/cards/request/confirm", handlers.ConfirmCardRequest(cardClient))
+	r.GET("/cards/:number", handlers.GetCardByNumber(cardClient))
+	r.PUT("/cards/:number/block", handlers.BlockCard(cardClient))
+	r.PUT("/cards/:number/unblock", middleware.RequireRole("EMPLOYEE"), handlers.UnblockCard(cardClient))
+	r.PUT("/cards/:number/deactivate", middleware.RequireRole("EMPLOYEE"), handlers.DeactivateCard(cardClient))
+	r.PUT("/cards/:number/limit", middleware.RequireRole("EMPLOYEE"), handlers.UpdateCardLimit(cardClient))
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run(":8083")
 }

@@ -29,10 +29,18 @@ message SendAccountCreatedEmailRequest {
 
 message SendAccountCreatedEmailResponse {}
 
+message SendCardConfirmationEmailRequest {
+  string email            = 1;
+  string first_name       = 2;
+  string confirmation_code = 3;
+}
+message SendCardConfirmationEmailResponse {}
+
 service EmailService {
-  rpc SendActivationEmail(SendActivationEmailRequest)           returns (SendActivationEmailResponse);
-  rpc SendPasswordResetEmail(SendPasswordResetEmailRequest)     returns (SendPasswordResetEmailResponse);
+  rpc SendActivationEmail(SendActivationEmailRequest)                 returns (SendActivationEmailResponse);
+  rpc SendPasswordResetEmail(SendPasswordResetEmailRequest)           returns (SendPasswordResetEmailResponse);
   // Reuses SendActivationEmailRequest (email + first_name); activation_link left empty.
-  rpc SendPasswordConfirmationEmail(SendActivationEmailRequest) returns (SendActivationEmailResponse);
-  rpc SendAccountCreatedEmail(SendAccountCreatedEmailRequest)   returns (SendAccountCreatedEmailResponse);
+  rpc SendPasswordConfirmationEmail(SendActivationEmailRequest)       returns (SendActivationEmailResponse);
+  rpc SendAccountCreatedEmail(SendAccountCreatedEmailRequest)         returns (SendAccountCreatedEmailResponse);
+  rpc SendCardConfirmationEmail(SendCardConfirmationEmailRequest)     returns (SendCardConfirmationEmailResponse);
 }

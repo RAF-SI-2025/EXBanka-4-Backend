@@ -868,6 +868,232 @@ func (*UpdateCardLimitResponse) Descriptor() ([]byte, []int) {
 	return file_card_proto_rawDescGZIP(), []int{15}
 }
 
+// InitiateCardRequest — check limits, store pending request, return token + code for email
+type InitiateCardRequestRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	AccountNumber    string                 `protobuf:"bytes,1,opt,name=account_number,json=accountNumber,proto3" json:"account_number,omitempty"`
+	CardName         string                 `protobuf:"bytes,2,opt,name=card_name,json=cardName,proto3" json:"card_name,omitempty"`
+	CallerClientId   int64                  `protobuf:"varint,3,opt,name=caller_client_id,json=callerClientId,proto3" json:"caller_client_id,omitempty"`
+	ForSelf          bool                   `protobuf:"varint,4,opt,name=for_self,json=forSelf,proto3" json:"for_self,omitempty"`
+	AuthorizedPerson *AuthorizedPersonData  `protobuf:"bytes,5,opt,name=authorized_person,json=authorizedPerson,proto3" json:"authorized_person,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *InitiateCardRequestRequest) Reset() {
+	*x = InitiateCardRequestRequest{}
+	mi := &file_card_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InitiateCardRequestRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InitiateCardRequestRequest) ProtoMessage() {}
+
+func (x *InitiateCardRequestRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_card_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InitiateCardRequestRequest.ProtoReflect.Descriptor instead.
+func (*InitiateCardRequestRequest) Descriptor() ([]byte, []int) {
+	return file_card_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *InitiateCardRequestRequest) GetAccountNumber() string {
+	if x != nil {
+		return x.AccountNumber
+	}
+	return ""
+}
+
+func (x *InitiateCardRequestRequest) GetCardName() string {
+	if x != nil {
+		return x.CardName
+	}
+	return ""
+}
+
+func (x *InitiateCardRequestRequest) GetCallerClientId() int64 {
+	if x != nil {
+		return x.CallerClientId
+	}
+	return 0
+}
+
+func (x *InitiateCardRequestRequest) GetForSelf() bool {
+	if x != nil {
+		return x.ForSelf
+	}
+	return false
+}
+
+func (x *InitiateCardRequestRequest) GetAuthorizedPerson() *AuthorizedPersonData {
+	if x != nil {
+		return x.AuthorizedPerson
+	}
+	return nil
+}
+
+type InitiateCardRequestResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	RequestToken     string                 `protobuf:"bytes,1,opt,name=request_token,json=requestToken,proto3" json:"request_token,omitempty"`
+	ConfirmationCode string                 `protobuf:"bytes,2,opt,name=confirmation_code,json=confirmationCode,proto3" json:"confirmation_code,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *InitiateCardRequestResponse) Reset() {
+	*x = InitiateCardRequestResponse{}
+	mi := &file_card_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InitiateCardRequestResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InitiateCardRequestResponse) ProtoMessage() {}
+
+func (x *InitiateCardRequestResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_card_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InitiateCardRequestResponse.ProtoReflect.Descriptor instead.
+func (*InitiateCardRequestResponse) Descriptor() ([]byte, []int) {
+	return file_card_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *InitiateCardRequestResponse) GetRequestToken() string {
+	if x != nil {
+		return x.RequestToken
+	}
+	return ""
+}
+
+func (x *InitiateCardRequestResponse) GetConfirmationCode() string {
+	if x != nil {
+		return x.ConfirmationCode
+	}
+	return ""
+}
+
+// ConfirmCardRequest — verify code and create the card
+type ConfirmCardRequestRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RequestToken  string                 `protobuf:"bytes,1,opt,name=request_token,json=requestToken,proto3" json:"request_token,omitempty"`
+	Code          string                 `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConfirmCardRequestRequest) Reset() {
+	*x = ConfirmCardRequestRequest{}
+	mi := &file_card_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConfirmCardRequestRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConfirmCardRequestRequest) ProtoMessage() {}
+
+func (x *ConfirmCardRequestRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_card_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConfirmCardRequestRequest.ProtoReflect.Descriptor instead.
+func (*ConfirmCardRequestRequest) Descriptor() ([]byte, []int) {
+	return file_card_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ConfirmCardRequestRequest) GetRequestToken() string {
+	if x != nil {
+		return x.RequestToken
+	}
+	return ""
+}
+
+func (x *ConfirmCardRequestRequest) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+type ConfirmCardRequestResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Card          *CardResponse          `protobuf:"bytes,1,opt,name=card,proto3" json:"card,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConfirmCardRequestResponse) Reset() {
+	*x = ConfirmCardRequestResponse{}
+	mi := &file_card_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConfirmCardRequestResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConfirmCardRequestResponse) ProtoMessage() {}
+
+func (x *ConfirmCardRequestResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_card_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConfirmCardRequestResponse.ProtoReflect.Descriptor instead.
+func (*ConfirmCardRequestResponse) Descriptor() ([]byte, []int) {
+	return file_card_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *ConfirmCardRequestResponse) GetCard() *CardResponse {
+	if x != nil {
+		return x.Card
+	}
+	return nil
+}
+
 var File_card_proto protoreflect.FileDescriptor
 
 const file_card_proto_rawDesc = "" +
@@ -933,7 +1159,21 @@ const file_card_proto_rawDesc = "" +
 	"\vcard_number\x18\x01 \x01(\tR\n" +
 	"cardNumber\x12\x1b\n" +
 	"\tnew_limit\x18\x02 \x01(\x01R\bnewLimit\"\x19\n" +
-	"\x17UpdateCardLimitResponse2\x93\x04\n" +
+	"\x17UpdateCardLimitResponse\"\xee\x01\n" +
+	"\x1aInitiateCardRequestRequest\x12%\n" +
+	"\x0eaccount_number\x18\x01 \x01(\tR\raccountNumber\x12\x1b\n" +
+	"\tcard_name\x18\x02 \x01(\tR\bcardName\x12(\n" +
+	"\x10caller_client_id\x18\x03 \x01(\x03R\x0ecallerClientId\x12\x19\n" +
+	"\bfor_self\x18\x04 \x01(\bR\aforSelf\x12G\n" +
+	"\x11authorized_person\x18\x05 \x01(\v2\x1a.card.AuthorizedPersonDataR\x10authorizedPerson\"o\n" +
+	"\x1bInitiateCardRequestResponse\x12#\n" +
+	"\rrequest_token\x18\x01 \x01(\tR\frequestToken\x12+\n" +
+	"\x11confirmation_code\x18\x02 \x01(\tR\x10confirmationCode\"T\n" +
+	"\x19ConfirmCardRequestRequest\x12#\n" +
+	"\rrequest_token\x18\x01 \x01(\tR\frequestToken\x12\x12\n" +
+	"\x04code\x18\x02 \x01(\tR\x04code\"D\n" +
+	"\x1aConfirmCardRequestResponse\x12&\n" +
+	"\x04card\x18\x01 \x01(\v2\x12.card.CardResponseR\x04card2\xc8\x05\n" +
 	"\vCardService\x12?\n" +
 	"\n" +
 	"CreateCard\x12\x17.card.CreateCardRequest\x1a\x18.card.CreateCardResponse\x12T\n" +
@@ -942,7 +1182,9 @@ const file_card_proto_rawDesc = "" +
 	"\tBlockCard\x12\x16.card.BlockCardRequest\x1a\x17.card.BlockCardResponse\x12B\n" +
 	"\vUnblockCard\x12\x18.card.UnblockCardRequest\x1a\x19.card.UnblockCardResponse\x12K\n" +
 	"\x0eDeactivateCard\x12\x1b.card.DeactivateCardRequest\x1a\x1c.card.DeactivateCardResponse\x12N\n" +
-	"\x0fUpdateCardLimit\x12\x1c.card.UpdateCardLimitRequest\x1a\x1d.card.UpdateCardLimitResponseB9Z7github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/cardb\x06proto3"
+	"\x0fUpdateCardLimit\x12\x1c.card.UpdateCardLimitRequest\x1a\x1d.card.UpdateCardLimitResponse\x12Z\n" +
+	"\x13InitiateCardRequest\x12 .card.InitiateCardRequestRequest\x1a!.card.InitiateCardRequestResponse\x12W\n" +
+	"\x12ConfirmCardRequest\x12\x1f.card.ConfirmCardRequestRequest\x1a .card.ConfirmCardRequestResponseB9Z7github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/cardb\x06proto3"
 
 var (
 	file_card_proto_rawDescOnce sync.Once
@@ -956,49 +1198,59 @@ func file_card_proto_rawDescGZIP() []byte {
 	return file_card_proto_rawDescData
 }
 
-var file_card_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_card_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_card_proto_goTypes = []any{
-	(*AuthorizedPersonData)(nil),      // 0: card.AuthorizedPersonData
-	(*CardResponse)(nil),              // 1: card.CardResponse
-	(*CreateCardRequest)(nil),         // 2: card.CreateCardRequest
-	(*CreateCardResponse)(nil),        // 3: card.CreateCardResponse
-	(*GetCardsByAccountRequest)(nil),  // 4: card.GetCardsByAccountRequest
-	(*GetCardsByAccountResponse)(nil), // 5: card.GetCardsByAccountResponse
-	(*GetCardByNumberRequest)(nil),    // 6: card.GetCardByNumberRequest
-	(*GetCardByNumberResponse)(nil),   // 7: card.GetCardByNumberResponse
-	(*BlockCardRequest)(nil),          // 8: card.BlockCardRequest
-	(*BlockCardResponse)(nil),         // 9: card.BlockCardResponse
-	(*UnblockCardRequest)(nil),        // 10: card.UnblockCardRequest
-	(*UnblockCardResponse)(nil),       // 11: card.UnblockCardResponse
-	(*DeactivateCardRequest)(nil),     // 12: card.DeactivateCardRequest
-	(*DeactivateCardResponse)(nil),    // 13: card.DeactivateCardResponse
-	(*UpdateCardLimitRequest)(nil),    // 14: card.UpdateCardLimitRequest
-	(*UpdateCardLimitResponse)(nil),   // 15: card.UpdateCardLimitResponse
+	(*AuthorizedPersonData)(nil),        // 0: card.AuthorizedPersonData
+	(*CardResponse)(nil),                // 1: card.CardResponse
+	(*CreateCardRequest)(nil),           // 2: card.CreateCardRequest
+	(*CreateCardResponse)(nil),          // 3: card.CreateCardResponse
+	(*GetCardsByAccountRequest)(nil),    // 4: card.GetCardsByAccountRequest
+	(*GetCardsByAccountResponse)(nil),   // 5: card.GetCardsByAccountResponse
+	(*GetCardByNumberRequest)(nil),      // 6: card.GetCardByNumberRequest
+	(*GetCardByNumberResponse)(nil),     // 7: card.GetCardByNumberResponse
+	(*BlockCardRequest)(nil),            // 8: card.BlockCardRequest
+	(*BlockCardResponse)(nil),           // 9: card.BlockCardResponse
+	(*UnblockCardRequest)(nil),          // 10: card.UnblockCardRequest
+	(*UnblockCardResponse)(nil),         // 11: card.UnblockCardResponse
+	(*DeactivateCardRequest)(nil),       // 12: card.DeactivateCardRequest
+	(*DeactivateCardResponse)(nil),      // 13: card.DeactivateCardResponse
+	(*UpdateCardLimitRequest)(nil),      // 14: card.UpdateCardLimitRequest
+	(*UpdateCardLimitResponse)(nil),     // 15: card.UpdateCardLimitResponse
+	(*InitiateCardRequestRequest)(nil),  // 16: card.InitiateCardRequestRequest
+	(*InitiateCardRequestResponse)(nil), // 17: card.InitiateCardRequestResponse
+	(*ConfirmCardRequestRequest)(nil),   // 18: card.ConfirmCardRequestRequest
+	(*ConfirmCardRequestResponse)(nil),  // 19: card.ConfirmCardRequestResponse
 }
 var file_card_proto_depIdxs = []int32{
 	0,  // 0: card.CreateCardRequest.authorized_person:type_name -> card.AuthorizedPersonData
 	1,  // 1: card.CreateCardResponse.card:type_name -> card.CardResponse
 	1,  // 2: card.GetCardsByAccountResponse.cards:type_name -> card.CardResponse
 	1,  // 3: card.GetCardByNumberResponse.card:type_name -> card.CardResponse
-	2,  // 4: card.CardService.CreateCard:input_type -> card.CreateCardRequest
-	4,  // 5: card.CardService.GetCardsByAccount:input_type -> card.GetCardsByAccountRequest
-	6,  // 6: card.CardService.GetCardByNumber:input_type -> card.GetCardByNumberRequest
-	8,  // 7: card.CardService.BlockCard:input_type -> card.BlockCardRequest
-	10, // 8: card.CardService.UnblockCard:input_type -> card.UnblockCardRequest
-	12, // 9: card.CardService.DeactivateCard:input_type -> card.DeactivateCardRequest
-	14, // 10: card.CardService.UpdateCardLimit:input_type -> card.UpdateCardLimitRequest
-	3,  // 11: card.CardService.CreateCard:output_type -> card.CreateCardResponse
-	5,  // 12: card.CardService.GetCardsByAccount:output_type -> card.GetCardsByAccountResponse
-	7,  // 13: card.CardService.GetCardByNumber:output_type -> card.GetCardByNumberResponse
-	9,  // 14: card.CardService.BlockCard:output_type -> card.BlockCardResponse
-	11, // 15: card.CardService.UnblockCard:output_type -> card.UnblockCardResponse
-	13, // 16: card.CardService.DeactivateCard:output_type -> card.DeactivateCardResponse
-	15, // 17: card.CardService.UpdateCardLimit:output_type -> card.UpdateCardLimitResponse
-	11, // [11:18] is the sub-list for method output_type
-	4,  // [4:11] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	0,  // 4: card.InitiateCardRequestRequest.authorized_person:type_name -> card.AuthorizedPersonData
+	1,  // 5: card.ConfirmCardRequestResponse.card:type_name -> card.CardResponse
+	2,  // 6: card.CardService.CreateCard:input_type -> card.CreateCardRequest
+	4,  // 7: card.CardService.GetCardsByAccount:input_type -> card.GetCardsByAccountRequest
+	6,  // 8: card.CardService.GetCardByNumber:input_type -> card.GetCardByNumberRequest
+	8,  // 9: card.CardService.BlockCard:input_type -> card.BlockCardRequest
+	10, // 10: card.CardService.UnblockCard:input_type -> card.UnblockCardRequest
+	12, // 11: card.CardService.DeactivateCard:input_type -> card.DeactivateCardRequest
+	14, // 12: card.CardService.UpdateCardLimit:input_type -> card.UpdateCardLimitRequest
+	16, // 13: card.CardService.InitiateCardRequest:input_type -> card.InitiateCardRequestRequest
+	18, // 14: card.CardService.ConfirmCardRequest:input_type -> card.ConfirmCardRequestRequest
+	3,  // 15: card.CardService.CreateCard:output_type -> card.CreateCardResponse
+	5,  // 16: card.CardService.GetCardsByAccount:output_type -> card.GetCardsByAccountResponse
+	7,  // 17: card.CardService.GetCardByNumber:output_type -> card.GetCardByNumberResponse
+	9,  // 18: card.CardService.BlockCard:output_type -> card.BlockCardResponse
+	11, // 19: card.CardService.UnblockCard:output_type -> card.UnblockCardResponse
+	13, // 20: card.CardService.DeactivateCard:output_type -> card.DeactivateCardResponse
+	15, // 21: card.CardService.UpdateCardLimit:output_type -> card.UpdateCardLimitResponse
+	17, // 22: card.CardService.InitiateCardRequest:output_type -> card.InitiateCardRequestResponse
+	19, // 23: card.CardService.ConfirmCardRequest:output_type -> card.ConfirmCardRequestResponse
+	15, // [15:24] is the sub-list for method output_type
+	6,  // [6:15] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_card_proto_init() }
@@ -1012,7 +1264,7 @@ func file_card_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_card_proto_rawDesc), len(file_card_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

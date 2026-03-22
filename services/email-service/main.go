@@ -84,6 +84,12 @@ func main() {
 	}
 	defer accountCreatedConsumeCh.Close()
 
+	cardConfirmConsumeCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to open card confirmation consume channel: %v", err)
+	}
+	defer cardConfirmConsumeCh.Close()
+
 	producer, err := queue.NewProducer(publishCh)
 	if err != nil {
 		log.Fatalf("failed to create producer: %v", err)
@@ -113,6 +119,7 @@ func main() {
 	go queue.ConsumePasswordReset(resetConsumeCh, smtpCfg, resetTmpl)
 	go queue.ConsumePasswordConfirmation(confirmConsumeCh, smtpCfg, confirmTmpl)
 	go queue.ConsumeAccountCreated(accountCreatedConsumeCh, smtpCfg, accountCreatedTmpl)
+	go queue.ConsumeCardConfirmation(cardConfirmConsumeCh, smtpCfg, nil)
 
 	lis, err := net.Listen("tcp", ":50053")
 	if err != nil {

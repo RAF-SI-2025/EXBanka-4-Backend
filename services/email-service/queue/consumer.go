@@ -163,6 +163,51 @@ func sendAccountCreatedEmail(cfg SMTPConfig, tmpl *template.Template, msg Accoun
 	return d.DialAndSend(m)
 }
 
+func ConsumeCardConfirmation(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	if _, err := ch.QueueDeclare(CardConfirmationQueueName, true, false, false, false, nil); err != nil {
+		log.Fatalf("failed to declare card confirmation queue: %v", err)
+	}
+
+	msgs, err := ch.Consume(CardConfirmationQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start card confirmation consumer: %v", err)
+	}
+
+	log.Println("card confirmation email consumer started, waiting for messages")
+
+	for d := range msgs {
+		var msg CardConfirmationMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode card confirmation message: %v", err)
+			d.Ack(false)
+			continue
+		}
+
+		if err := sendCardConfirmationEmail(cfg, msg); err != nil {
+			log.Printf("failed to send card confirmation email to %s: %v", msg.Email, err)
+		} else {
+			log.Printf("card confirmation email sent to %s", msg.Email)
+		}
+
+		d.Ack(false)
+	}
+}
+
+func sendCardConfirmationEmail(cfg SMTPConfig, msg CardConfirmationMessage) error {
+	body := "<p>Poštovani " + msg.FirstName + ",</p>" +
+		"<p>Vaš kod za potvrdu zahteva za karticu je: <strong>" + msg.ConfirmationCode + "</strong></p>" +
+		"<p>Kod važi 15 minuta. Ako niste podneli ovaj zahtev, ignorišite ovu poruku.</p>"
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", cfg.From)
+	m.SetHeader("To", msg.Email)
+	m.SetHeader("Subject", "Potvrda zahteva za karticu — AnkaBanka")
+	m.SetBody("text/html", body)
+
+	d := gomail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password)
+	return d.DialAndSend(m)
+}
+
 func ConsumePasswordConfirmation(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
 	msgs, err := ch.Consume(ConfirmQueueName, "", false, false, false, false, nil)
 	if err != nil {

@@ -10,6 +10,19 @@ CREATE TABLE authorized_persons (
     account_number VARCHAR NOT NULL  -- logical FK to account_db.accounts (enforced at app level)
 );
 
+CREATE TABLE card_requests (
+    id                     BIGSERIAL    PRIMARY KEY,
+    request_token          VARCHAR      NOT NULL UNIQUE,
+    account_number         VARCHAR      NOT NULL,
+    card_name              VARCHAR      NOT NULL,
+    caller_client_id       BIGINT       NOT NULL,
+    for_self               BOOLEAN      NOT NULL DEFAULT true,
+    authorized_person_data JSONB,                           -- non-null when for_self = false
+    confirmation_code      VARCHAR      NOT NULL,
+    expires_at             TIMESTAMPTZ  NOT NULL,
+    used                   BOOLEAN      NOT NULL DEFAULT false
+);
+
 CREATE TABLE cards (
     id                   BIGSERIAL PRIMARY KEY,
     card_number          VARCHAR       NOT NULL UNIQUE,

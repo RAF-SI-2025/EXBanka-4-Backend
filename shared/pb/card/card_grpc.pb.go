@@ -19,13 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CardService_CreateCard_FullMethodName        = "/card.CardService/CreateCard"
-	CardService_GetCardsByAccount_FullMethodName = "/card.CardService/GetCardsByAccount"
-	CardService_GetCardByNumber_FullMethodName   = "/card.CardService/GetCardByNumber"
-	CardService_BlockCard_FullMethodName         = "/card.CardService/BlockCard"
-	CardService_UnblockCard_FullMethodName       = "/card.CardService/UnblockCard"
-	CardService_DeactivateCard_FullMethodName    = "/card.CardService/DeactivateCard"
-	CardService_UpdateCardLimit_FullMethodName   = "/card.CardService/UpdateCardLimit"
+	CardService_CreateCard_FullMethodName          = "/card.CardService/CreateCard"
+	CardService_GetCardsByAccount_FullMethodName   = "/card.CardService/GetCardsByAccount"
+	CardService_GetCardByNumber_FullMethodName     = "/card.CardService/GetCardByNumber"
+	CardService_BlockCard_FullMethodName           = "/card.CardService/BlockCard"
+	CardService_UnblockCard_FullMethodName         = "/card.CardService/UnblockCard"
+	CardService_DeactivateCard_FullMethodName      = "/card.CardService/DeactivateCard"
+	CardService_UpdateCardLimit_FullMethodName     = "/card.CardService/UpdateCardLimit"
+	CardService_InitiateCardRequest_FullMethodName = "/card.CardService/InitiateCardRequest"
+	CardService_ConfirmCardRequest_FullMethodName  = "/card.CardService/ConfirmCardRequest"
 )
 
 // CardServiceClient is the client API for CardService service.
@@ -39,6 +41,8 @@ type CardServiceClient interface {
 	UnblockCard(ctx context.Context, in *UnblockCardRequest, opts ...grpc.CallOption) (*UnblockCardResponse, error)
 	DeactivateCard(ctx context.Context, in *DeactivateCardRequest, opts ...grpc.CallOption) (*DeactivateCardResponse, error)
 	UpdateCardLimit(ctx context.Context, in *UpdateCardLimitRequest, opts ...grpc.CallOption) (*UpdateCardLimitResponse, error)
+	InitiateCardRequest(ctx context.Context, in *InitiateCardRequestRequest, opts ...grpc.CallOption) (*InitiateCardRequestResponse, error)
+	ConfirmCardRequest(ctx context.Context, in *ConfirmCardRequestRequest, opts ...grpc.CallOption) (*ConfirmCardRequestResponse, error)
 }
 
 type cardServiceClient struct {
@@ -119,6 +123,26 @@ func (c *cardServiceClient) UpdateCardLimit(ctx context.Context, in *UpdateCardL
 	return out, nil
 }
 
+func (c *cardServiceClient) InitiateCardRequest(ctx context.Context, in *InitiateCardRequestRequest, opts ...grpc.CallOption) (*InitiateCardRequestResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InitiateCardRequestResponse)
+	err := c.cc.Invoke(ctx, CardService_InitiateCardRequest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cardServiceClient) ConfirmCardRequest(ctx context.Context, in *ConfirmCardRequestRequest, opts ...grpc.CallOption) (*ConfirmCardRequestResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConfirmCardRequestResponse)
+	err := c.cc.Invoke(ctx, CardService_ConfirmCardRequest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CardServiceServer is the server API for CardService service.
 // All implementations must embed UnimplementedCardServiceServer
 // for forward compatibility.
@@ -130,6 +154,8 @@ type CardServiceServer interface {
 	UnblockCard(context.Context, *UnblockCardRequest) (*UnblockCardResponse, error)
 	DeactivateCard(context.Context, *DeactivateCardRequest) (*DeactivateCardResponse, error)
 	UpdateCardLimit(context.Context, *UpdateCardLimitRequest) (*UpdateCardLimitResponse, error)
+	InitiateCardRequest(context.Context, *InitiateCardRequestRequest) (*InitiateCardRequestResponse, error)
+	ConfirmCardRequest(context.Context, *ConfirmCardRequestRequest) (*ConfirmCardRequestResponse, error)
 	mustEmbedUnimplementedCardServiceServer()
 }
 
@@ -160,6 +186,12 @@ func (UnimplementedCardServiceServer) DeactivateCard(context.Context, *Deactivat
 }
 func (UnimplementedCardServiceServer) UpdateCardLimit(context.Context, *UpdateCardLimitRequest) (*UpdateCardLimitResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateCardLimit not implemented")
+}
+func (UnimplementedCardServiceServer) InitiateCardRequest(context.Context, *InitiateCardRequestRequest) (*InitiateCardRequestResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method InitiateCardRequest not implemented")
+}
+func (UnimplementedCardServiceServer) ConfirmCardRequest(context.Context, *ConfirmCardRequestRequest) (*ConfirmCardRequestResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ConfirmCardRequest not implemented")
 }
 func (UnimplementedCardServiceServer) mustEmbedUnimplementedCardServiceServer() {}
 func (UnimplementedCardServiceServer) testEmbeddedByValue()                     {}
@@ -308,6 +340,42 @@ func _CardService_UpdateCardLimit_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CardService_InitiateCardRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InitiateCardRequestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).InitiateCardRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CardService_InitiateCardRequest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).InitiateCardRequest(ctx, req.(*InitiateCardRequestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CardService_ConfirmCardRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmCardRequestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CardServiceServer).ConfirmCardRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CardService_ConfirmCardRequest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CardServiceServer).ConfirmCardRequest(ctx, req.(*ConfirmCardRequestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CardService_ServiceDesc is the grpc.ServiceDesc for CardService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -342,6 +410,14 @@ var CardService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateCardLimit",
 			Handler:    _CardService_UpdateCardLimit_Handler,
+		},
+		{
+			MethodName: "InitiateCardRequest",
+			Handler:    _CardService_InitiateCardRequest_Handler,
+		},
+		{
+			MethodName: "ConfirmCardRequest",
+			Handler:    _CardService_ConfirmCardRequest_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

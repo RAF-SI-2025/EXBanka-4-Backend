@@ -23,6 +23,7 @@ const (
 	EmailService_SendPasswordResetEmail_FullMethodName        = "/email.EmailService/SendPasswordResetEmail"
 	EmailService_SendPasswordConfirmationEmail_FullMethodName = "/email.EmailService/SendPasswordConfirmationEmail"
 	EmailService_SendAccountCreatedEmail_FullMethodName       = "/email.EmailService/SendAccountCreatedEmail"
+	EmailService_SendCardConfirmationEmail_FullMethodName     = "/email.EmailService/SendCardConfirmationEmail"
 )
 
 // EmailServiceClient is the client API for EmailService service.
@@ -34,6 +35,7 @@ type EmailServiceClient interface {
 	// Reuses SendActivationEmailRequest (email + first_name); activation_link left empty.
 	SendPasswordConfirmationEmail(ctx context.Context, in *SendActivationEmailRequest, opts ...grpc.CallOption) (*SendActivationEmailResponse, error)
 	SendAccountCreatedEmail(ctx context.Context, in *SendAccountCreatedEmailRequest, opts ...grpc.CallOption) (*SendAccountCreatedEmailResponse, error)
+	SendCardConfirmationEmail(ctx context.Context, in *SendCardConfirmationEmailRequest, opts ...grpc.CallOption) (*SendCardConfirmationEmailResponse, error)
 }
 
 type emailServiceClient struct {
@@ -84,6 +86,16 @@ func (c *emailServiceClient) SendAccountCreatedEmail(ctx context.Context, in *Se
 	return out, nil
 }
 
+func (c *emailServiceClient) SendCardConfirmationEmail(ctx context.Context, in *SendCardConfirmationEmailRequest, opts ...grpc.CallOption) (*SendCardConfirmationEmailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendCardConfirmationEmailResponse)
+	err := c.cc.Invoke(ctx, EmailService_SendCardConfirmationEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EmailServiceServer is the server API for EmailService service.
 // All implementations must embed UnimplementedEmailServiceServer
 // for forward compatibility.
@@ -93,6 +105,7 @@ type EmailServiceServer interface {
 	// Reuses SendActivationEmailRequest (email + first_name); activation_link left empty.
 	SendPasswordConfirmationEmail(context.Context, *SendActivationEmailRequest) (*SendActivationEmailResponse, error)
 	SendAccountCreatedEmail(context.Context, *SendAccountCreatedEmailRequest) (*SendAccountCreatedEmailResponse, error)
+	SendCardConfirmationEmail(context.Context, *SendCardConfirmationEmailRequest) (*SendCardConfirmationEmailResponse, error)
 	mustEmbedUnimplementedEmailServiceServer()
 }
 
@@ -114,6 +127,9 @@ func (UnimplementedEmailServiceServer) SendPasswordConfirmationEmail(context.Con
 }
 func (UnimplementedEmailServiceServer) SendAccountCreatedEmail(context.Context, *SendAccountCreatedEmailRequest) (*SendAccountCreatedEmailResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendAccountCreatedEmail not implemented")
+}
+func (UnimplementedEmailServiceServer) SendCardConfirmationEmail(context.Context, *SendCardConfirmationEmailRequest) (*SendCardConfirmationEmailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendCardConfirmationEmail not implemented")
 }
 func (UnimplementedEmailServiceServer) mustEmbedUnimplementedEmailServiceServer() {}
 func (UnimplementedEmailServiceServer) testEmbeddedByValue()                      {}
@@ -208,6 +224,24 @@ func _EmailService_SendAccountCreatedEmail_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _EmailService_SendCardConfirmationEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendCardConfirmationEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EmailServiceServer).SendCardConfirmationEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EmailService_SendCardConfirmationEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EmailServiceServer).SendCardConfirmationEmail(ctx, req.(*SendCardConfirmationEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // EmailService_ServiceDesc is the grpc.ServiceDesc for EmailService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -230,6 +264,10 @@ var EmailService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendAccountCreatedEmail",
 			Handler:    _EmailService_SendAccountCreatedEmail_Handler,
+		},
+		{
+			MethodName: "SendCardConfirmationEmail",
+			Handler:    _EmailService_SendCardConfirmationEmail_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

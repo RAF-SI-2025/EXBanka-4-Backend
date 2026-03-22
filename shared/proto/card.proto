@@ -65,12 +65,34 @@ message DeactivateCardResponse {}
 message UpdateCardLimitRequest  { string card_number = 1; double new_limit = 2; }
 message UpdateCardLimitResponse {}
 
+// InitiateCardRequest — check limits, store pending request, return token + code for email
+message InitiateCardRequestRequest {
+  string               account_number    = 1;
+  string               card_name         = 2;
+  int64                caller_client_id  = 3;
+  bool                 for_self          = 4;
+  AuthorizedPersonData authorized_person = 5;
+}
+message InitiateCardRequestResponse {
+  string request_token     = 1;
+  string confirmation_code = 2;
+}
+
+// ConfirmCardRequest — verify code and create the card
+message ConfirmCardRequestRequest {
+  string request_token = 1;
+  string code          = 2;
+}
+message ConfirmCardRequestResponse { CardResponse card = 1; }
+
 service CardService {
-  rpc CreateCard        (CreateCardRequest)        returns (CreateCardResponse);
-  rpc GetCardsByAccount (GetCardsByAccountRequest) returns (GetCardsByAccountResponse);
-  rpc GetCardByNumber   (GetCardByNumberRequest)   returns (GetCardByNumberResponse);
-  rpc BlockCard         (BlockCardRequest)         returns (BlockCardResponse);
-  rpc UnblockCard       (UnblockCardRequest)       returns (UnblockCardResponse);
-  rpc DeactivateCard    (DeactivateCardRequest)    returns (DeactivateCardResponse);
-  rpc UpdateCardLimit   (UpdateCardLimitRequest)   returns (UpdateCardLimitResponse);
+  rpc CreateCard          (CreateCardRequest)          returns (CreateCardResponse);
+  rpc GetCardsByAccount   (GetCardsByAccountRequest)   returns (GetCardsByAccountResponse);
+  rpc GetCardByNumber     (GetCardByNumberRequest)     returns (GetCardByNumberResponse);
+  rpc BlockCard           (BlockCardRequest)           returns (BlockCardResponse);
+  rpc UnblockCard         (UnblockCardRequest)         returns (UnblockCardResponse);
+  rpc DeactivateCard      (DeactivateCardRequest)      returns (DeactivateCardResponse);
+  rpc UpdateCardLimit     (UpdateCardLimitRequest)     returns (UpdateCardLimitResponse);
+  rpc InitiateCardRequest (InitiateCardRequestRequest) returns (InitiateCardRequestResponse);
+  rpc ConfirmCardRequest  (ConfirmCardRequestRequest)  returns (ConfirmCardRequestResponse);
 }
