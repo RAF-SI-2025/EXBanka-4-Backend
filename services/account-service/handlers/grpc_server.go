@@ -84,13 +84,13 @@ func (s *AccountServer) GetAccount(ctx context.Context, req *pb.GetAccountReques
 	err := s.DB.QueryRowContext(ctx, `
 		SELECT id, account_name, account_number, owner_id, balance, available_balance,
 		       balance - available_balance AS reserved_funds,
-		       currency_id, status, account_type,
+		       currency_id, status, account_type, COALESCE(account_subtype, ''),
 		       COALESCE(daily_limit, 0), COALESCE(monthly_limit, 0),
 		       daily_spent, monthly_spent, company_id
 		FROM accounts WHERE id = $1`, req.AccountId,
 	).Scan(&a.Id, &a.AccountName, &a.AccountNumber, &ownerID,
 		&a.Balance, &a.AvailableBalance, &a.ReservedFunds,
-		&currencyID, &a.Status, &a.AccountType,
+		&currencyID, &a.Status, &a.AccountType, &a.AccountSubtype,
 		&a.DailyLimit, &a.MonthlyLimit, &a.DailySpent, &a.MonthlySpent, &companyID)
 	if err == sql.ErrNoRows {
 		return nil, status.Errorf(codes.NotFound, "account %d not found", req.AccountId)
@@ -169,6 +169,7 @@ func (s *AccountServer) GetAllAccounts(ctx context.Context, _ *pb.GetAllAccounts
 	rows, err := s.DB.QueryContext(ctx,
 		`SELECT id, account_number, account_name, owner_id, account_type, currency_id, available_balance
 		 FROM accounts
+		 WHERE account_type != 'BANK'
 		 ORDER BY id DESC`)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to query accounts: %v", err)
@@ -322,8 +323,8 @@ func (s *AccountServer) CreateAccount(ctx context.Context, req *pb.CreateAccount
 	err = s.DB.QueryRowContext(ctx,
 		`INSERT INTO accounts
 			(account_number, account_name, owner_id, employee_id, currency_id,
-			 account_type, status, balance, available_balance, expiration_date, company_id)
-		VALUES ($1, $2, $3, $4, $5, $6, 'ACTIVE', $7, $7, $8, $9)
+			 account_type, account_subtype, status, balance, available_balance, expiration_date, company_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, 'ACTIVE', $8, $8, $9, $10)
 		RETURNING id, created_date`,
 		accountNumber,
 		req.AccountName,
@@ -331,6 +332,7 @@ func (s *AccountServer) CreateAccount(ctx context.Context, req *pb.CreateAccount
 		req.EmployeeId,
 		currencyID,
 		req.AccountType,
+		req.AccountSubtype,
 		req.InitialBalance,
 		expirationDate,
 		companyID,

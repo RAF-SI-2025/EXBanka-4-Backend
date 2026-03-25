@@ -13,14 +13,15 @@ message CompanyData {
 }
 
 message CreateAccountRequest {
-  int64       client_id       = 1;
-  string      account_type    = 2;
-  string      currency_code   = 3;
-  double      initial_balance = 4;
-  string      account_name    = 5;
-  bool        create_card     = 6;
-  int64       employee_id     = 7;
-  CompanyData company_data    = 8;
+  int64       client_id        = 1;
+  string      account_type     = 2;
+  string      currency_code    = 3;
+  double      initial_balance  = 4;
+  string      account_name     = 5;
+  bool        create_card      = 6;
+  int64       employee_id      = 7;
+  CompanyData company_data     = 8;
+  string      account_subtype  = 9;
 }
 
 message AccountResponse {
@@ -79,6 +80,7 @@ message AccountDetails {
   double      daily_spent       = 13;
   double      monthly_spent     = 14;
   CompanyData company_data      = 15;
+  string      account_subtype   = 16;
 }
 
 message GetAccountResponse {

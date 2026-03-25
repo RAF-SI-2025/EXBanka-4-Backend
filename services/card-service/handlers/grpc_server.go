@@ -42,7 +42,7 @@ func (s *CardServer) CreateCard(ctx context.Context, req *pb.CreateCardRequest) 
 	// 2. Check card limit
 	var existingCount int
 	switch accountType {
-	case "PERSONAL":
+	case "CURRENT", "SAVINGS", "FOREIGN_CURRENCY":
 		existingCount, err = s.countAllCards(ctx, req.AccountNumber)
 		if err != nil {
 			return nil, err
@@ -311,7 +311,7 @@ func (s *CardServer) InitiateCardRequest(ctx context.Context, req *pb.InitiateCa
 	// Pre-check limits (same logic as CreateCard)
 	var existingCount int
 	switch accountType {
-	case "PERSONAL":
+	case "CURRENT", "SAVINGS", "FOREIGN_CURRENCY":
 		existingCount, err = s.countAllCards(ctx, req.AccountNumber)
 		if err != nil {
 			return nil, err

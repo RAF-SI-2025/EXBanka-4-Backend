@@ -39,6 +39,7 @@ CREATE TABLE accounts (
     employee_id         BIGINT NOT NULL,
     currency_id         BIGINT NOT NULL,
     account_type        VARCHAR NOT NULL,
+    account_subtype     VARCHAR,
     status              VARCHAR NOT NULL DEFAULT 'ACTIVE',
     balance             NUMERIC(20, 2) NOT NULL DEFAULT 0,
     available_balance   NUMERIC(20, 2) NOT NULL DEFAULT 0,

@@ -107,6 +107,7 @@ type CreateAccountRequest struct {
 	CreateCard     bool                   `protobuf:"varint,6,opt,name=create_card,json=createCard,proto3" json:"create_card,omitempty"`
 	EmployeeId     int64                  `protobuf:"varint,7,opt,name=employee_id,json=employeeId,proto3" json:"employee_id,omitempty"`
 	CompanyData    *CompanyData           `protobuf:"bytes,8,opt,name=company_data,json=companyData,proto3" json:"company_data,omitempty"`
+	AccountSubtype string                 `protobuf:"bytes,9,opt,name=account_subtype,json=accountSubtype,proto3" json:"account_subtype,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -195,6 +196,13 @@ func (x *CreateAccountRequest) GetCompanyData() *CompanyData {
 		return x.CompanyData
 	}
 	return nil
+}
+
+func (x *CreateAccountRequest) GetAccountSubtype() string {
+	if x != nil {
+		return x.AccountSubtype
+	}
+	return ""
 }
 
 type AccountResponse struct {
@@ -606,6 +614,7 @@ type AccountDetails struct {
 	DailySpent       float64                `protobuf:"fixed64,13,opt,name=daily_spent,json=dailySpent,proto3" json:"daily_spent,omitempty"`
 	MonthlySpent     float64                `protobuf:"fixed64,14,opt,name=monthly_spent,json=monthlySpent,proto3" json:"monthly_spent,omitempty"`
 	CompanyData      *CompanyData           `protobuf:"bytes,15,opt,name=company_data,json=companyData,proto3" json:"company_data,omitempty"`
+	AccountSubtype   string                 `protobuf:"bytes,16,opt,name=account_subtype,json=accountSubtype,proto3" json:"account_subtype,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -743,6 +752,13 @@ func (x *AccountDetails) GetCompanyData() *CompanyData {
 		return x.CompanyData
 	}
 	return nil
+}
+
+func (x *AccountDetails) GetAccountSubtype() string {
+	if x != nil {
+		return x.AccountSubtype
+	}
+	return ""
 }
 
 type GetAccountResponse struct {
@@ -1187,7 +1203,7 @@ const file_account_proto_rawDesc = "" +
 	"\x13registration_number\x18\x02 \x01(\tR\x12registrationNumber\x12\x10\n" +
 	"\x03pib\x18\x03 \x01(\tR\x03pib\x12#\n" +
 	"\ractivity_code\x18\x04 \x01(\tR\factivityCode\x12\x18\n" +
-	"\aaddress\x18\x05 \x01(\tR\aaddress\"\xc2\x02\n" +
+	"\aaddress\x18\x05 \x01(\tR\aaddress\"\xeb\x02\n" +
 	"\x14CreateAccountRequest\x12\x1b\n" +
 	"\tclient_id\x18\x01 \x01(\x03R\bclientId\x12!\n" +
 	"\faccount_type\x18\x02 \x01(\tR\vaccountType\x12#\n" +
@@ -1198,7 +1214,8 @@ const file_account_proto_rawDesc = "" +
 	"createCard\x12\x1f\n" +
 	"\vemployee_id\x18\a \x01(\x03R\n" +
 	"employeeId\x127\n" +
-	"\fcompany_data\x18\b \x01(\v2\x14.account.CompanyDataR\vcompanyData\"\x8d\x03\n" +
+	"\fcompany_data\x18\b \x01(\v2\x14.account.CompanyDataR\vcompanyData\x12'\n" +
+	"\x0faccount_subtype\x18\t \x01(\tR\x0eaccountSubtype\"\x8d\x03\n" +
 	"\x0fAccountResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12%\n" +
 	"\x0eaccount_number\x18\x02 \x01(\tR\raccountNumber\x12!\n" +
@@ -1229,7 +1246,7 @@ const file_account_proto_rawDesc = "" +
 	"\x11GetAccountRequest\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\x01 \x01(\x03R\taccountId\x12\x19\n" +
-	"\bowner_id\x18\x02 \x01(\x03R\aownerId\"\x93\x04\n" +
+	"\bowner_id\x18\x02 \x01(\x03R\aownerId\"\xbc\x04\n" +
 	"\x0eAccountDetails\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12!\n" +
 	"\faccount_name\x18\x02 \x01(\tR\vaccountName\x12%\n" +
@@ -1248,7 +1265,8 @@ const file_account_proto_rawDesc = "" +
 	"\vdaily_spent\x18\r \x01(\x01R\n" +
 	"dailySpent\x12#\n" +
 	"\rmonthly_spent\x18\x0e \x01(\x01R\fmonthlySpent\x127\n" +
-	"\fcompany_data\x18\x0f \x01(\v2\x14.account.CompanyDataR\vcompanyData\"G\n" +
+	"\fcompany_data\x18\x0f \x01(\v2\x14.account.CompanyDataR\vcompanyData\x12'\n" +
+	"\x0faccount_subtype\x18\x10 \x01(\tR\x0eaccountSubtype\"G\n" +
 	"\x12GetAccountResponse\x121\n" +
 	"\aaccount\x18\x01 \x01(\v2\x17.account.AccountDetailsR\aaccount\"k\n" +
 	"\x14RenameAccountRequest\x12\x1d\n" +

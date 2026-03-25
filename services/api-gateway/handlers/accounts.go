@@ -22,8 +22,12 @@ type CreateAccountRequest struct {
 	CurrencyCode   string      `json:"currencyCode"   binding:"required"`
 	InitialBalance float64     `json:"initialBalance"`
 	AccountName    string      `json:"accountName"`
+	AccountSubtype string      `json:"accountSubtype"`
+	DailyLimit     float64     `json:"dailyLimit"`
+	MonthlyLimit   float64     `json:"monthlyLimit"`
 	CreateCard     bool        `json:"createCard"`
 	CardName       string      `json:"cardName"`
+	CardLimit      float64     `json:"cardLimit"`
 	CompanyData    *companyReq `json:"companyData"`
 }
 
@@ -126,6 +130,7 @@ func GetAccount(accountClient pb.AccountServiceClient) gin.HandlerFunc {
 			"currency":         a.CurrencyCode,
 			"status":           a.Status,
 			"accountType":      a.AccountType,
+			"accountSubtype":   a.AccountSubtype,
 			"dailyLimit":       a.DailyLimit,
 			"monthlyLimit":     a.MonthlyLimit,
 			"dailySpent":       a.DailySpent,
@@ -187,6 +192,7 @@ func GetAccountAdmin(accountClient pb.AccountServiceClient) gin.HandlerFunc {
 			"currency":         a.CurrencyCode,
 			"status":           a.Status,
 			"accountType":      a.AccountType,
+			"accountSubtype":   a.AccountSubtype,
 			"dailyLimit":       a.DailyLimit,
 			"monthlyLimit":     a.MonthlyLimit,
 			"dailySpent":       a.DailySpent,
@@ -391,13 +397,14 @@ func CreateAccount(accountClient pb.AccountServiceClient, cardClient pbcard.Card
 		}
 
 		grpcReq := &pb.CreateAccountRequest{
-			ClientId:       req.ClientID,
-			AccountType:    req.AccountType,
-			CurrencyCode:   req.CurrencyCode,
-			InitialBalance: req.InitialBalance,
-			AccountName:    req.AccountName,
-			CreateCard:     req.CreateCard,
-			EmployeeId:     employeeID,
+			ClientId:        req.ClientID,
+			AccountType:     req.AccountType,
+			AccountSubtype:  req.AccountSubtype,
+			CurrencyCode:    req.CurrencyCode,
+			InitialBalance:  req.InitialBalance,
+			AccountName:     req.AccountName,
+			CreateCard:      req.CreateCard,
+			EmployeeId:      employeeID,
 		}
 		if req.CompanyData != nil {
 			grpcReq.CompanyData = &pb.CompanyData{
@@ -427,6 +434,21 @@ func CreateAccount(accountClient pb.AccountServiceClient, cardClient pbcard.Card
 
 		a := resp.Account
 
+		// Set transaction limits if provided
+		if req.DailyLimit > 0 || req.MonthlyLimit > 0 {
+			limCtx, limCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer limCancel()
+			_, limErr := accountClient.UpdateAccountLimits(limCtx, &pb.UpdateAccountLimitsRequest{
+				AccountId:    a.Id,
+				OwnerId:      0, // bypass ownership check
+				DailyLimit:   req.DailyLimit,
+				MonthlyLimit: req.MonthlyLimit,
+			})
+			if limErr != nil {
+				log.Printf("failed to set limits for account %s: %v", a.AccountNumber, limErr)
+			}
+		}
+
 		if req.CreateCard {
 			cardName := req.CardName
 			if cardName == "" {
@@ -434,7 +456,7 @@ func CreateAccount(accountClient pb.AccountServiceClient, cardClient pbcard.Card
 			}
 			cardCtx, cardCancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cardCancel()
-			_, cardErr := cardClient.CreateCard(cardCtx, &pbcard.CreateCardRequest{
+			cardResp, cardErr := cardClient.CreateCard(cardCtx, &pbcard.CreateCardRequest{
 				AccountNumber:  a.AccountNumber,
 				CardName:       cardName,
 				CallerClientId: 0,
@@ -442,6 +464,16 @@ func CreateAccount(accountClient pb.AccountServiceClient, cardClient pbcard.Card
 			})
 			if cardErr != nil {
 				log.Printf("auto card creation failed for account %s: %v", a.AccountNumber, cardErr)
+			} else if req.CardLimit > 0 {
+				limitCtx, limitCancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer limitCancel()
+				_, limitErr := cardClient.UpdateCardLimit(limitCtx, &pbcard.UpdateCardLimitRequest{
+					CardNumber: cardResp.Card.CardNumber,
+					NewLimit:   req.CardLimit,
+				})
+				if limitErr != nil {
+					log.Printf("failed to set card limit for %s: %v", cardResp.Card.CardNumber, limitErr)
+				}
 			}
 		}
 
