@@ -102,6 +102,7 @@ func main() {
 	r.GET("/api/recipients", handlers.GetPaymentRecipients(paymentClient))
 	r.PUT("/api/recipients/:id", handlers.UpdatePaymentRecipient(paymentClient))
 	r.DELETE("/api/recipients/:id", handlers.DeletePaymentRecipient(paymentClient))
+	r.PUT("/api/recipients/reorder", handlers.ReorderPaymentRecipients(paymentClient))
 	r.GET("/api/accounts", middleware.RequireRole("EMPLOYEE"), handlers.GetAllAccounts(accountClient))
 	r.GET("/api/admin/accounts/:accountId", middleware.RequireRole("EMPLOYEE"), handlers.GetAccountAdmin(accountClient))
 	r.GET("/api/accounts/my", handlers.GetMyAccounts(accountClient))

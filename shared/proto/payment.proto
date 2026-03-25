@@ -32,7 +32,14 @@ message PaymentRecipient {
   int64  client_id      = 2;
   string name           = 3;
   string account_number = 4;
+  int32  order          = 5;
 }
+
+message ReorderPaymentRecipientsRequest {
+  int64          client_id   = 1;
+  repeated int64 ordered_ids = 2;
+}
+message ReorderPaymentRecipientsResponse {}
 
 message CreatePaymentRecipientRequest {
   int64  client_id      = 1;
@@ -138,5 +145,6 @@ service PaymentService {
   rpc GetPaymentRecipients(GetPaymentRecipientsRequest)       returns (GetPaymentRecipientsResponse);
   rpc UpdatePaymentRecipient(UpdatePaymentRecipientRequest)   returns (UpdatePaymentRecipientResponse);
   rpc DeletePaymentRecipient(DeletePaymentRecipientRequest)   returns (DeletePaymentRecipientResponse);
+  rpc ReorderPaymentRecipients(ReorderPaymentRecipientsRequest) returns (ReorderPaymentRecipientsResponse);
   rpc GetTransfers(GetTransfersRequest)                       returns (GetTransfersResponse);
 }

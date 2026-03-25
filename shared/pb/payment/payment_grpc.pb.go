@@ -19,15 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PaymentService_CreatePayment_FullMethodName          = "/payment.PaymentService/CreatePayment"
-	PaymentService_GetPayments_FullMethodName            = "/payment.PaymentService/GetPayments"
-	PaymentService_GetPaymentById_FullMethodName         = "/payment.PaymentService/GetPaymentById"
-	PaymentService_CreateTransfer_FullMethodName         = "/payment.PaymentService/CreateTransfer"
-	PaymentService_CreatePaymentRecipient_FullMethodName = "/payment.PaymentService/CreatePaymentRecipient"
-	PaymentService_GetPaymentRecipients_FullMethodName   = "/payment.PaymentService/GetPaymentRecipients"
-	PaymentService_UpdatePaymentRecipient_FullMethodName = "/payment.PaymentService/UpdatePaymentRecipient"
-	PaymentService_DeletePaymentRecipient_FullMethodName = "/payment.PaymentService/DeletePaymentRecipient"
-	PaymentService_GetTransfers_FullMethodName           = "/payment.PaymentService/GetTransfers"
+	PaymentService_CreatePayment_FullMethodName            = "/payment.PaymentService/CreatePayment"
+	PaymentService_GetPayments_FullMethodName              = "/payment.PaymentService/GetPayments"
+	PaymentService_GetPaymentById_FullMethodName           = "/payment.PaymentService/GetPaymentById"
+	PaymentService_CreateTransfer_FullMethodName           = "/payment.PaymentService/CreateTransfer"
+	PaymentService_CreatePaymentRecipient_FullMethodName   = "/payment.PaymentService/CreatePaymentRecipient"
+	PaymentService_GetPaymentRecipients_FullMethodName     = "/payment.PaymentService/GetPaymentRecipients"
+	PaymentService_UpdatePaymentRecipient_FullMethodName   = "/payment.PaymentService/UpdatePaymentRecipient"
+	PaymentService_DeletePaymentRecipient_FullMethodName   = "/payment.PaymentService/DeletePaymentRecipient"
+	PaymentService_ReorderPaymentRecipients_FullMethodName = "/payment.PaymentService/ReorderPaymentRecipients"
+	PaymentService_GetTransfers_FullMethodName             = "/payment.PaymentService/GetTransfers"
 )
 
 // PaymentServiceClient is the client API for PaymentService service.
@@ -42,6 +43,7 @@ type PaymentServiceClient interface {
 	GetPaymentRecipients(ctx context.Context, in *GetPaymentRecipientsRequest, opts ...grpc.CallOption) (*GetPaymentRecipientsResponse, error)
 	UpdatePaymentRecipient(ctx context.Context, in *UpdatePaymentRecipientRequest, opts ...grpc.CallOption) (*UpdatePaymentRecipientResponse, error)
 	DeletePaymentRecipient(ctx context.Context, in *DeletePaymentRecipientRequest, opts ...grpc.CallOption) (*DeletePaymentRecipientResponse, error)
+	ReorderPaymentRecipients(ctx context.Context, in *ReorderPaymentRecipientsRequest, opts ...grpc.CallOption) (*ReorderPaymentRecipientsResponse, error)
 	GetTransfers(ctx context.Context, in *GetTransfersRequest, opts ...grpc.CallOption) (*GetTransfersResponse, error)
 }
 
@@ -133,6 +135,16 @@ func (c *paymentServiceClient) DeletePaymentRecipient(ctx context.Context, in *D
 	return out, nil
 }
 
+func (c *paymentServiceClient) ReorderPaymentRecipients(ctx context.Context, in *ReorderPaymentRecipientsRequest, opts ...grpc.CallOption) (*ReorderPaymentRecipientsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReorderPaymentRecipientsResponse)
+	err := c.cc.Invoke(ctx, PaymentService_ReorderPaymentRecipients_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *paymentServiceClient) GetTransfers(ctx context.Context, in *GetTransfersRequest, opts ...grpc.CallOption) (*GetTransfersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetTransfersResponse)
@@ -155,6 +167,7 @@ type PaymentServiceServer interface {
 	GetPaymentRecipients(context.Context, *GetPaymentRecipientsRequest) (*GetPaymentRecipientsResponse, error)
 	UpdatePaymentRecipient(context.Context, *UpdatePaymentRecipientRequest) (*UpdatePaymentRecipientResponse, error)
 	DeletePaymentRecipient(context.Context, *DeletePaymentRecipientRequest) (*DeletePaymentRecipientResponse, error)
+	ReorderPaymentRecipients(context.Context, *ReorderPaymentRecipientsRequest) (*ReorderPaymentRecipientsResponse, error)
 	GetTransfers(context.Context, *GetTransfersRequest) (*GetTransfersResponse, error)
 	mustEmbedUnimplementedPaymentServiceServer()
 }
@@ -189,6 +202,9 @@ func (UnimplementedPaymentServiceServer) UpdatePaymentRecipient(context.Context,
 }
 func (UnimplementedPaymentServiceServer) DeletePaymentRecipient(context.Context, *DeletePaymentRecipientRequest) (*DeletePaymentRecipientResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeletePaymentRecipient not implemented")
+}
+func (UnimplementedPaymentServiceServer) ReorderPaymentRecipients(context.Context, *ReorderPaymentRecipientsRequest) (*ReorderPaymentRecipientsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReorderPaymentRecipients not implemented")
 }
 func (UnimplementedPaymentServiceServer) GetTransfers(context.Context, *GetTransfersRequest) (*GetTransfersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTransfers not implemented")
@@ -358,6 +374,24 @@ func _PaymentService_DeletePaymentRecipient_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PaymentService_ReorderPaymentRecipients_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReorderPaymentRecipientsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaymentServiceServer).ReorderPaymentRecipients(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PaymentService_ReorderPaymentRecipients_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaymentServiceServer).ReorderPaymentRecipients(ctx, req.(*ReorderPaymentRecipientsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _PaymentService_GetTransfers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetTransfersRequest)
 	if err := dec(in); err != nil {
@@ -414,6 +448,10 @@ var PaymentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeletePaymentRecipient",
 			Handler:    _PaymentService_DeletePaymentRecipient_Handler,
+		},
+		{
+			MethodName: "ReorderPaymentRecipients",
+			Handler:    _PaymentService_ReorderPaymentRecipients_Handler,
 		},
 		{
 			MethodName: "GetTransfers",

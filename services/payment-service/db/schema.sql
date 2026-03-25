@@ -2,7 +2,8 @@ CREATE TABLE payment_recipients (
     id             BIGSERIAL PRIMARY KEY,
     client_id      BIGINT    NOT NULL,
     name           VARCHAR   NOT NULL,
-    account_number VARCHAR   NOT NULL
+    account_number VARCHAR   NOT NULL,
+    "order"        INT       NOT NULL DEFAULT 0
 );
 
 CREATE TABLE transfers (
