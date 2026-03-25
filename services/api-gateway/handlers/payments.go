@@ -180,6 +180,7 @@ func GetPaymentRecipients(paymentClient pb.PaymentServiceClient) gin.HandlerFunc
 			ClientID      int64  `json:"clientId"`
 			Name          string `json:"name"`
 			AccountNumber string `json:"accountNumber"`
+			Order         int32  `json:"order"`
 		}
 		result := make([]recipientJSON, 0, len(resp.Recipients))
 		for _, r := range resp.Recipients {
@@ -188,9 +189,37 @@ func GetPaymentRecipients(paymentClient pb.PaymentServiceClient) gin.HandlerFunc
 				ClientID:      r.ClientId,
 				Name:          r.Name,
 				AccountNumber: r.AccountNumber,
+				Order:         r.Order,
 			})
 		}
 		c.JSON(http.StatusOK, result)
+	}
+}
+
+func ReorderPaymentRecipients(paymentClient pb.PaymentServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		clientID, err := middleware.GetUserIDFromToken(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "could not extract identity from token"})
+			return
+		}
+		var req struct {
+			OrderedIDs []int64 `json:"orderedIds" binding:"required"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		if _, err := paymentClient.ReorderPaymentRecipients(ctx, &pb.ReorderPaymentRecipientsRequest{
+			ClientId:   clientID,
+			OrderedIds: req.OrderedIDs,
+		}); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.Status(http.StatusNoContent)
 	}
 }
 

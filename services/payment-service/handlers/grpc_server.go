@@ -148,12 +148,13 @@ func (s *PaymentServer) CreatePayment(ctx context.Context, req *pb.CreatePayment
 
 func (s *PaymentServer) CreatePaymentRecipient(ctx context.Context, req *pb.CreatePaymentRecipientRequest) (*pb.CreatePaymentRecipientResponse, error) {
 	var id int64
+	var order int32
 	err := s.DB.QueryRowContext(ctx, `
-		INSERT INTO payment_recipients (client_id, name, account_number)
-		VALUES ($1, $2, $3)
-		RETURNING id`,
+		INSERT INTO payment_recipients (client_id, name, account_number, "order")
+		VALUES ($1, $2, $3, COALESCE((SELECT MAX("order") + 1 FROM payment_recipients WHERE client_id = $1), 0))
+		RETURNING id, "order"`,
 		req.ClientId, req.Name, req.AccountNumber,
-	).Scan(&id)
+	).Scan(&id, &order)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create payment recipient: %v", err)
 	}
@@ -163,15 +164,17 @@ func (s *PaymentServer) CreatePaymentRecipient(ctx context.Context, req *pb.Crea
 			ClientId:      req.ClientId,
 			Name:          req.Name,
 			AccountNumber: req.AccountNumber,
+			Order:         order,
 		},
 	}, nil
 }
 
 func (s *PaymentServer) GetPaymentRecipients(ctx context.Context, req *pb.GetPaymentRecipientsRequest) (*pb.GetPaymentRecipientsResponse, error) {
 	rows, err := s.DB.QueryContext(ctx, `
-		SELECT id, client_id, name, account_number
+		SELECT id, client_id, name, account_number, "order"
 		FROM payment_recipients
-		WHERE client_id = $1`, req.ClientId)
+		WHERE client_id = $1
+		ORDER BY "order" ASC`, req.ClientId)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to query payment recipients: %v", err)
 	}
@@ -180,12 +183,33 @@ func (s *PaymentServer) GetPaymentRecipients(ctx context.Context, req *pb.GetPay
 	var recipients []*pb.PaymentRecipient
 	for rows.Next() {
 		var r pb.PaymentRecipient
-		if err := rows.Scan(&r.Id, &r.ClientId, &r.Name, &r.AccountNumber); err != nil {
+		if err := rows.Scan(&r.Id, &r.ClientId, &r.Name, &r.AccountNumber, &r.Order); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to scan payment recipient: %v", err)
 		}
 		recipients = append(recipients, &r)
 	}
 	return &pb.GetPaymentRecipientsResponse{Recipients: recipients}, nil
+}
+
+func (s *PaymentServer) ReorderPaymentRecipients(ctx context.Context, req *pb.ReorderPaymentRecipientsRequest) (*pb.ReorderPaymentRecipientsResponse, error) {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to begin transaction: %v", err)
+	}
+	defer tx.Rollback()
+
+	for i, id := range req.OrderedIds {
+		if _, err := tx.ExecContext(ctx,
+			`UPDATE payment_recipients SET "order" = $1 WHERE id = $2 AND client_id = $3`,
+			i, id, req.ClientId,
+		); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to update recipient order: %v", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to commit reorder: %v", err)
+	}
+	return &pb.ReorderPaymentRecipientsResponse{}, nil
 }
 
 func (s *PaymentServer) UpdatePaymentRecipient(ctx context.Context, req *pb.UpdatePaymentRecipientRequest) (*pb.UpdatePaymentRecipientResponse, error) {
@@ -194,9 +218,9 @@ func (s *PaymentServer) UpdatePaymentRecipient(ctx context.Context, req *pb.Upda
 		UPDATE payment_recipients
 		SET name = $3, account_number = $4
 		WHERE id = $1 AND client_id = $2
-		RETURNING id, client_id, name, account_number`,
+		RETURNING id, client_id, name, account_number, "order"`,
 		req.Id, req.ClientId, req.Name, req.AccountNumber,
-	).Scan(&r.Id, &r.ClientId, &r.Name, &r.AccountNumber)
+	).Scan(&r.Id, &r.ClientId, &r.Name, &r.AccountNumber, &r.Order)
 	if err == sql.ErrNoRows {
 		return nil, status.Error(codes.NotFound, "payment recipient not found")
 	}
