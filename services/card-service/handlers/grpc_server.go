@@ -42,7 +42,7 @@ func (s *CardServer) CreateCard(ctx context.Context, req *pb.CreateCardRequest) 
 	// 2. Check card limit
 	var existingCount int
 	switch accountType {
-	case "CURRENT", "SAVINGS", "FOREIGN_CURRENCY":
+	case "personal":
 		existingCount, err = s.countAllCards(ctx, req.AccountNumber)
 		if err != nil {
 			return nil, err
@@ -50,7 +50,7 @@ func (s *CardServer) CreateCard(ctx context.Context, req *pb.CreateCardRequest) 
 		if err := utils.CheckCardLimit("PERSONAL", true, existingCount); err != nil {
 			return nil, status.Error(codes.ResourceExhausted, err.Error())
 		}
-	case "BUSINESS":
+	case "business":
 		if req.ForSelf {
 			existingCount, err = s.countOwnerCards(ctx, req.AccountNumber)
 			if err != nil {
@@ -311,7 +311,7 @@ func (s *CardServer) InitiateCardRequest(ctx context.Context, req *pb.InitiateCa
 	// Pre-check limits (same logic as CreateCard)
 	var existingCount int
 	switch accountType {
-	case "CURRENT", "SAVINGS", "FOREIGN_CURRENCY":
+	case "personal":
 		existingCount, err = s.countAllCards(ctx, req.AccountNumber)
 		if err != nil {
 			return nil, err
@@ -319,7 +319,7 @@ func (s *CardServer) InitiateCardRequest(ctx context.Context, req *pb.InitiateCa
 		if err := utils.CheckCardLimit("PERSONAL", true, existingCount); err != nil {
 			return nil, status.Error(codes.ResourceExhausted, err.Error())
 		}
-	case "BUSINESS":
+	case "business":
 		if req.ForSelf {
 			existingCount, err = s.countOwnerCards(ctx, req.AccountNumber)
 			if err != nil {

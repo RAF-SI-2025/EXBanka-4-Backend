@@ -107,10 +107,11 @@ echo "email-rabbitmq ready."
 set -a; source "$REPO_ROOT/.env"; set +a
 
 # Launch services in background, capture PIDs
-go run "$REPO_ROOT/services/employee-service/" &
+# Note: auth-service, client-service, employee-service each use DB_URL — pass per-process
+DB_URL="$EMPLOYEE_DB_URL" go run "$REPO_ROOT/services/employee-service/" &
 EMP_PID=$!
 
-go run "$REPO_ROOT/services/auth-service/" &
+DB_URL="$AUTH_DB_URL" go run "$REPO_ROOT/services/auth-service/" &
 AUTH_PID=$!
 
 go run "$REPO_ROOT/services/api-gateway/" &
@@ -122,7 +123,7 @@ EMAIL_PID=$!
 go run "$REPO_ROOT/services/account-service/" &
 ACC_PID=$!
 
-go run "$REPO_ROOT/services/client-service/" &
+DB_URL="$CLIENT_DB_URL" go run "$REPO_ROOT/services/client-service/" &
 CLIENT_PID=$!
 
 go run "$REPO_ROOT/services/exchange-service/" &
