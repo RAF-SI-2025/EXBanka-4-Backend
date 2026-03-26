@@ -204,7 +204,7 @@ func BlockCard(cardClient pbcard.CardServiceClient) gin.HandlerFunc {
 		_, err = cardClient.BlockCard(ctx, &pbcard.BlockCardRequest{
 			CardNumber:     cardNumber,
 			CallerClientId: clientID,
-			CallerRole:     "CLIENT",
+			CallerRole:     middleware.GetCallerRoleFromToken(c),
 		})
 		if err != nil {
 			switch status.Code(err) {

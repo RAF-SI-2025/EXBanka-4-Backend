@@ -44,6 +44,35 @@ func GetUserIDFromToken(c *gin.Context) (int64, error) {
 
 const jwtSecret = "secret-key-change-in-production"
 
+// GetCallerRoleFromToken returns "CLIENT" for client tokens, "EMPLOYEE" for employee tokens.
+func GetCallerRoleFromToken(c *gin.Context) string {
+	header := c.GetHeader("Authorization")
+	if !strings.HasPrefix(header, "Bearer ") {
+		return ""
+	}
+	tokenStr := strings.TrimPrefix(header, "Bearer ")
+	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(jwtSecret), nil
+	})
+	if err != nil || !token.Valid {
+		return ""
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return ""
+	}
+	if role, ok := claims["role"].(string); ok {
+		return role
+	}
+	if _, hasDozv := claims["dozvole"]; hasDozv {
+		return "EMPLOYEE"
+	}
+	return ""
+}
+
 // RequireRole returns a Gin middleware that validates the JWT and checks that
 // the caller has the given role (or ADMIN, which bypasses all role checks).
 func RequireRole(role string) gin.HandlerFunc {
