@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/mail"
+	"os"
 	"strconv"
 	"time"
 
@@ -231,7 +232,11 @@ func CreateClient(clientSvc pb.ClientServiceClient, authClient authpb.AuthServic
 			return
 		}
 
-		link := fmt.Sprintf("http://localhost:5173/client/activate?token=%s", tokenResp.Token)
+		frontendURL := os.Getenv("FRONTEND_URL")
+		if frontendURL == "" {
+			frontendURL = "http://localhost:5173"
+		}
+		link := fmt.Sprintf("%s/client/activate?token=%s", frontendURL, tokenResp.Token)
 		go func() {
 			_, err := emailClient.SendActivationEmail(context.Background(),
 				&emailpb.SendActivationEmailRequest{

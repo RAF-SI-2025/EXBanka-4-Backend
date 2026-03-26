@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -203,7 +204,11 @@ func ForgotPassword(authClient pb.AuthServiceClient, emailClient pb_email.EmailS
 			return
 		}
 
-		resetLink := fmt.Sprintf("http://localhost:5173/reset-password?token=%s", resp.Token)
+		frontendURL := os.Getenv("FRONTEND_URL")
+		if frontendURL == "" {
+			frontendURL = "http://localhost:5173"
+		}
+		resetLink := fmt.Sprintf("%s/reset-password?token=%s", frontendURL, resp.Token)
 		go func() {
 			emailCtx, emailCancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer emailCancel()

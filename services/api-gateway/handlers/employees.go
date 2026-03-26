@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/mail"
+	"os"
 	"strconv"
 	"time"
 
@@ -360,7 +361,11 @@ func CreateEmployee(empClient pb.EmployeeServiceClient, authClient authpb.AuthSe
 			return
 		}
 
-		link := fmt.Sprintf("http://localhost:5173/set-password?token=%s", tokenResp.Token)
+		frontendURL := os.Getenv("FRONTEND_URL")
+		if frontendURL == "" {
+			frontendURL = "http://localhost:5173"
+		}
+		link := fmt.Sprintf("%s/set-password?token=%s", frontendURL, tokenResp.Token)
 		go func() {
 			_, err := emailClient.SendActivationEmail(context.Background(),
 				&emailpb.SendActivationEmailRequest{
