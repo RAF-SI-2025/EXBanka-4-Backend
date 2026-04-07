@@ -171,6 +171,8 @@ func main() {
 	r.PUT("/api/cards/:id/limit", middleware.RequireRole("EMPLOYEE"), handlers.UpdateCardLimit(cardClient))
 	r.GET("/stock-exchanges", middleware.RequireRole("EMPLOYEE"), handlers.GetStockExchanges(securitiesClient))
 	r.POST("/stock-exchanges", middleware.RequireRole("ADMIN"), handlers.CreateStockExchange(securitiesClient))
+	r.GET("/stock-exchanges/test-mode", middleware.RequireRole("ADMIN"), handlers.GetTestMode(securitiesClient))
+	r.POST("/stock-exchanges/test-mode", middleware.RequireRole("ADMIN"), handlers.SetTestMode(securitiesClient))
 	r.GET("/stock-exchanges/:mic", middleware.RequireRole("EMPLOYEE"), handlers.GetStockExchangeByMIC(securitiesClient))
 	r.PUT("/stock-exchanges/:mic", middleware.RequireRole("ADMIN"), handlers.UpdateStockExchange(securitiesClient))
 	r.DELETE("/stock-exchanges/:mic", middleware.RequireRole("ADMIN"), handlers.DeleteStockExchange(securitiesClient))

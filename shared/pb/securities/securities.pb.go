@@ -1369,7 +1369,7 @@ type IsExchangeOpenResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	MicCode          string                 `protobuf:"bytes,1,opt,name=mic_code,json=micCode,proto3" json:"mic_code,omitempty"`
 	IsOpen           bool                   `protobuf:"varint,2,opt,name=is_open,json=isOpen,proto3" json:"is_open,omitempty"`
-	Segment          string                 `protobuf:"bytes,3,opt,name=segment,proto3" json:"segment,omitempty"`                                             // "pre_market", "regular", "post_market", or "closed"
+	Segment          string                 `protobuf:"bytes,3,opt,name=segment,proto3" json:"segment,omitempty"`                                             // "pre_market", "regular", "post_market", "test_mode", or "closed"
 	CurrentTimeLocal string                 `protobuf:"bytes,4,opt,name=current_time_local,json=currentTimeLocal,proto3" json:"current_time_local,omitempty"` // "HH:MM" in exchange's local timezone
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -1431,6 +1431,174 @@ func (x *IsExchangeOpenResponse) GetCurrentTimeLocal() string {
 		return x.CurrentTimeLocal
 	}
 	return ""
+}
+
+type GetTestModeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTestModeRequest) Reset() {
+	*x = GetTestModeRequest{}
+	mi := &file_securities_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTestModeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTestModeRequest) ProtoMessage() {}
+
+func (x *GetTestModeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_securities_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTestModeRequest.ProtoReflect.Descriptor instead.
+func (*GetTestModeRequest) Descriptor() ([]byte, []int) {
+	return file_securities_proto_rawDescGZIP(), []int{27}
+}
+
+type GetTestModeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Enabled       bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetTestModeResponse) Reset() {
+	*x = GetTestModeResponse{}
+	mi := &file_securities_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetTestModeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetTestModeResponse) ProtoMessage() {}
+
+func (x *GetTestModeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_securities_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetTestModeResponse.ProtoReflect.Descriptor instead.
+func (*GetTestModeResponse) Descriptor() ([]byte, []int) {
+	return file_securities_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *GetTestModeResponse) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+type SetTestModeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Enabled       bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetTestModeRequest) Reset() {
+	*x = SetTestModeRequest{}
+	mi := &file_securities_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetTestModeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetTestModeRequest) ProtoMessage() {}
+
+func (x *SetTestModeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_securities_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetTestModeRequest.ProtoReflect.Descriptor instead.
+func (*SetTestModeRequest) Descriptor() ([]byte, []int) {
+	return file_securities_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *SetTestModeRequest) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+type SetTestModeResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Enabled       bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetTestModeResponse) Reset() {
+	*x = SetTestModeResponse{}
+	mi := &file_securities_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetTestModeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetTestModeResponse) ProtoMessage() {}
+
+func (x *SetTestModeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_securities_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetTestModeResponse.ProtoReflect.Descriptor instead.
+func (*SetTestModeResponse) Descriptor() ([]byte, []int) {
+	return file_securities_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *SetTestModeResponse) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
 }
 
 var File_securities_proto protoreflect.FileDescriptor
@@ -1522,7 +1690,14 @@ const file_securities_proto_rawDesc = "" +
 	"\bmic_code\x18\x01 \x01(\tR\amicCode\x12\x17\n" +
 	"\ais_open\x18\x02 \x01(\bR\x06isOpen\x12\x18\n" +
 	"\asegment\x18\x03 \x01(\tR\asegment\x12,\n" +
-	"\x12current_time_local\x18\x04 \x01(\tR\x10currentTimeLocal2\xda\b\n" +
+	"\x12current_time_local\x18\x04 \x01(\tR\x10currentTimeLocal\"\x14\n" +
+	"\x12GetTestModeRequest\"/\n" +
+	"\x13GetTestModeResponse\x12\x18\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\".\n" +
+	"\x12SetTestModeRequest\x12\x18\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\"/\n" +
+	"\x13SetTestModeResponse\x12\x18\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled2\xfa\t\n" +
 	"\x11SecuritiesService\x129\n" +
 	"\x04Ping\x12\x17.securities.PingRequest\x1a\x18.securities.PingResponse\x12`\n" +
 	"\x11GetStockExchanges\x12$.securities.GetStockExchangesRequest\x1a%.securities.GetStockExchangesResponse\x12l\n" +
@@ -1536,7 +1711,9 @@ const file_securities_proto_rawDesc = "" +
 	"\n" +
 	"AddHoliday\x12\x1d.securities.AddHolidayRequest\x1a\x1e.securities.AddHolidayResponse\x12T\n" +
 	"\rDeleteHoliday\x12 .securities.DeleteHolidayRequest\x1a!.securities.DeleteHolidayResponse\x12W\n" +
-	"\x0eIsExchangeOpen\x12!.securities.IsExchangeOpenRequest\x1a\".securities.IsExchangeOpenResponseB?Z=github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/securitiesb\x06proto3"
+	"\x0eIsExchangeOpen\x12!.securities.IsExchangeOpenRequest\x1a\".securities.IsExchangeOpenResponse\x12N\n" +
+	"\vGetTestMode\x12\x1e.securities.GetTestModeRequest\x1a\x1f.securities.GetTestModeResponse\x12N\n" +
+	"\vSetTestMode\x12\x1e.securities.SetTestModeRequest\x1a\x1f.securities.SetTestModeResponseB?Z=github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/securitiesb\x06proto3"
 
 var (
 	file_securities_proto_rawDescOnce sync.Once
@@ -1550,7 +1727,7 @@ func file_securities_proto_rawDescGZIP() []byte {
 	return file_securities_proto_rawDescData
 }
 
-var file_securities_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_securities_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_securities_proto_goTypes = []any{
 	(*PingRequest)(nil),                   // 0: securities.PingRequest
 	(*PingResponse)(nil),                  // 1: securities.PingResponse
@@ -1579,6 +1756,10 @@ var file_securities_proto_goTypes = []any{
 	(*DeleteHolidayResponse)(nil),         // 24: securities.DeleteHolidayResponse
 	(*IsExchangeOpenRequest)(nil),         // 25: securities.IsExchangeOpenRequest
 	(*IsExchangeOpenResponse)(nil),        // 26: securities.IsExchangeOpenResponse
+	(*GetTestModeRequest)(nil),            // 27: securities.GetTestModeRequest
+	(*GetTestModeResponse)(nil),           // 28: securities.GetTestModeResponse
+	(*SetTestModeRequest)(nil),            // 29: securities.SetTestModeRequest
+	(*SetTestModeResponse)(nil),           // 30: securities.SetTestModeResponse
 }
 var file_securities_proto_depIdxs = []int32{
 	2,  // 0: securities.GetStockExchangesResponse.exchanges:type_name -> securities.StockExchange
@@ -1601,20 +1782,24 @@ var file_securities_proto_depIdxs = []int32{
 	21, // 17: securities.SecuritiesService.AddHoliday:input_type -> securities.AddHolidayRequest
 	23, // 18: securities.SecuritiesService.DeleteHoliday:input_type -> securities.DeleteHolidayRequest
 	25, // 19: securities.SecuritiesService.IsExchangeOpen:input_type -> securities.IsExchangeOpenRequest
-	1,  // 20: securities.SecuritiesService.Ping:output_type -> securities.PingResponse
-	4,  // 21: securities.SecuritiesService.GetStockExchanges:output_type -> securities.GetStockExchangesResponse
-	6,  // 22: securities.SecuritiesService.GetStockExchangeByMIC:output_type -> securities.GetStockExchangeByMICResponse
-	8,  // 23: securities.SecuritiesService.CreateStockExchange:output_type -> securities.CreateStockExchangeResponse
-	10, // 24: securities.SecuritiesService.UpdateStockExchange:output_type -> securities.UpdateStockExchangeResponse
-	12, // 25: securities.SecuritiesService.DeleteStockExchange:output_type -> securities.DeleteStockExchangeResponse
-	15, // 26: securities.SecuritiesService.GetWorkingHours:output_type -> securities.GetWorkingHoursResponse
-	17, // 27: securities.SecuritiesService.SetWorkingHours:output_type -> securities.SetWorkingHoursResponse
-	20, // 28: securities.SecuritiesService.GetHolidays:output_type -> securities.GetHolidaysResponse
-	22, // 29: securities.SecuritiesService.AddHoliday:output_type -> securities.AddHolidayResponse
-	24, // 30: securities.SecuritiesService.DeleteHoliday:output_type -> securities.DeleteHolidayResponse
-	26, // 31: securities.SecuritiesService.IsExchangeOpen:output_type -> securities.IsExchangeOpenResponse
-	20, // [20:32] is the sub-list for method output_type
-	8,  // [8:20] is the sub-list for method input_type
+	27, // 20: securities.SecuritiesService.GetTestMode:input_type -> securities.GetTestModeRequest
+	29, // 21: securities.SecuritiesService.SetTestMode:input_type -> securities.SetTestModeRequest
+	1,  // 22: securities.SecuritiesService.Ping:output_type -> securities.PingResponse
+	4,  // 23: securities.SecuritiesService.GetStockExchanges:output_type -> securities.GetStockExchangesResponse
+	6,  // 24: securities.SecuritiesService.GetStockExchangeByMIC:output_type -> securities.GetStockExchangeByMICResponse
+	8,  // 25: securities.SecuritiesService.CreateStockExchange:output_type -> securities.CreateStockExchangeResponse
+	10, // 26: securities.SecuritiesService.UpdateStockExchange:output_type -> securities.UpdateStockExchangeResponse
+	12, // 27: securities.SecuritiesService.DeleteStockExchange:output_type -> securities.DeleteStockExchangeResponse
+	15, // 28: securities.SecuritiesService.GetWorkingHours:output_type -> securities.GetWorkingHoursResponse
+	17, // 29: securities.SecuritiesService.SetWorkingHours:output_type -> securities.SetWorkingHoursResponse
+	20, // 30: securities.SecuritiesService.GetHolidays:output_type -> securities.GetHolidaysResponse
+	22, // 31: securities.SecuritiesService.AddHoliday:output_type -> securities.AddHolidayResponse
+	24, // 32: securities.SecuritiesService.DeleteHoliday:output_type -> securities.DeleteHolidayResponse
+	26, // 33: securities.SecuritiesService.IsExchangeOpen:output_type -> securities.IsExchangeOpenResponse
+	28, // 34: securities.SecuritiesService.GetTestMode:output_type -> securities.GetTestModeResponse
+	30, // 35: securities.SecuritiesService.SetTestMode:output_type -> securities.SetTestModeResponse
+	22, // [22:36] is the sub-list for method output_type
+	8,  // [8:22] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name
 	8,  // [8:8] is the sub-list for extension extendee
 	0,  // [0:8] is the sub-list for field type_name
@@ -1631,7 +1816,7 @@ func file_securities_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_securities_proto_rawDesc), len(file_securities_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   27,
+			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

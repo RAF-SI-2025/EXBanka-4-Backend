@@ -28,3 +28,10 @@ CREATE TABLE exchange_holidays (
     description  VARCHAR(255),
     UNIQUE (polity, holiday_date)
 );
+
+-- Global settings (single row enforced by CHECK).
+CREATE TABLE settings (
+    id                BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (id = TRUE),
+    test_mode_enabled BOOLEAN NOT NULL DEFAULT FALSE
+);
+INSERT INTO settings (test_mode_enabled) VALUES (FALSE);

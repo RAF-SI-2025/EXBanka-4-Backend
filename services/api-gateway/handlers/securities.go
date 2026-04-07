@@ -400,6 +400,55 @@ func DeleteHoliday(client pb.SecuritiesServiceClient) gin.HandlerFunc {
 
 // ── Exchange Status ───────────────────────────────────────────────────────────
 
+// GetTestMode godoc
+// @Summary      Get test mode status
+// @Tags         securities
+// @Produce      json
+// @Success      200  {object}  map[string]bool
+// @Router       /stock-exchanges/test-mode [get]
+func GetTestMode(client pb.SecuritiesServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+		defer cancel()
+
+		resp, err := client.GetTestMode(ctx, &pb.GetTestModeRequest{})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get test mode"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"enabled": resp.Enabled})
+	}
+}
+
+// SetTestMode godoc
+// @Summary      Enable or disable test mode
+// @Tags         securities
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  map[string]bool
+// @Router       /stock-exchanges/test-mode [post]
+func SetTestMode(client pb.SecuritiesServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var body struct {
+			Enabled bool `json:"enabled"`
+		}
+		if err := c.ShouldBindJSON(&body); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+		defer cancel()
+
+		resp, err := client.SetTestMode(ctx, &pb.SetTestModeRequest{Enabled: body.Enabled})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to set test mode"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"enabled": resp.Enabled})
+	}
+}
+
 // IsExchangeOpen godoc
 // @Summary      Check if an exchange is currently open
 // @Tags         securities

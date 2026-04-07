@@ -236,6 +236,8 @@ func TestDeleteHoliday_DBError(t *testing.T) {
 
 func TestIsExchangeOpen_ExchangeNotFound(t *testing.T) {
 	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT test_mode_enabled FROM settings").
+		WillReturnRows(sqlmock.NewRows([]string{"test_mode_enabled"}).AddRow(false))
 	mock.ExpectQuery("SELECT timezone, polity FROM stock_exchanges").
 		WithArgs("XXXX").
 		WillReturnError(sql.ErrNoRows)
@@ -247,6 +249,8 @@ func TestIsExchangeOpen_ExchangeNotFound(t *testing.T) {
 
 func TestIsExchangeOpen_DBError(t *testing.T) {
 	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT test_mode_enabled FROM settings").
+		WillReturnRows(sqlmock.NewRows([]string{"test_mode_enabled"}).AddRow(false))
 	mock.ExpectQuery("SELECT timezone, polity FROM stock_exchanges").
 		WithArgs("XNYS").
 		WillReturnError(sql.ErrConnDone)
@@ -258,6 +262,8 @@ func TestIsExchangeOpen_DBError(t *testing.T) {
 
 func TestIsExchangeOpen_Holiday(t *testing.T) {
 	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT test_mode_enabled FROM settings").
+		WillReturnRows(sqlmock.NewRows([]string{"test_mode_enabled"}).AddRow(false))
 	mock.ExpectQuery("SELECT timezone, polity FROM stock_exchanges").
 		WithArgs("XNYS").
 		WillReturnRows(sqlmock.NewRows([]string{"timezone", "polity"}).
@@ -275,6 +281,8 @@ func TestIsExchangeOpen_Holiday(t *testing.T) {
 
 func TestIsExchangeOpen_NoHoursConfigured(t *testing.T) {
 	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT test_mode_enabled FROM settings").
+		WillReturnRows(sqlmock.NewRows([]string{"test_mode_enabled"}).AddRow(false))
 	mock.ExpectQuery("SELECT timezone, polity FROM stock_exchanges").
 		WithArgs("XNYS").
 		WillReturnRows(sqlmock.NewRows([]string{"timezone", "polity"}).

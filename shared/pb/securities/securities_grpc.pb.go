@@ -31,6 +31,8 @@ const (
 	SecuritiesService_AddHoliday_FullMethodName            = "/securities.SecuritiesService/AddHoliday"
 	SecuritiesService_DeleteHoliday_FullMethodName         = "/securities.SecuritiesService/DeleteHoliday"
 	SecuritiesService_IsExchangeOpen_FullMethodName        = "/securities.SecuritiesService/IsExchangeOpen"
+	SecuritiesService_GetTestMode_FullMethodName           = "/securities.SecuritiesService/GetTestMode"
+	SecuritiesService_SetTestMode_FullMethodName           = "/securities.SecuritiesService/SetTestMode"
 )
 
 // SecuritiesServiceClient is the client API for SecuritiesService service.
@@ -53,6 +55,9 @@ type SecuritiesServiceClient interface {
 	DeleteHoliday(ctx context.Context, in *DeleteHolidayRequest, opts ...grpc.CallOption) (*DeleteHolidayResponse, error)
 	// Status
 	IsExchangeOpen(ctx context.Context, in *IsExchangeOpenRequest, opts ...grpc.CallOption) (*IsExchangeOpenResponse, error)
+	// Test Mode
+	GetTestMode(ctx context.Context, in *GetTestModeRequest, opts ...grpc.CallOption) (*GetTestModeResponse, error)
+	SetTestMode(ctx context.Context, in *SetTestModeRequest, opts ...grpc.CallOption) (*SetTestModeResponse, error)
 }
 
 type securitiesServiceClient struct {
@@ -183,6 +188,26 @@ func (c *securitiesServiceClient) IsExchangeOpen(ctx context.Context, in *IsExch
 	return out, nil
 }
 
+func (c *securitiesServiceClient) GetTestMode(ctx context.Context, in *GetTestModeRequest, opts ...grpc.CallOption) (*GetTestModeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTestModeResponse)
+	err := c.cc.Invoke(ctx, SecuritiesService_GetTestMode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *securitiesServiceClient) SetTestMode(ctx context.Context, in *SetTestModeRequest, opts ...grpc.CallOption) (*SetTestModeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetTestModeResponse)
+	err := c.cc.Invoke(ctx, SecuritiesService_SetTestMode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SecuritiesServiceServer is the server API for SecuritiesService service.
 // All implementations must embed UnimplementedSecuritiesServiceServer
 // for forward compatibility.
@@ -203,6 +228,9 @@ type SecuritiesServiceServer interface {
 	DeleteHoliday(context.Context, *DeleteHolidayRequest) (*DeleteHolidayResponse, error)
 	// Status
 	IsExchangeOpen(context.Context, *IsExchangeOpenRequest) (*IsExchangeOpenResponse, error)
+	// Test Mode
+	GetTestMode(context.Context, *GetTestModeRequest) (*GetTestModeResponse, error)
+	SetTestMode(context.Context, *SetTestModeRequest) (*SetTestModeResponse, error)
 	mustEmbedUnimplementedSecuritiesServiceServer()
 }
 
@@ -248,6 +276,12 @@ func (UnimplementedSecuritiesServiceServer) DeleteHoliday(context.Context, *Dele
 }
 func (UnimplementedSecuritiesServiceServer) IsExchangeOpen(context.Context, *IsExchangeOpenRequest) (*IsExchangeOpenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method IsExchangeOpen not implemented")
+}
+func (UnimplementedSecuritiesServiceServer) GetTestMode(context.Context, *GetTestModeRequest) (*GetTestModeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTestMode not implemented")
+}
+func (UnimplementedSecuritiesServiceServer) SetTestMode(context.Context, *SetTestModeRequest) (*SetTestModeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetTestMode not implemented")
 }
 func (UnimplementedSecuritiesServiceServer) mustEmbedUnimplementedSecuritiesServiceServer() {}
 func (UnimplementedSecuritiesServiceServer) testEmbeddedByValue()                           {}
@@ -486,6 +520,42 @@ func _SecuritiesService_IsExchangeOpen_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SecuritiesService_GetTestMode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTestModeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SecuritiesServiceServer).GetTestMode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SecuritiesService_GetTestMode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SecuritiesServiceServer).GetTestMode(ctx, req.(*GetTestModeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SecuritiesService_SetTestMode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetTestModeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SecuritiesServiceServer).SetTestMode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SecuritiesService_SetTestMode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SecuritiesServiceServer).SetTestMode(ctx, req.(*SetTestModeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SecuritiesService_ServiceDesc is the grpc.ServiceDesc for SecuritiesService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -540,6 +610,14 @@ var SecuritiesService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsExchangeOpen",
 			Handler:    _SecuritiesService_IsExchangeOpen_Handler,
+		},
+		{
+			MethodName: "GetTestMode",
+			Handler:    _SecuritiesService_GetTestMode_Handler,
+		},
+		{
+			MethodName: "SetTestMode",
+			Handler:    _SecuritiesService_SetTestMode_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -231,3 +231,85 @@ func TestDeleteStockExchange_DBError(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, codes.Internal, status.Code(err))
 }
+
+// ── GetTestMode ───────────────────────────────────────────────────────────────
+
+func TestGetTestMode_DefaultFalse(t *testing.T) {
+	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT test_mode_enabled FROM settings").
+		WillReturnRows(sqlmock.NewRows([]string{"test_mode_enabled"}).AddRow(false))
+
+	resp, err := s.GetTestMode(context.Background(), &pb.GetTestModeRequest{})
+	require.NoError(t, err)
+	assert.False(t, resp.Enabled)
+}
+
+func TestGetTestMode_True(t *testing.T) {
+	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT test_mode_enabled FROM settings").
+		WillReturnRows(sqlmock.NewRows([]string{"test_mode_enabled"}).AddRow(true))
+
+	resp, err := s.GetTestMode(context.Background(), &pb.GetTestModeRequest{})
+	require.NoError(t, err)
+	assert.True(t, resp.Enabled)
+}
+
+func TestGetTestMode_DBError(t *testing.T) {
+	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT test_mode_enabled FROM settings").
+		WillReturnError(sql.ErrConnDone)
+
+	_, err := s.GetTestMode(context.Background(), &pb.GetTestModeRequest{})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+// ── SetTestMode ───────────────────────────────────────────────────────────────
+
+func TestSetTestMode_Enable(t *testing.T) {
+	s, mock := newServer(t)
+	mock.ExpectExec("UPDATE settings").
+		WithArgs(true).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	resp, err := s.SetTestMode(context.Background(), &pb.SetTestModeRequest{Enabled: true})
+	require.NoError(t, err)
+	assert.True(t, resp.Enabled)
+}
+
+func TestSetTestMode_Disable(t *testing.T) {
+	s, mock := newServer(t)
+	mock.ExpectExec("UPDATE settings").
+		WithArgs(false).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	resp, err := s.SetTestMode(context.Background(), &pb.SetTestModeRequest{Enabled: false})
+	require.NoError(t, err)
+	assert.False(t, resp.Enabled)
+}
+
+func TestSetTestMode_DBError(t *testing.T) {
+	s, mock := newServer(t)
+	mock.ExpectExec("UPDATE settings").
+		WillReturnError(sql.ErrConnDone)
+
+	_, err := s.SetTestMode(context.Background(), &pb.SetTestModeRequest{Enabled: true})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+// ── IsExchangeOpen (test mode) ────────────────────────────────────────────────
+
+func TestIsExchangeOpen_TestModeOn(t *testing.T) {
+	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT test_mode_enabled FROM settings").
+		WillReturnRows(sqlmock.NewRows([]string{"test_mode_enabled"}).AddRow(true))
+
+	resp, err := s.IsExchangeOpen(context.Background(), &pb.IsExchangeOpenRequest{MicCode: "XNYS"})
+	require.NoError(t, err)
+	assert.True(t, resp.IsOpen)
+	assert.Equal(t, "test_mode", resp.Segment)
+	assert.Equal(t, "XNYS", resp.MicCode)
+	// No further DB queries should have been made
+	require.NoError(t, mock.ExpectationsWereMet())
+}

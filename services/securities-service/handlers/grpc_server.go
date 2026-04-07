@@ -217,10 +217,40 @@ func (s *SecuritiesServer) DeleteHoliday(ctx context.Context, req *pb.DeleteHoli
 	return &pb.DeleteHolidayResponse{}, nil
 }
 
+// ── Test Mode ─────────────────────────────────────────────────────────────────
+
+func (s *SecuritiesServer) GetTestMode(ctx context.Context, _ *pb.GetTestModeRequest) (*pb.GetTestModeResponse, error) {
+	var enabled bool
+	err := s.DB.QueryRowContext(ctx, `SELECT test_mode_enabled FROM settings WHERE id = TRUE`).Scan(&enabled)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "query failed: %v", err)
+	}
+	return &pb.GetTestModeResponse{Enabled: enabled}, nil
+}
+
+func (s *SecuritiesServer) SetTestMode(ctx context.Context, req *pb.SetTestModeRequest) (*pb.SetTestModeResponse, error) {
+	_, err := s.DB.ExecContext(ctx, `UPDATE settings SET test_mode_enabled = $1 WHERE id = TRUE`, req.Enabled)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "update failed: %v", err)
+	}
+	return &pb.SetTestModeResponse{Enabled: req.Enabled}, nil
+}
+
 // ── Exchange Status ───────────────────────────────────────────────────────────
 
 func (s *SecuritiesServer) IsExchangeOpen(ctx context.Context, req *pb.IsExchangeOpenRequest) (*pb.IsExchangeOpenResponse, error) {
-	// 1. Fetch timezone and polity for the exchange
+	// 1. Check test mode — if enabled, all exchanges are treated as open
+	var testMode bool
+	if err := s.DB.QueryRowContext(ctx, `SELECT test_mode_enabled FROM settings WHERE id = TRUE`).Scan(&testMode); err != nil {
+		return nil, status.Errorf(codes.Internal, "test mode check failed: %v", err)
+	}
+	if testMode {
+		return &pb.IsExchangeOpenResponse{
+			MicCode: req.MicCode, IsOpen: true, Segment: "test_mode",
+		}, nil
+	}
+
+	// 2. Fetch timezone and polity for the exchange
 	var timezone, polity string
 	err := s.DB.QueryRowContext(ctx,
 		`SELECT timezone, polity FROM stock_exchanges WHERE mic_code = $1`, req.MicCode).
@@ -232,7 +262,7 @@ func (s *SecuritiesServer) IsExchangeOpen(ctx context.Context, req *pb.IsExchang
 		return nil, status.Errorf(codes.Internal, "query failed: %v", err)
 	}
 
-	// 2. Get current time in the exchange's local timezone
+	// 3. Get current time in the exchange's local timezone
 	loc, err := time.LoadLocation(timezone)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "invalid timezone %q: %v", timezone, err)
@@ -241,7 +271,7 @@ func (s *SecuritiesServer) IsExchangeOpen(ctx context.Context, req *pb.IsExchang
 	today := now.Format("2006-01-02")
 	currentTime := now.Format("15:04")
 
-	// 3. Check if today is a holiday
+	// 4. Check if today is a holiday
 	var holidayExists bool
 	err = s.DB.QueryRowContext(ctx,
 		`SELECT EXISTS(SELECT 1 FROM exchange_holidays WHERE polity = $1 AND holiday_date = $2)`,
@@ -258,7 +288,7 @@ func (s *SecuritiesServer) IsExchangeOpen(ctx context.Context, req *pb.IsExchang
 		}, nil
 	}
 
-	// 4. Load working hours for this polity
+	// 5. Load working hours for this polity
 	rows, err := s.DB.QueryContext(ctx,
 		`SELECT segment, open_time, close_time FROM exchange_working_hours WHERE polity = $1`,
 		polity)
@@ -267,7 +297,7 @@ func (s *SecuritiesServer) IsExchangeOpen(ctx context.Context, req *pb.IsExchang
 	}
 	defer rows.Close()
 
-	// 5. Check which segment (if any) the current time falls in
+	// 6. Check which segment (if any) the current time falls in
 	for rows.Next() {
 		var segment, openStr, closeStr string
 		if err := rows.Scan(&segment, &openStr, &closeStr); err != nil {
@@ -283,7 +313,7 @@ func (s *SecuritiesServer) IsExchangeOpen(ctx context.Context, req *pb.IsExchang
 		}
 	}
 
-	// 6. No segment matched — exchange is closed
+	// 7. No segment matched — exchange is closed
 	return &pb.IsExchangeOpenResponse{
 		MicCode:          req.MicCode,
 		IsOpen:           false,

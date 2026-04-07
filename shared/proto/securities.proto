@@ -103,9 +103,17 @@ message IsExchangeOpenRequest  { string mic_code = 1; }
 message IsExchangeOpenResponse {
   string mic_code          = 1;
   bool   is_open           = 2;
-  string segment           = 3; // "pre_market", "regular", "post_market", or "closed"
+  string segment           = 3; // "pre_market", "regular", "post_market", "test_mode", or "closed"
   string current_time_local = 4; // "HH:MM" in exchange's local timezone
 }
+
+// ── Test Mode ─────────────────────────────────────────────────────────────────
+
+message GetTestModeRequest  {}
+message GetTestModeResponse { bool enabled = 1; }
+
+message SetTestModeRequest  { bool enabled = 1; }
+message SetTestModeResponse { bool enabled = 1; }
 
 // ── Service ───────────────────────────────────────────────────────────────────
 
@@ -130,4 +138,8 @@ service SecuritiesService {
 
   // Status
   rpc IsExchangeOpen        (IsExchangeOpenRequest)        returns (IsExchangeOpenResponse);
+
+  // Test Mode
+  rpc GetTestMode           (GetTestModeRequest)           returns (GetTestModeResponse);
+  rpc SetTestMode           (SetTestModeRequest)           returns (SetTestModeResponse);
 }
