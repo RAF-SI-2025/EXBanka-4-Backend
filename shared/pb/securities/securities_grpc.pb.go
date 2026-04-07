@@ -22,6 +22,7 @@ const (
 	SecuritiesService_Ping_FullMethodName                  = "/securities.SecuritiesService/Ping"
 	SecuritiesService_GetStockExchanges_FullMethodName     = "/securities.SecuritiesService/GetStockExchanges"
 	SecuritiesService_GetStockExchangeByMIC_FullMethodName = "/securities.SecuritiesService/GetStockExchangeByMIC"
+	SecuritiesService_GetStockExchangeById_FullMethodName  = "/securities.SecuritiesService/GetStockExchangeById"
 	SecuritiesService_CreateStockExchange_FullMethodName   = "/securities.SecuritiesService/CreateStockExchange"
 	SecuritiesService_UpdateStockExchange_FullMethodName   = "/securities.SecuritiesService/UpdateStockExchange"
 	SecuritiesService_DeleteStockExchange_FullMethodName   = "/securities.SecuritiesService/DeleteStockExchange"
@@ -43,6 +44,7 @@ type SecuritiesServiceClient interface {
 	// Stock Exchanges
 	GetStockExchanges(ctx context.Context, in *GetStockExchangesRequest, opts ...grpc.CallOption) (*GetStockExchangesResponse, error)
 	GetStockExchangeByMIC(ctx context.Context, in *GetStockExchangeByMICRequest, opts ...grpc.CallOption) (*GetStockExchangeByMICResponse, error)
+	GetStockExchangeById(ctx context.Context, in *GetStockExchangeByIdRequest, opts ...grpc.CallOption) (*GetStockExchangeByIdResponse, error)
 	CreateStockExchange(ctx context.Context, in *CreateStockExchangeRequest, opts ...grpc.CallOption) (*CreateStockExchangeResponse, error)
 	UpdateStockExchange(ctx context.Context, in *UpdateStockExchangeRequest, opts ...grpc.CallOption) (*UpdateStockExchangeResponse, error)
 	DeleteStockExchange(ctx context.Context, in *DeleteStockExchangeRequest, opts ...grpc.CallOption) (*DeleteStockExchangeResponse, error)
@@ -92,6 +94,16 @@ func (c *securitiesServiceClient) GetStockExchangeByMIC(ctx context.Context, in 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetStockExchangeByMICResponse)
 	err := c.cc.Invoke(ctx, SecuritiesService_GetStockExchangeByMIC_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *securitiesServiceClient) GetStockExchangeById(ctx context.Context, in *GetStockExchangeByIdRequest, opts ...grpc.CallOption) (*GetStockExchangeByIdResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetStockExchangeByIdResponse)
+	err := c.cc.Invoke(ctx, SecuritiesService_GetStockExchangeById_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -216,6 +228,7 @@ type SecuritiesServiceServer interface {
 	// Stock Exchanges
 	GetStockExchanges(context.Context, *GetStockExchangesRequest) (*GetStockExchangesResponse, error)
 	GetStockExchangeByMIC(context.Context, *GetStockExchangeByMICRequest) (*GetStockExchangeByMICResponse, error)
+	GetStockExchangeById(context.Context, *GetStockExchangeByIdRequest) (*GetStockExchangeByIdResponse, error)
 	CreateStockExchange(context.Context, *CreateStockExchangeRequest) (*CreateStockExchangeResponse, error)
 	UpdateStockExchange(context.Context, *UpdateStockExchangeRequest) (*UpdateStockExchangeResponse, error)
 	DeleteStockExchange(context.Context, *DeleteStockExchangeRequest) (*DeleteStockExchangeResponse, error)
@@ -249,6 +262,9 @@ func (UnimplementedSecuritiesServiceServer) GetStockExchanges(context.Context, *
 }
 func (UnimplementedSecuritiesServiceServer) GetStockExchangeByMIC(context.Context, *GetStockExchangeByMICRequest) (*GetStockExchangeByMICResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetStockExchangeByMIC not implemented")
+}
+func (UnimplementedSecuritiesServiceServer) GetStockExchangeById(context.Context, *GetStockExchangeByIdRequest) (*GetStockExchangeByIdResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetStockExchangeById not implemented")
 }
 func (UnimplementedSecuritiesServiceServer) CreateStockExchange(context.Context, *CreateStockExchangeRequest) (*CreateStockExchangeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateStockExchange not implemented")
@@ -354,6 +370,24 @@ func _SecuritiesService_GetStockExchangeByMIC_Handler(srv interface{}, ctx conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SecuritiesServiceServer).GetStockExchangeByMIC(ctx, req.(*GetStockExchangeByMICRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SecuritiesService_GetStockExchangeById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetStockExchangeByIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SecuritiesServiceServer).GetStockExchangeById(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SecuritiesService_GetStockExchangeById_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SecuritiesServiceServer).GetStockExchangeById(ctx, req.(*GetStockExchangeByIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -574,6 +608,10 @@ var SecuritiesService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetStockExchangeByMIC",
 			Handler:    _SecuritiesService_GetStockExchangeByMIC_Handler,
+		},
+		{
+			MethodName: "GetStockExchangeById",
+			Handler:    _SecuritiesService_GetStockExchangeById_Handler,
 		},
 		{
 			MethodName: "CreateStockExchange",

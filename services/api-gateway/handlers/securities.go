@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -33,18 +34,58 @@ func toExchangeJSON(e *pb.StockExchange) exchangeJSON {
 	}
 }
 
+// resolveExchangeMIC looks up the MIC code for a path param that may be either
+// a numeric ID or a MIC string. Returns the MIC on success; writes an HTTP
+// error response and returns "" on failure.
+func resolveExchangeMIC(c *gin.Context, client pb.SecuritiesServiceClient, id string) string {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+	defer cancel()
+
+	if numID, err := strconv.ParseInt(id, 10, 64); err == nil {
+		resp, err := client.GetStockExchangeById(ctx, &pb.GetStockExchangeByIdRequest{Id: numID})
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				c.JSON(http.StatusNotFound, gin.H{"error": status.Convert(err).Message()})
+				return ""
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch exchange"})
+			return ""
+		}
+		return resp.Exchange.MicCode
+	}
+
+	resp, err := client.GetStockExchangeByMIC(ctx, &pb.GetStockExchangeByMICRequest{MicCode: id})
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": status.Convert(err).Message()})
+			return ""
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch exchange"})
+		return ""
+	}
+	return resp.Exchange.MicCode
+}
+
 // GetStockExchanges godoc
-// @Summary      List all stock exchanges
+// @Summary      List all stock exchanges (paginated)
 // @Tags         securities
 // @Produce      json
-// @Success      200  {array}   exchangeJSON
+// @Param        page      query  int  false  "Page number (default 1)"
+// @Param        pageSize  query  int  false  "Page size (default 10)"
+// @Success      200  {object}  map[string]interface{}
 // @Router       /stock-exchanges [get]
 func GetStockExchanges(client pb.SecuritiesServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+		pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 		defer cancel()
 
-		resp, err := client.GetStockExchanges(ctx, &pb.GetStockExchangesRequest{})
+		resp, err := client.GetStockExchanges(ctx, &pb.GetStockExchangesRequest{
+			Page:     int32(page),
+			PageSize: int32(pageSize),
+		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch stock exchanges"})
 			return
@@ -54,24 +95,38 @@ func GetStockExchanges(client pb.SecuritiesServiceClient) gin.HandlerFunc {
 		for _, e := range resp.Exchanges {
 			result = append(result, toExchangeJSON(e))
 		}
-		c.JSON(http.StatusOK, result)
+		c.JSON(http.StatusOK, gin.H{"exchanges": result, "totalCount": resp.TotalCount})
 	}
 }
 
-// GetStockExchangeByMIC godoc
-// @Summary      Get stock exchange by MIC code
+// GetStockExchange godoc
+// @Summary      Get stock exchange by numeric ID or MIC code
 // @Tags         securities
 // @Produce      json
-// @Param        mic  path  string  true  "MIC code"
+// @Param        id  path  string  true  "Numeric ID or MIC code"
 // @Success      200  {object}  exchangeJSON
-// @Router       /stock-exchanges/{mic} [get]
-func GetStockExchangeByMIC(client pb.SecuritiesServiceClient) gin.HandlerFunc {
+// @Router       /stock-exchanges/{id} [get]
+func GetStockExchange(client pb.SecuritiesServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		mic := c.Param("mic")
+		id := c.Param("id")
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 		defer cancel()
 
-		resp, err := client.GetStockExchangeByMIC(ctx, &pb.GetStockExchangeByMICRequest{MicCode: mic})
+		if numID, err := strconv.ParseInt(id, 10, 64); err == nil {
+			resp, err := client.GetStockExchangeById(ctx, &pb.GetStockExchangeByIdRequest{Id: numID})
+			if err != nil {
+				if status.Code(err) == codes.NotFound {
+					c.JSON(http.StatusNotFound, gin.H{"error": status.Convert(err).Message()})
+					return
+				}
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch exchange"})
+				return
+			}
+			c.JSON(http.StatusOK, toExchangeJSON(resp.Exchange))
+			return
+		}
+
+		resp, err := client.GetStockExchangeByMIC(ctx, &pb.GetStockExchangeByMICRequest{MicCode: id})
 		if err != nil {
 			if status.Code(err) == codes.NotFound {
 				c.JSON(http.StatusNotFound, gin.H{"error": status.Convert(err).Message()})
@@ -130,16 +185,19 @@ func CreateStockExchange(client pb.SecuritiesServiceClient) gin.HandlerFunc {
 }
 
 // UpdateStockExchange godoc
-// @Summary      Update a stock exchange by MIC code
+// @Summary      Update a stock exchange by numeric ID or MIC code
 // @Tags         securities
 // @Accept       json
 // @Produce      json
-// @Param        mic  path  string  true  "MIC code"
+// @Param        id  path  string  true  "Numeric ID or MIC code"
 // @Success      200  {object}  exchangeJSON
-// @Router       /stock-exchanges/{mic} [put]
+// @Router       /stock-exchanges/{id} [put]
 func UpdateStockExchange(client pb.SecuritiesServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		mic := c.Param("mic")
+		mic := resolveExchangeMIC(c, client, c.Param("id"))
+		if mic == "" {
+			return
+		}
 		var body struct {
 			Name     string `json:"name"     binding:"required"`
 			Acronym  string `json:"acronym"  binding:"required"`
@@ -176,14 +234,17 @@ func UpdateStockExchange(client pb.SecuritiesServiceClient) gin.HandlerFunc {
 }
 
 // DeleteStockExchange godoc
-// @Summary      Delete a stock exchange by MIC code
+// @Summary      Delete a stock exchange by numeric ID or MIC code
 // @Tags         securities
-// @Param        mic  path  string  true  "MIC code"
+// @Param        id  path  string  true  "Numeric ID or MIC code"
 // @Success      204
-// @Router       /stock-exchanges/{mic} [delete]
+// @Router       /stock-exchanges/{id} [delete]
 func DeleteStockExchange(client pb.SecuritiesServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		mic := c.Param("mic")
+		mic := resolveExchangeMIC(c, client, c.Param("id"))
+		if mic == "" {
+			return
+		}
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 		defer cancel()
 
@@ -218,14 +279,17 @@ func toWorkingHoursJSON(h *pb.ExchangeWorkingHours) workingHoursJSON {
 }
 
 // GetWorkingHours godoc
-// @Summary      Get working hours for an exchange
+// @Summary      Get working hours for an exchange by numeric ID or MIC code
 // @Tags         securities
-// @Param        mic  path  string  true  "MIC code"
+// @Param        id  path  string  true  "Numeric ID or MIC code"
 // @Success      200  {array}  workingHoursJSON
-// @Router       /stock-exchanges/{mic}/hours [get]
+// @Router       /stock-exchanges/{id}/hours [get]
 func GetWorkingHours(client pb.SecuritiesServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		mic := c.Param("mic")
+		mic := resolveExchangeMIC(c, client, c.Param("id"))
+		if mic == "" {
+			return
+		}
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 		defer cancel()
 
@@ -298,18 +362,21 @@ func toHolidayJSON(h *pb.ExchangeHoliday) holidayJSON {
 }
 
 // GetHolidays godoc
-// @Summary      Get holidays for an exchange's polity
+// @Summary      Get holidays for an exchange's polity by numeric ID or MIC code
 // @Tags         securities
-// @Param        mic  path  string  true  "MIC code"
+// @Param        id  path  string  true  "Numeric ID or MIC code"
 // @Success      200  {array}  holidayJSON
-// @Router       /stock-exchanges/{mic}/holidays [get]
+// @Router       /stock-exchanges/{id}/holidays [get]
 func GetHolidays(client pb.SecuritiesServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		mic := c.Param("mic")
+		mic := resolveExchangeMIC(c, client, c.Param("id"))
+		if mic == "" {
+			return
+		}
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 		defer cancel()
 
-		// Resolve polity via GetStockExchangeByMIC first, then GetHolidays by polity
+		// Resolve polity via GetStockExchangeByMIC, then GetHolidays by polity
 		exchResp, err := client.GetStockExchangeByMIC(ctx, &pb.GetStockExchangeByMICRequest{MicCode: mic})
 		if err != nil {
 			if status.Code(err) == codes.NotFound {

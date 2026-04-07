@@ -18,6 +18,7 @@ import (
 type stubSecuritiesClient struct {
 	getExchangesFn    func(context.Context, *pb.GetStockExchangesRequest, ...grpc.CallOption) (*pb.GetStockExchangesResponse, error)
 	getByMICFn        func(context.Context, *pb.GetStockExchangeByMICRequest, ...grpc.CallOption) (*pb.GetStockExchangeByMICResponse, error)
+	getByIdFn         func(context.Context, *pb.GetStockExchangeByIdRequest, ...grpc.CallOption) (*pb.GetStockExchangeByIdResponse, error)
 	createExchangeFn  func(context.Context, *pb.CreateStockExchangeRequest, ...grpc.CallOption) (*pb.CreateStockExchangeResponse, error)
 	updateExchangeFn  func(context.Context, *pb.UpdateStockExchangeRequest, ...grpc.CallOption) (*pb.UpdateStockExchangeResponse, error)
 	deleteExchangeFn  func(context.Context, *pb.DeleteStockExchangeRequest, ...grpc.CallOption) (*pb.DeleteStockExchangeResponse, error)
@@ -43,6 +44,12 @@ func (s *stubSecuritiesClient) GetStockExchanges(ctx context.Context, in *pb.Get
 func (s *stubSecuritiesClient) GetStockExchangeByMIC(ctx context.Context, in *pb.GetStockExchangeByMICRequest, opts ...grpc.CallOption) (*pb.GetStockExchangeByMICResponse, error) {
 	if s.getByMICFn != nil {
 		return s.getByMICFn(ctx, in, opts...)
+	}
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubSecuritiesClient) GetStockExchangeById(ctx context.Context, in *pb.GetStockExchangeByIdRequest, opts ...grpc.CallOption) (*pb.GetStockExchangeByIdResponse, error) {
+	if s.getByIdFn != nil {
+		return s.getByIdFn(ctx, in, opts...)
 	}
 	return nil, fmt.Errorf("not implemented")
 }
@@ -174,4 +181,213 @@ func TestSetTestMode_Error(t *testing.T) {
 	}
 	w := serveHandler(SetTestMode(client), "POST", "/stock-exchanges/test-mode", "/stock-exchanges/test-mode", `{"enabled":true}`)
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+// ---- helpers ----
+
+func sampleExchange() *pb.StockExchange {
+	return &pb.StockExchange{
+		Id: 1, Name: "New York Stock Exchange", Acronym: "NYSE",
+		MicCode: "XNYS", Polity: "United States", Currency: "USD", Timezone: "America/New_York",
+	}
+}
+
+// ---- GetStockExchanges ----
+
+func TestGetStockExchanges_Happy(t *testing.T) {
+	client := &stubSecuritiesClient{
+		getExchangesFn: func(ctx context.Context, in *pb.GetStockExchangesRequest, opts ...grpc.CallOption) (*pb.GetStockExchangesResponse, error) {
+			return &pb.GetStockExchangesResponse{Exchanges: []*pb.StockExchange{sampleExchange()}, TotalCount: 1}, nil
+		},
+	}
+	w := serveHandler(GetStockExchanges(client), "GET", "/stock-exchanges", "/stock-exchanges?page=1&pageSize=10", "")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), `"totalCount":1`)
+	assert.Contains(t, w.Body.String(), "XNYS")
+}
+
+func TestGetStockExchanges_Error(t *testing.T) {
+	client := &stubSecuritiesClient{
+		getExchangesFn: func(ctx context.Context, in *pb.GetStockExchangesRequest, opts ...grpc.CallOption) (*pb.GetStockExchangesResponse, error) {
+			return nil, status.Error(codes.Internal, "db error")
+		},
+	}
+	w := serveHandler(GetStockExchanges(client), "GET", "/stock-exchanges", "/stock-exchanges", "")
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+// ---- GetStockExchange (by MIC or ID) ----
+
+func TestGetStockExchange_ByMIC_Happy(t *testing.T) {
+	client := &stubSecuritiesClient{
+		getByMICFn: func(ctx context.Context, in *pb.GetStockExchangeByMICRequest, opts ...grpc.CallOption) (*pb.GetStockExchangeByMICResponse, error) {
+			return &pb.GetStockExchangeByMICResponse{Exchange: sampleExchange()}, nil
+		},
+	}
+	w := serveHandler(GetStockExchange(client), "GET", "/stock-exchanges/:id", "/stock-exchanges/XNYS", "")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "XNYS")
+}
+
+func TestGetStockExchange_ByID_Happy(t *testing.T) {
+	client := &stubSecuritiesClient{
+		getByIdFn: func(ctx context.Context, in *pb.GetStockExchangeByIdRequest, opts ...grpc.CallOption) (*pb.GetStockExchangeByIdResponse, error) {
+			return &pb.GetStockExchangeByIdResponse{Exchange: sampleExchange()}, nil
+		},
+	}
+	w := serveHandler(GetStockExchange(client), "GET", "/stock-exchanges/:id", "/stock-exchanges/1", "")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "XNYS")
+}
+
+func TestGetStockExchange_NotFound(t *testing.T) {
+	client := &stubSecuritiesClient{
+		getByMICFn: func(ctx context.Context, in *pb.GetStockExchangeByMICRequest, opts ...grpc.CallOption) (*pb.GetStockExchangeByMICResponse, error) {
+			return nil, status.Error(codes.NotFound, "not found")
+		},
+	}
+	w := serveHandler(GetStockExchange(client), "GET", "/stock-exchanges/:id", "/stock-exchanges/XXXX", "")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestGetStockExchange_Error(t *testing.T) {
+	client := &stubSecuritiesClient{
+		getByMICFn: func(ctx context.Context, in *pb.GetStockExchangeByMICRequest, opts ...grpc.CallOption) (*pb.GetStockExchangeByMICResponse, error) {
+			return nil, status.Error(codes.Internal, "db error")
+		},
+	}
+	w := serveHandler(GetStockExchange(client), "GET", "/stock-exchanges/:id", "/stock-exchanges/XNYS", "")
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+// ---- CreateStockExchange ----
+
+func TestCreateStockExchange_Happy(t *testing.T) {
+	client := &stubSecuritiesClient{
+		createExchangeFn: func(ctx context.Context, in *pb.CreateStockExchangeRequest, opts ...grpc.CallOption) (*pb.CreateStockExchangeResponse, error) {
+			return &pb.CreateStockExchangeResponse{Exchange: sampleExchange()}, nil
+		},
+	}
+	body := `{"name":"NYSE","acronym":"NYSE","micCode":"XNYS","polity":"United States","currency":"USD","timezone":"America/New_York"}`
+	w := serveHandler(CreateStockExchange(client), "POST", "/stock-exchanges", "/stock-exchanges", body)
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Contains(t, w.Body.String(), "XNYS")
+}
+
+func TestCreateStockExchange_Conflict(t *testing.T) {
+	client := &stubSecuritiesClient{
+		createExchangeFn: func(ctx context.Context, in *pb.CreateStockExchangeRequest, opts ...grpc.CallOption) (*pb.CreateStockExchangeResponse, error) {
+			return nil, status.Error(codes.AlreadyExists, "already exists")
+		},
+	}
+	body := `{"name":"NYSE","acronym":"NYSE","micCode":"XNYS","polity":"United States","currency":"USD","timezone":"America/New_York"}`
+	w := serveHandler(CreateStockExchange(client), "POST", "/stock-exchanges", "/stock-exchanges", body)
+	assert.Equal(t, http.StatusConflict, w.Code)
+}
+
+func TestCreateStockExchange_BadBody(t *testing.T) {
+	client := &stubSecuritiesClient{}
+	w := serveHandler(CreateStockExchange(client), "POST", "/stock-exchanges", "/stock-exchanges", `{}`)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestCreateStockExchange_Error(t *testing.T) {
+	client := &stubSecuritiesClient{
+		createExchangeFn: func(ctx context.Context, in *pb.CreateStockExchangeRequest, opts ...grpc.CallOption) (*pb.CreateStockExchangeResponse, error) {
+			return nil, status.Error(codes.Internal, "db error")
+		},
+	}
+	body := `{"name":"NYSE","acronym":"NYSE","micCode":"XNYS","polity":"United States","currency":"USD","timezone":"America/New_York"}`
+	w := serveHandler(CreateStockExchange(client), "POST", "/stock-exchanges", "/stock-exchanges", body)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
+
+// ---- UpdateStockExchange ----
+
+func TestUpdateStockExchange_Happy(t *testing.T) {
+	client := &stubSecuritiesClient{
+		getByMICFn: func(ctx context.Context, in *pb.GetStockExchangeByMICRequest, opts ...grpc.CallOption) (*pb.GetStockExchangeByMICResponse, error) {
+			return &pb.GetStockExchangeByMICResponse{Exchange: sampleExchange()}, nil
+		},
+		updateExchangeFn: func(ctx context.Context, in *pb.UpdateStockExchangeRequest, opts ...grpc.CallOption) (*pb.UpdateStockExchangeResponse, error) {
+			return &pb.UpdateStockExchangeResponse{Exchange: sampleExchange()}, nil
+		},
+	}
+	body := `{"name":"NYSE","acronym":"NYSE","polity":"United States","currency":"USD","timezone":"America/New_York"}`
+	w := serveHandler(UpdateStockExchange(client), "PUT", "/stock-exchanges/:id", "/stock-exchanges/XNYS", body)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestUpdateStockExchange_NotFound(t *testing.T) {
+	client := &stubSecuritiesClient{
+		getByMICFn: func(ctx context.Context, in *pb.GetStockExchangeByMICRequest, opts ...grpc.CallOption) (*pb.GetStockExchangeByMICResponse, error) {
+			return nil, status.Error(codes.NotFound, "not found")
+		},
+	}
+	body := `{"name":"NYSE","acronym":"NYSE","polity":"United States","currency":"USD","timezone":"America/New_York"}`
+	w := serveHandler(UpdateStockExchange(client), "PUT", "/stock-exchanges/:id", "/stock-exchanges/XXXX", body)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestUpdateStockExchange_BadBody(t *testing.T) {
+	client := &stubSecuritiesClient{
+		getByMICFn: func(ctx context.Context, in *pb.GetStockExchangeByMICRequest, opts ...grpc.CallOption) (*pb.GetStockExchangeByMICResponse, error) {
+			return &pb.GetStockExchangeByMICResponse{Exchange: sampleExchange()}, nil
+		},
+	}
+	w := serveHandler(UpdateStockExchange(client), "PUT", "/stock-exchanges/:id", "/stock-exchanges/XNYS", `{}`)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+// ---- DeleteStockExchange ----
+
+func TestDeleteStockExchange_Happy(t *testing.T) {
+	client := &stubSecuritiesClient{
+		getByMICFn: func(ctx context.Context, in *pb.GetStockExchangeByMICRequest, opts ...grpc.CallOption) (*pb.GetStockExchangeByMICResponse, error) {
+			return &pb.GetStockExchangeByMICResponse{Exchange: sampleExchange()}, nil
+		},
+		deleteExchangeFn: func(ctx context.Context, in *pb.DeleteStockExchangeRequest, opts ...grpc.CallOption) (*pb.DeleteStockExchangeResponse, error) {
+			return &pb.DeleteStockExchangeResponse{}, nil
+		},
+	}
+	w := serveHandler(DeleteStockExchange(client), "DELETE", "/stock-exchanges/:id", "/stock-exchanges/XNYS", "")
+	assert.Equal(t, http.StatusNoContent, w.Code)
+}
+
+func TestDeleteStockExchange_NotFound(t *testing.T) {
+	client := &stubSecuritiesClient{
+		getByMICFn: func(ctx context.Context, in *pb.GetStockExchangeByMICRequest, opts ...grpc.CallOption) (*pb.GetStockExchangeByMICResponse, error) {
+			return nil, status.Error(codes.NotFound, "not found")
+		},
+	}
+	w := serveHandler(DeleteStockExchange(client), "DELETE", "/stock-exchanges/:id", "/stock-exchanges/XXXX", "")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+// ---- GetWorkingHours ----
+
+func TestGetWorkingHours_Happy(t *testing.T) {
+	client := &stubSecuritiesClient{
+		getByMICFn: func(ctx context.Context, in *pb.GetStockExchangeByMICRequest, opts ...grpc.CallOption) (*pb.GetStockExchangeByMICResponse, error) {
+			return &pb.GetStockExchangeByMICResponse{Exchange: sampleExchange()}, nil
+		},
+		getHoursFn: func(ctx context.Context, in *pb.GetWorkingHoursRequest, opts ...grpc.CallOption) (*pb.GetWorkingHoursResponse, error) {
+			return &pb.GetWorkingHoursResponse{Hours: []*pb.ExchangeWorkingHours{
+				{Id: 1, Polity: "United States", Segment: "regular", OpenTime: "09:30", CloseTime: "16:00"},
+			}}, nil
+		},
+	}
+	w := serveHandler(GetWorkingHours(client), "GET", "/stock-exchanges/:id/hours", "/stock-exchanges/XNYS/hours", "")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "regular")
+}
+
+func TestGetWorkingHours_NotFound(t *testing.T) {
+	client := &stubSecuritiesClient{
+		getByMICFn: func(ctx context.Context, in *pb.GetStockExchangeByMICRequest, opts ...grpc.CallOption) (*pb.GetStockExchangeByMICResponse, error) {
+			return nil, status.Error(codes.NotFound, "not found")
+		},
+	}
+	w := serveHandler(GetWorkingHours(client), "GET", "/stock-exchanges/:id/hours", "/stock-exchanges/XXXX/hours", "")
+	assert.Equal(t, http.StatusNotFound, w.Code)
 }

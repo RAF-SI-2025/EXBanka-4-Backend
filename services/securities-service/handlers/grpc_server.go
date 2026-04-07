@@ -24,11 +24,27 @@ func (s *SecuritiesServer) Ping(_ context.Context, _ *pb.PingRequest) (*pb.PingR
 
 // ── Stock Exchanges ───────────────────────────────────────────────────────────
 
-func (s *SecuritiesServer) GetStockExchanges(ctx context.Context, _ *pb.GetStockExchangesRequest) (*pb.GetStockExchangesResponse, error) {
+func (s *SecuritiesServer) GetStockExchanges(ctx context.Context, req *pb.GetStockExchangesRequest) (*pb.GetStockExchangesResponse, error) {
+	page := req.Page
+	pageSize := req.PageSize
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+	offset := (page - 1) * pageSize
+
+	var total int32
+	if err := s.DB.QueryRowContext(ctx, `SELECT COUNT(*) FROM stock_exchanges`).Scan(&total); err != nil {
+		return nil, status.Errorf(codes.Internal, "count query failed: %v", err)
+	}
+
 	rows, err := s.DB.QueryContext(ctx, `
 		SELECT id, name, acronym, mic_code, polity, currency, timezone
 		FROM stock_exchanges
-		ORDER BY name`)
+		ORDER BY name
+		LIMIT $1 OFFSET $2`, pageSize, offset)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "query failed: %v", err)
 	}
@@ -42,7 +58,23 @@ func (s *SecuritiesServer) GetStockExchanges(ctx context.Context, _ *pb.GetStock
 		}
 		exchanges = append(exchanges, e)
 	}
-	return &pb.GetStockExchangesResponse{Exchanges: exchanges}, nil
+	return &pb.GetStockExchangesResponse{Exchanges: exchanges, TotalCount: total}, nil
+}
+
+func (s *SecuritiesServer) GetStockExchangeById(ctx context.Context, req *pb.GetStockExchangeByIdRequest) (*pb.GetStockExchangeByIdResponse, error) {
+	e := &pb.StockExchange{}
+	err := s.DB.QueryRowContext(ctx, `
+		SELECT id, name, acronym, mic_code, polity, currency, timezone
+		FROM stock_exchanges
+		WHERE id = $1`, req.Id).
+		Scan(&e.Id, &e.Name, &e.Acronym, &e.MicCode, &e.Polity, &e.Currency, &e.Timezone)
+	if err == sql.ErrNoRows {
+		return nil, status.Errorf(codes.NotFound, "exchange with ID %d not found", req.Id)
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "query failed: %v", err)
+	}
+	return &pb.GetStockExchangeByIdResponse{Exchange: e}, nil
 }
 
 func (s *SecuritiesServer) GetStockExchangeByMIC(ctx context.Context, req *pb.GetStockExchangeByMICRequest) (*pb.GetStockExchangeByMICResponse, error) {

@@ -37,34 +37,103 @@ func TestPing(t *testing.T) {
 
 func TestGetStockExchanges_Empty(t *testing.T) {
 	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT COUNT").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
 	mock.ExpectQuery("SELECT id, name, acronym, mic_code").
 		WillReturnRows(sqlmock.NewRows(exchangeCols))
 
-	resp, err := s.GetStockExchanges(context.Background(), &pb.GetStockExchangesRequest{})
+	resp, err := s.GetStockExchanges(context.Background(), &pb.GetStockExchangesRequest{Page: 1, PageSize: 10})
 	require.NoError(t, err)
 	assert.Empty(t, resp.Exchanges)
+	assert.Equal(t, int32(0), resp.TotalCount)
 }
 
-func TestGetStockExchanges_ReturnsAll(t *testing.T) {
+func TestGetStockExchanges_Paginated(t *testing.T) {
 	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT COUNT").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
 	mock.ExpectQuery("SELECT id, name, acronym, mic_code").
 		WillReturnRows(sqlmock.NewRows(exchangeCols).
 			AddRow(1, "New York Stock Exchange", "NYSE", "XNYS", "United States", "USD", "America/New_York").
 			AddRow(2, "London Stock Exchange", "LSE", "XLON", "United Kingdom", "GBP", "Europe/London"))
 
-	resp, err := s.GetStockExchanges(context.Background(), &pb.GetStockExchangesRequest{})
+	resp, err := s.GetStockExchanges(context.Background(), &pb.GetStockExchangesRequest{Page: 1, PageSize: 10})
 	require.NoError(t, err)
 	require.Len(t, resp.Exchanges, 2)
+	assert.Equal(t, int32(2), resp.TotalCount)
 	assert.Equal(t, "XNYS", resp.Exchanges[0].MicCode)
 	assert.Equal(t, "XLON", resp.Exchanges[1].MicCode)
 }
 
+func TestGetStockExchanges_DefaultPagination(t *testing.T) {
+	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT COUNT").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+	mock.ExpectQuery("SELECT id, name, acronym, mic_code").
+		WillReturnRows(sqlmock.NewRows(exchangeCols).
+			AddRow(1, "New York Stock Exchange", "NYSE", "XNYS", "United States", "USD", "America/New_York"))
+
+	// Zero values should default to page=1, pageSize=10
+	resp, err := s.GetStockExchanges(context.Background(), &pb.GetStockExchangesRequest{})
+	require.NoError(t, err)
+	assert.Len(t, resp.Exchanges, 1)
+}
+
+func TestGetStockExchanges_CountDBError(t *testing.T) {
+	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT COUNT").
+		WillReturnError(sql.ErrConnDone)
+
+	_, err := s.GetStockExchanges(context.Background(), &pb.GetStockExchangesRequest{Page: 1, PageSize: 10})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
 func TestGetStockExchanges_DBError(t *testing.T) {
 	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT COUNT").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(5))
 	mock.ExpectQuery("SELECT id, name, acronym, mic_code").
 		WillReturnError(sql.ErrConnDone)
 
-	_, err := s.GetStockExchanges(context.Background(), &pb.GetStockExchangesRequest{})
+	_, err := s.GetStockExchanges(context.Background(), &pb.GetStockExchangesRequest{Page: 1, PageSize: 10})
+	require.Error(t, err)
+	assert.Equal(t, codes.Internal, status.Code(err))
+}
+
+// ── GetStockExchangeById ──────────────────────────────────────────────────────
+
+func TestGetStockExchangeById_Found(t *testing.T) {
+	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT id, name, acronym, mic_code").
+		WithArgs(int64(1)).
+		WillReturnRows(sqlmock.NewRows(exchangeCols).
+			AddRow(1, "New York Stock Exchange", "NYSE", "XNYS", "United States", "USD", "America/New_York"))
+
+	resp, err := s.GetStockExchangeById(context.Background(), &pb.GetStockExchangeByIdRequest{Id: 1})
+	require.NoError(t, err)
+	assert.Equal(t, "XNYS", resp.Exchange.MicCode)
+	assert.Equal(t, int64(1), resp.Exchange.Id)
+}
+
+func TestGetStockExchangeById_NotFound(t *testing.T) {
+	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT id, name, acronym, mic_code").
+		WithArgs(int64(999)).
+		WillReturnError(sql.ErrNoRows)
+
+	_, err := s.GetStockExchangeById(context.Background(), &pb.GetStockExchangeByIdRequest{Id: 999})
+	require.Error(t, err)
+	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+func TestGetStockExchangeById_DBError(t *testing.T) {
+	s, mock := newServer(t)
+	mock.ExpectQuery("SELECT id, name, acronym, mic_code").
+		WithArgs(int64(1)).
+		WillReturnError(sql.ErrConnDone)
+
+	_, err := s.GetStockExchangeById(context.Background(), &pb.GetStockExchangeByIdRequest{Id: 1})
 	require.Error(t, err)
 	assert.Equal(t, codes.Internal, status.Code(err))
 }

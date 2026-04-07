@@ -21,11 +21,20 @@ message StockExchange {
   string timezone = 7;
 }
 
-message GetStockExchangesRequest {}
-message GetStockExchangesResponse { repeated StockExchange exchanges = 1; }
+message GetStockExchangesRequest {
+  int32 page      = 1; // 1-based, default 1
+  int32 page_size = 2; // default 10
+}
+message GetStockExchangesResponse {
+  repeated StockExchange exchanges = 1;
+  int32 total_count                = 2;
+}
 
 message GetStockExchangeByMICRequest  { string mic_code = 1; }
 message GetStockExchangeByMICResponse { StockExchange exchange = 1; }
+
+message GetStockExchangeByIdRequest  { int64 id = 1; }
+message GetStockExchangeByIdResponse { StockExchange exchange = 1; }
 
 message CreateStockExchangeRequest {
   string name     = 1;
@@ -123,6 +132,7 @@ service SecuritiesService {
   // Stock Exchanges
   rpc GetStockExchanges     (GetStockExchangesRequest)     returns (GetStockExchangesResponse);
   rpc GetStockExchangeByMIC (GetStockExchangeByMICRequest) returns (GetStockExchangeByMICResponse);
+  rpc GetStockExchangeById  (GetStockExchangeByIdRequest)  returns (GetStockExchangeByIdResponse);
   rpc CreateStockExchange   (CreateStockExchangeRequest)   returns (CreateStockExchangeResponse);
   rpc UpdateStockExchange   (UpdateStockExchangeRequest)   returns (UpdateStockExchangeResponse);
   rpc DeleteStockExchange   (DeleteStockExchangeRequest)   returns (DeleteStockExchangeResponse);
