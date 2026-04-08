@@ -16,6 +16,7 @@ type OrderServer struct {
 	AccountDB        *sql.DB
 	SecuritiesDB     *sql.DB
 	ExchangeDB       *sql.DB
+	EmployeeDB       *sql.DB
 	SecuritiesClient pb_sec.SecuritiesServiceClient
 	LoanClient       pb_loan.LoanServiceClient
 	EmployeeClient   pb_emp.EmployeeServiceClient

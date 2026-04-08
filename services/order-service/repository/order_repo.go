@@ -94,3 +94,57 @@ func InsertPortion(ctx context.Context, db *sql.DB, p *models.OrderPortion) erro
 		p.OrderID, p.Quantity, p.Price, time.Now())
 	return err
 }
+
+func GetPendingOrders(ctx context.Context, db *sql.DB) ([]models.Order, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT id, user_id, user_type, asset_id, order_type, quantity, contract_size,
+		       price_per_unit, limit_value, stop_value, direction, status, approved_by,
+		       is_done, last_modification, remaining_portions, after_hours, is_aon, is_margin, account_id
+		FROM orders
+		WHERE status = 'PENDING'`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var orders []models.Order
+	for rows.Next() {
+		var o models.Order
+		if err := rows.Scan(
+			&o.ID, &o.UserID, &o.UserType, &o.AssetID, &o.OrderType, &o.Quantity, &o.ContractSize,
+			&o.PricePerUnit, &o.LimitValue, &o.StopValue, &o.Direction, &o.Status, &o.ApprovedBy,
+			&o.IsDone, &o.LastModification, &o.RemainingPortions, &o.AfterHours, &o.IsAON, &o.IsMargin, &o.AccountID,
+		); err != nil {
+			return nil, err
+		}
+		orders = append(orders, o)
+	}
+	return orders, rows.Err()
+}
+
+// GetActuaryInfo returns limit management data for an employee.
+// Returns sql.ErrNoRows if the employee is not an actuary.
+func GetActuaryInfo(ctx context.Context, employeeDB *sql.DB, employeeID int64) (limitAmount, usedLimit float64, needApproval bool, err error) {
+	err = employeeDB.QueryRowContext(ctx,
+		`SELECT limit_amount, used_limit, need_approval FROM actuary_info WHERE employee_id = $1`,
+		employeeID,
+	).Scan(&limitAmount, &usedLimit, &needApproval)
+	return
+}
+
+// IsActuary reports whether the employee has a row in actuary_info.
+func IsActuary(ctx context.Context, employeeDB *sql.DB, employeeID int64) bool {
+	var exists bool
+	employeeDB.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM actuary_info WHERE employee_id = $1)`, employeeID,
+	).Scan(&exists)
+	return exists
+}
+
+// DeductActuaryUsedLimit increments used_limit by amount for the given employee.
+func DeductActuaryUsedLimit(ctx context.Context, employeeDB *sql.DB, employeeID int64, amount float64) error {
+	_, err := employeeDB.ExecContext(ctx,
+		`UPDATE actuary_info SET used_limit = used_limit + $1 WHERE employee_id = $2`,
+		amount, employeeID)
+	return err
+}

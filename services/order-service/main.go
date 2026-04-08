@@ -43,6 +43,12 @@ func main() {
 	}
 	defer exchangeDB.Close()
 
+	employeeDB, err := orderdb.Connect(os.Getenv("EMPLOYEE_DB_URL"))
+	if err != nil {
+		log.Fatalf("failed to connect to employee_db: %v", err)
+	}
+	defer employeeDB.Close()
+
 	secConn, err := grpc.NewClient(os.Getenv("SECURITIES_SERVICE_ADDR"), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("failed to connect to securities-service: %v", err)
@@ -76,6 +82,7 @@ func main() {
 		AccountDB:        accountDB,
 		SecuritiesDB:     securitiesDB,
 		ExchangeDB:       exchangeDB,
+		EmployeeDB:       employeeDB,
 		SecuritiesClient: securitiesClient,
 		LoanClient:       loanClient,
 		EmployeeClient:   employeeClient,
@@ -87,6 +94,7 @@ func main() {
 		AccountDB:        accountDB,
 		SecuritiesDB:     securitiesDB,
 		ExchangeDB:       exchangeDB,
+		EmployeeDB:       employeeDB,
 		SecuritiesClient: securitiesClient,
 		LoanClient:       loanClient,
 		EmployeeClient:   employeeClient,

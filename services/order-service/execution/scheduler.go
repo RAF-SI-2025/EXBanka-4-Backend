@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/order-service/approval"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/order-service/models"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/order-service/repository"
 	pb_emp "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
@@ -21,6 +22,7 @@ type Scheduler struct {
 	AccountDB        *sql.DB
 	SecuritiesDB     *sql.DB
 	ExchangeDB       *sql.DB
+	EmployeeDB       *sql.DB
 	SecuritiesClient pb_sec.SecuritiesServiceClient
 	LoanClient       pb_loan.LoanServiceClient
 	EmployeeClient   pb_emp.EmployeeServiceClient
@@ -28,9 +30,49 @@ type Scheduler struct {
 	inProgress sync.Map // map[int64]bool — orders currently being executed
 }
 
-// Start launches the background polling goroutine.
+// Start launches the background polling goroutines.
 func (s *Scheduler) Start() {
 	go s.loop()
+	go s.expiredOrderLoop()
+}
+
+// expiredOrderLoop periodically auto-declines PENDING orders with an expired settlement date.
+func (s *Scheduler) expiredOrderLoop() {
+	ticker := time.NewTicker(1 * time.Minute)
+	for range ticker.C {
+		s.declineExpiredOrders()
+	}
+}
+
+func (s *Scheduler) declineExpiredOrders() {
+	ctx := context.Background()
+	pending, err := repository.GetPendingOrders(ctx, s.DB)
+	if err != nil {
+		log.Printf("order-scheduler: expired check query error: %v", err)
+		return
+	}
+
+	for _, o := range pending {
+		var settlementDate string
+		err := s.SecuritiesDB.QueryRowContext(ctx, `
+			SELECT settlement_date::text FROM listing_futures_contract WHERE listing_id = $1
+			UNION ALL
+			SELECT settlement_date::text FROM listing_option WHERE listing_id = $1
+			LIMIT 1`, o.AssetID,
+		).Scan(&settlementDate)
+
+		if err != nil {
+			continue // not a futures/options listing, or no settlement date
+		}
+
+		if approval.IsSettlementExpired(settlementDate) {
+			if err := approval.DeclineOrder(ctx, s.DB, o.ID, 0); err != nil {
+				log.Printf("order-scheduler: auto-decline order %d error: %v", o.ID, err)
+			} else {
+				log.Printf("order-scheduler: auto-declined expired order %d (settlement %s)", o.ID, settlementDate)
+			}
+		}
+	}
 }
 
 func (s *Scheduler) loop() {
