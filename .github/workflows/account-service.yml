@@ -1,11 +1,11 @@
-name: Order Service
+name: Account Service
 
 on:
   pull_request:
     paths:
-      - 'services/order-service/**'
+      - 'services/account-service/**'
       - 'shared/**'
-      - '.github/workflows/order-service.yml'
+      - '.github/workflows/account-service.yml'
 
 jobs:
   build:
@@ -13,30 +13,30 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: services/order-service
+        working-directory: services/account-service
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Install Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
-          go-version-file: 'services/order-service/go.mod'
+          go-version-file: 'services/account-service/go.mod'
       - name: Build project
-        run: go build -o order-service ./main.go
+        run: go build -o account-service ./main.go
 
   unit-test:
     name: Run unit tests
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: services/order-service
+        working-directory: services/account-service
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Install Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
-          go-version-file: 'services/order-service/go.mod'
+          go-version-file: 'services/account-service/go.mod'
       - name: Run tests
         run: go test -v ./...
 
@@ -49,33 +49,33 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: services/order-service
+        working-directory: services/account-service
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Install Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
-          go-version-file: 'services/order-service/go.mod'
+          go-version-file: 'services/account-service/go.mod'
       - name: golangci-lint
         uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20
         with:
           version: v2.11
-          working-directory: services/order-service
+          working-directory: services/account-service
 
   gofmt:
     name: Go format
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: services/order-service
+        working-directory: services/account-service
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Install Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
-          go-version-file: 'services/order-service/go.mod'
+          go-version-file: 'services/account-service/go.mod'
       - name: Check formatting
         run: |
           unformatted=$(gofmt -l .)
@@ -90,14 +90,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: services/order-service
+        working-directory: services/account-service
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Install Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
-          go-version-file: 'services/order-service/go.mod'
+          go-version-file: 'services/account-service/go.mod'
       - name: Go mod tidy
         run: |
           go mod tidy
