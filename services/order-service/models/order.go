@@ -5,6 +5,7 @@ import "time"
 type Order struct {
 	ID                int64
 	UserID            int64
+	UserType          string // CLIENT or EMPLOYEE
 	AssetID           int64
 	OrderType         string
 	Quantity          int32
