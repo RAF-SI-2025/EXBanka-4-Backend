@@ -84,6 +84,12 @@ func main() {
 	}
 	defer securitiesConn.Close()
 
+	orderClient, orderConn, err := gwgrpc.NewOrderClient(os.Getenv("ORDER_SERVICE_ADDR"))
+	if err != nil {
+		log.Fatalf("failed to connect to order-service: %v", err)
+	}
+	defer orderConn.Close()
+
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
@@ -185,6 +191,13 @@ func main() {
 	r.POST("/stock-exchanges/holidays", middleware.RequireRole("ADMIN"), handlers.AddHoliday(securitiesClient))
 	r.DELETE("/stock-exchanges/holidays/:polity/:date", middleware.RequireRole("ADMIN"), handlers.DeleteHoliday(securitiesClient))
 	r.GET("/stock-exchanges/:id/is-open", middleware.RequireRole("AGENT", "SUPERVISOR"), handlers.IsExchangeOpen(securitiesClient))
+	r.POST("/orders", handlers.CreateOrder(orderClient))
+	r.GET("/orders", middleware.RequireRole("SUPERVISOR"), handlers.ListOrders(orderClient))
+	r.GET("/orders/:id", handlers.GetOrderById(orderClient))
+	r.PUT("/orders/:id/approve", middleware.RequireRole("SUPERVISOR"), handlers.ApproveOrder(orderClient))
+	r.PUT("/orders/:id/decline", middleware.RequireRole("SUPERVISOR"), handlers.DeclineOrder(orderClient))
+	r.DELETE("/orders/:id/portions", handlers.CancelOrderPortions(orderClient))
+	r.DELETE("/orders/:id", handlers.CancelOrder(orderClient))
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.Run(":8083")
 }

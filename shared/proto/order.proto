@@ -33,8 +33,73 @@ message Order {
   int64  account_id         = 19;
 }
 
+// ── CreateOrder ───────────────────────────────────────────────────────────────
+
+message CreateOrderRequest {
+  int64  user_id     = 1;
+  string user_type   = 2; // CLIENT or EMPLOYEE
+  int64  asset_id    = 3;
+  int32  quantity    = 4;
+  double limit_value = 5; // 0 = not set
+  double stop_value  = 6; // 0 = not set
+  bool   is_aon      = 7;
+  bool   is_margin   = 8;
+  int64  account_id  = 9;
+  string direction   = 10; // BUY or SELL
+}
+
+message CreateOrderResponse {
+  int64  order_id          = 1;
+  string order_type        = 2;
+  string status            = 3;
+  double approximate_price = 4;
+}
+
+// ── ListOrders ────────────────────────────────────────────────────────────────
+
+message ListOrdersRequest {
+  string status   = 1; // ALL, PENDING, APPROVED, DECLINED, DONE — empty = ALL
+  int64  agent_id = 2; // 0 = no filter
+}
+
+message ListOrdersResponse {
+  repeated Order orders = 1;
+}
+
+// ── GetOrderById ──────────────────────────────────────────────────────────────
+
+message GetOrderByIdRequest  { int64 id = 1; }
+message GetOrderByIdResponse { Order order = 1; }
+
+// ── ApproveOrder ──────────────────────────────────────────────────────────────
+
+message ApproveOrderRequest  { int64 order_id = 1; int64 supervisor_id = 2; }
+message ApproveOrderResponse {}
+
+// ── DeclineOrder ──────────────────────────────────────────────────────────────
+
+message DeclineOrderRequest  { int64 order_id = 1; int64 supervisor_id = 2; }
+message DeclineOrderResponse {}
+
+// ── CancelOrder ───────────────────────────────────────────────────────────────
+
+message CancelOrderRequest  { int64 order_id = 1; int64 user_id = 2; }
+message CancelOrderResponse {}
+
+// ── CancelOrderPortions ───────────────────────────────────────────────────────
+
+message CancelOrderPortionsRequest  { int64 order_id = 1; int64 user_id = 2; }
+message CancelOrderPortionsResponse {}
+
 // ── Service ───────────────────────────────────────────────────────────────────
 
 service OrderService {
-  rpc Ping (PingRequest) returns (PingResponse);
+  rpc Ping                (PingRequest)               returns (PingResponse);
+  rpc CreateOrder         (CreateOrderRequest)        returns (CreateOrderResponse);
+  rpc ListOrders          (ListOrdersRequest)         returns (ListOrdersResponse);
+  rpc GetOrderById        (GetOrderByIdRequest)       returns (GetOrderByIdResponse);
+  rpc ApproveOrder        (ApproveOrderRequest)       returns (ApproveOrderResponse);
+  rpc DeclineOrder        (DeclineOrderRequest)       returns (DeclineOrderResponse);
+  rpc CancelOrder         (CancelOrderRequest)        returns (CancelOrderResponse);
+  rpc CancelOrderPortions (CancelOrderPortionsRequest) returns (CancelOrderPortionsResponse);
 }

@@ -148,3 +148,43 @@ func DeductActuaryUsedLimit(ctx context.Context, employeeDB *sql.DB, employeeID 
 		amount, employeeID)
 	return err
 }
+
+// ListOrders returns orders optionally filtered by status and/or agent (user_id).
+// status="" or "ALL" returns all statuses. agentID=0 returns all agents.
+func ListOrders(ctx context.Context, db *sql.DB, statusFilter string, agentID int64) ([]models.Order, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT id, user_id, user_type, asset_id, order_type, quantity, contract_size,
+		       price_per_unit, limit_value, stop_value, direction, status, approved_by,
+		       is_done, last_modification, remaining_portions, after_hours, is_aon, is_margin, account_id
+		FROM orders
+		WHERE ($1 = '' OR $1 = 'ALL' OR status::text = $1)
+		  AND ($2 = 0 OR user_id = $2)
+		ORDER BY last_modification DESC`,
+		statusFilter, agentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var orders []models.Order
+	for rows.Next() {
+		var o models.Order
+		if err := rows.Scan(
+			&o.ID, &o.UserID, &o.UserType, &o.AssetID, &o.OrderType, &o.Quantity, &o.ContractSize,
+			&o.PricePerUnit, &o.LimitValue, &o.StopValue, &o.Direction, &o.Status, &o.ApprovedBy,
+			&o.IsDone, &o.LastModification, &o.RemainingPortions, &o.AfterHours, &o.IsAON, &o.IsMargin, &o.AccountID,
+		); err != nil {
+			return nil, err
+		}
+		orders = append(orders, o)
+	}
+	return orders, rows.Err()
+}
+
+// CancelOrder marks an order as fully done with no remaining portions.
+func CancelOrder(ctx context.Context, db *sql.DB, orderID int64) error {
+	_, err := db.ExecContext(ctx,
+		`UPDATE orders SET is_done = true, remaining_portions = 0, last_modification = $1 WHERE id = $2`,
+		time.Now(), orderID)
+	return err
+}
