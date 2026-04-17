@@ -31,7 +31,7 @@ jobs:
 
       - name: Regenerate protos
         run: |
-          for svc in account auth card client email employee exchange loan payment securities; do
+          for svc in account auth card client email employee exchange loan payment portfolio securities; do
             protoc --go_out=pb/${svc} --go_opt=paths=source_relative \
                    --go-grpc_out=pb/${svc} --go-grpc_opt=paths=source_relative \
                    -I proto proto/${svc}.proto

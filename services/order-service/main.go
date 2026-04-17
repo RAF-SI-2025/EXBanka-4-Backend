@@ -24,55 +24,55 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect to order_db: %v", err)
 	}
-	defer orderDB.Close()
+	defer func() { _ = orderDB.Close() }()
 
 	accountDB, err := orderdb.Connect(os.Getenv("ACCOUNT_DB_URL"))
 	if err != nil {
 		log.Fatalf("failed to connect to account_db: %v", err)
 	}
-	defer accountDB.Close()
+	defer func() { _ = accountDB.Close() }()
 
 	securitiesDB, err := orderdb.Connect(os.Getenv("SECURITIES_DB_URL"))
 	if err != nil {
 		log.Fatalf("failed to connect to securities_db: %v", err)
 	}
-	defer securitiesDB.Close()
+	defer func() { _ = securitiesDB.Close() }()
 
 	exchangeDB, err := orderdb.Connect(os.Getenv("EXCHANGE_DB_URL"))
 	if err != nil {
 		log.Fatalf("failed to connect to exchange_db: %v", err)
 	}
-	defer exchangeDB.Close()
+	defer func() { _ = exchangeDB.Close() }()
 
 	employeeDB, err := orderdb.Connect(os.Getenv("EMPLOYEE_DB_URL"))
 	if err != nil {
 		log.Fatalf("failed to connect to employee_db: %v", err)
 	}
-	defer employeeDB.Close()
+	defer func() { _ = employeeDB.Close() }()
 
 	secConn, err := grpc.NewClient(os.Getenv("SECURITIES_SERVICE_ADDR"), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("failed to connect to securities-service: %v", err)
 	}
-	defer secConn.Close()
+	defer func() { _ = secConn.Close() }()
 
 	loanConn, err := grpc.NewClient(os.Getenv("LOAN_SERVICE_ADDR"), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("failed to connect to loan-service: %v", err)
 	}
-	defer loanConn.Close()
+	defer func() { _ = loanConn.Close() }()
 
 	empConn, err := grpc.NewClient(os.Getenv("EMPLOYEE_SERVICE_ADDR"), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("failed to connect to employee-service: %v", err)
 	}
-	defer empConn.Close()
+	defer func() { _ = empConn.Close() }()
 
 	portfolioConn, err := grpc.NewClient(os.Getenv("PORTFOLIO_SERVICE_ADDR"), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("failed to connect to portfolio-service: %v", err)
 	}
-	defer portfolioConn.Close()
+	defer func() { _ = portfolioConn.Close() }()
 
 	securitiesClient := pb_sec.NewSecuritiesServiceClient(secConn)
 	loanClient := pb_loan.NewLoanServiceClient(loanConn)
