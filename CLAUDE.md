@@ -8,7 +8,7 @@ Go-based microservices backend for EXBanka. Services communicate via gRPC. The A
 - One `go.mod` per service: `services/<name>/go.mod`
 - Shared protobuf bindings: `shared/go.mod` → `github.com/RAF-SI-2025/EXBanka-4-Backend/shared`
 - Service module paths: `github.com/RAF-SI-2025/EXBanka-4-Backend/services/<name>`
-- Modules in `go.work`: `./services/account-service`, `./services/api-gateway`, `./services/auth-service`, `./services/card-service`, `./services/client-service`, `./services/email-service`, `./services/employee-service`, `./services/exchange-service`, `./services/loan-service`, `./services/order-service`, `./services/payment-service`, `./services/securities-service`, `./shared`
+- Modules in `go.work`: `./services/account-service`, `./services/api-gateway`, `./services/auth-service`, `./services/card-service`, `./services/client-service`, `./services/email-service`, `./services/employee-service`, `./services/exchange-service`, `./services/loan-service`, `./services/order-service`, `./services/payment-service`, `./services/portfolio-service`, `./services/securities-service`, `./shared`
 
 ## Repository structure
 ```
@@ -35,6 +35,7 @@ docs/            # Architecture docs, runbooks (placeholder)
 | `card-service` | 50059 | 5440 |
 | `securities-service` | 50060 | 5441 |
 | `order-service` | 50061 | 5442 |
+| `portfolio-service` | 50062 | 5443 |
 | `api-gateway` | **8083** (HTTP) | none |
 
 ## Service layout conventions
@@ -50,7 +51,7 @@ services/<name>/
 ```
 
 ## Shared Protobuf
-- Source definitions: `shared/proto/*.proto` — one file per service: `account.proto`, `auth.proto`, `card.proto`, `client.proto`, `email.proto`, `employee.proto`, `exchange.proto`, `loan.proto`, `order.proto`, `payment.proto`, `securities.proto`
+- Source definitions: `shared/proto/*.proto` — one file per service: `account.proto`, `auth.proto`, `card.proto`, `client.proto`, `email.proto`, `employee.proto`, `exchange.proto`, `loan.proto`, `order.proto`, `payment.proto`, `portfolio.proto`, `securities.proto`
 - Generated Go bindings (committed): `shared/pb/<service>/`
 - After editing a `.proto` file, regenerate with:
 ```bash
@@ -70,9 +71,9 @@ protoc --go_out=shared/pb/<service> --go_opt=paths=source_relative \
 Service-to-service addresses (set by `dev.sh` or deployment):
 - `EMPLOYEE_SERVICE_ADDR`, `AUTH_SERVICE_ADDR`, `CLIENT_SERVICE_ADDR`, `ACCOUNT_SERVICE_ADDR`
 - `PAYMENT_SERVICE_ADDR`, `EXCHANGE_SERVICE_ADDR`, `LOAN_SERVICE_ADDR`, `CARD_SERVICE_ADDR`
-- `SECURITIES_SERVICE_ADDR`, `ORDER_SERVICE_ADDR`, `EMAIL_SERVICE_ADDR`
+- `SECURITIES_SERVICE_ADDR`, `ORDER_SERVICE_ADDR`, `PORTFOLIO_SERVICE_ADDR`, `EMAIL_SERVICE_ADDR`
 
-Database URLs (one per service): `EMPLOYEE_DB_URL`, `AUTH_DB_URL`, `CLIENT_DB_URL`, `ACCOUNT_DB_URL`, `PAYMENT_DB_URL`, `EXCHANGE_DB_URL`, `LOAN_DB_URL`, `CARD_DB_URL`, `SECURITIES_DB_URL`, `ORDER_DB_URL`
+Database URLs (one per service): `EMPLOYEE_DB_URL`, `AUTH_DB_URL`, `CLIENT_DB_URL`, `ACCOUNT_DB_URL`, `PAYMENT_DB_URL`, `EXCHANGE_DB_URL`, `LOAN_DB_URL`, `CARD_DB_URL`, `SECURITIES_DB_URL`, `ORDER_DB_URL`, `PORTFOLIO_DB_URL`
 
 A `.env` file at the repo root holds **email-service** variables:
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `FROM_EMAIL`, `RABBITMQ_URL`
@@ -83,7 +84,7 @@ A `.env` file at the repo root holds **email-service** variables:
 ```bash
 ./scripts/dev.sh
 ```
-Starts all database containers (waits for readiness), RabbitMQ, then all 11 Go services. Ctrl+C stops the Go processes; containers keep running.
+Starts all database containers (waits for readiness), RabbitMQ, then all 12 Go services. Ctrl+C stops the Go processes; containers keep running.
 
 To reset all databases:
 ```bash

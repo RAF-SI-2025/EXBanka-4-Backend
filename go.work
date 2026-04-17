@@ -10,8 +10,9 @@ use (
 	./services/employee-service
 	./services/exchange-service
 	./services/loan-service
-	./services/payment-service
 	./services/order-service
+	./services/payment-service
+	./services/portfolio-service
 	./services/securities-service
 	./shared
 )

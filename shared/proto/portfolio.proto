@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package portfolio;
+
+option go_package = "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/portfolio";
+
+service PortfolioService {
+  rpc UpdateHolding(UpdateHoldingRequest) returns (UpdateHoldingResponse);
+  rpc GetPortfolio(GetPortfolioRequest)   returns (GetPortfolioResponse);
+  rpc GetProfit(GetProfitRequest)         returns (GetProfitResponse);
+  rpc SetPublicAmount(SetPublicAmountRequest) returns (SetPublicAmountResponse);
+}
+
+// UpdateHolding — called by order-service on each partial fill
+message UpdateHoldingRequest {
+  int64  user_id    = 1;
+  string user_type  = 2; // CLIENT or EMPLOYEE
+  int64  listing_id = 3;
+  int32  quantity   = 4;
+  double price      = 5; // price per unit at fill time
+  string direction  = 6; // BUY or SELL
+  int64  account_id = 7;
+}
+message UpdateHoldingResponse {}
+
+// GetPortfolio — returns all holdings for a user (implemented in #156)
+message GetPortfolioRequest {
+  int64 user_id = 1;
+}
+message PortfolioEntry {
+  int64  id             = 1;
+  int64  listing_id     = 2;
+  int32  amount         = 3;
+  double buy_price      = 4;
+  string last_modified  = 5;
+  bool   is_public      = 6;
+  int32  public_amount  = 7;
+  int64  account_id     = 8;
+}
+message GetPortfolioResponse {
+  repeated PortfolioEntry entries = 1;
+}
+
+// GetProfit — returns total profit/loss (implemented in #156)
+message GetProfitRequest {
+  int64 user_id = 1;
+}
+message GetProfitResponse {
+  double total_profit = 1;
+}
+
+// SetPublicAmount — set public units for a stock holding (implemented in #147)
+message SetPublicAmountRequest {
+  int64 user_id    = 1;
+  int64 listing_id = 2;
+  int32 amount     = 3;
+}
+message SetPublicAmountResponse {}

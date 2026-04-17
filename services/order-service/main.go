@@ -11,6 +11,7 @@ import (
 	pb_emp "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
 	pb_loan "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/loan"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/order"
+	pb_portfolio "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/portfolio"
 	pb_sec "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/securities"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -67,9 +68,16 @@ func main() {
 	}
 	defer empConn.Close()
 
+	portfolioConn, err := grpc.NewClient(os.Getenv("PORTFOLIO_SERVICE_ADDR"), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect to portfolio-service: %v", err)
+	}
+	defer portfolioConn.Close()
+
 	securitiesClient := pb_sec.NewSecuritiesServiceClient(secConn)
 	loanClient := pb_loan.NewLoanServiceClient(loanConn)
 	employeeClient := pb_emp.NewEmployeeServiceClient(empConn)
+	portfolioClient := pb_portfolio.NewPortfolioServiceClient(portfolioConn)
 
 	lis, err := net.Listen("tcp", grpcPort)
 	if err != nil {
@@ -98,6 +106,7 @@ func main() {
 		SecuritiesClient: securitiesClient,
 		LoanClient:       loanClient,
 		EmployeeClient:   employeeClient,
+		PortfolioClient:  portfolioClient,
 	}
 	scheduler.Start()
 

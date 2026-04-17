@@ -13,6 +13,7 @@ import (
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/order-service/repository"
 	pb_emp "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
 	pb_loan "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/loan"
+	pb_portfolio "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/portfolio"
 	pb_sec "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/securities"
 )
 
@@ -26,6 +27,7 @@ type Scheduler struct {
 	SecuritiesClient pb_sec.SecuritiesServiceClient
 	LoanClient       pb_loan.LoanServiceClient
 	EmployeeClient   pb_emp.EmployeeServiceClient
+	PortfolioClient  pb_portfolio.PortfolioServiceClient
 
 	inProgress sync.Map // map[int64]bool — orders currently being executed
 }
@@ -195,6 +197,22 @@ func (s *Scheduler) executeOrder(order models.Order) {
 			log.Printf("order-scheduler: insert portion error for order %d: %v", order.ID, err)
 			time.Sleep(5 * time.Second)
 			continue
+		}
+
+		if s.PortfolioClient != nil {
+			_, err := s.PortfolioClient.UpdateHolding(ctx, &pb_portfolio.UpdateHoldingRequest{
+				UserId:    order.UserID,
+				UserType:  order.UserType,
+				ListingId: order.AssetID,
+				Quantity:  fillQty,
+				Price:     pricePerUnit,
+				Direction: order.Direction,
+				AccountId: order.AccountID,
+			})
+			if err != nil {
+				log.Printf("order-scheduler: portfolio update error for order %d: %v", order.ID, err)
+				// Non-fatal: fill already recorded
+			}
 		}
 
 		remaining -= fillQty

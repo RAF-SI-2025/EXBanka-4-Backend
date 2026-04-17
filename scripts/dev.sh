@@ -43,6 +43,10 @@ echo "Starting loan-db..."
 echo "Starting securities-db..."
 (cd "$REPO_ROOT/services/securities-service" && docker compose up -d)
 
+# Start portfolio DB
+echo "Starting portfolio-db..."
+(cd "$REPO_ROOT/services/portfolio-service" && docker compose up -d)
+
 # Wait for PostgreSQL to accept connections
 echo "Waiting for employee-db to be ready..."
 until docker exec $(docker compose -f "$REPO_ROOT/services/employee-service/docker-compose.yml" ps -q employee-db) \
@@ -107,6 +111,13 @@ until docker exec $(docker compose -f "$REPO_ROOT/services/securities-service/do
 done
 echo "securities-db ready."
 
+echo "Waiting for portfolio-db to be ready..."
+until docker exec $(docker compose -f "$REPO_ROOT/services/portfolio-service/docker-compose.yml" ps -q portfolio-db) \
+    pg_isready -U portfolio_user -d portfolio_db -q 2>/dev/null; do
+  sleep 1
+done
+echo "portfolio-db ready."
+
 # Wait for RabbitMQ to be ready
 echo "Waiting for email-rabbitmq to be ready..."
 until bash -c 'echo > /dev/tcp/localhost/5672' 2>/dev/null; do
@@ -152,6 +163,9 @@ LOAN_PID=$!
 go run "$REPO_ROOT/services/securities-service/" &
 SEC_PID=$!
 
+go run "$REPO_ROOT/services/portfolio-service/" &
+PORTFOLIO_PID=$!
+
 echo ""
 echo "All services started."
 echo "  employee-service  PID $EMP_PID   (:50051)"
@@ -162,9 +176,10 @@ echo "  client-service    PID $CLIENT_PID   (:50056)"
 echo "  exchange-service  PID $EXCHANGE_PID (:50057)"
 echo "  payment-service   PID $PAYMENT_PID  (:50055)"
 echo "  card-service      PID $CARD_PID     (:50059)"
-echo "  loan-service        PID $LOAN_PID     (:50058)
-  securities-service  PID $SEC_PID      (:50060)"
-echo "  api-gateway       PID $GW_PID       (:8083)"
+echo "  loan-service        PID $LOAN_PID        (:50058)"
+echo "  securities-service  PID $SEC_PID         (:50060)"
+echo "  portfolio-service   PID $PORTFOLIO_PID   (:50062)"
+echo "  api-gateway         PID $GW_PID          (:8083)"
 echo ""
 echo "Press Ctrl+C to stop all services."
 echo "Note: the database and RabbitMQ containers keep running after Ctrl+C."
@@ -178,9 +193,10 @@ echo "        cd services/exchange-service && docker compose down"
 echo "        cd services/payment-service && docker compose down"
 echo "        cd services/card-service && docker compose down"
 echo "        cd services/loan-service && docker compose down
-        cd services/securities-service && docker compose down"
+        cd services/securities-service && docker compose down
+        cd services/portfolio-service && docker compose down"
 
 # On Ctrl+C, kill Go services only — containers are intentionally left running
-trap "echo ''; echo 'Stopping Go services...'; kill $EMP_PID $AUTH_PID $GW_PID $EMAIL_PID $ACC_PID $CLIENT_PID $EXCHANGE_PID $PAYMENT_PID $CARD_PID $LOAN_PID $SEC_PID 2>/dev/null; exit 0" INT
+trap "echo ''; echo 'Stopping Go services...'; kill $EMP_PID $AUTH_PID $GW_PID $EMAIL_PID $ACC_PID $CLIENT_PID $EXCHANGE_PID $PAYMENT_PID $CARD_PID $LOAN_PID $SEC_PID $PORTFOLIO_PID 2>/dev/null; exit 0" INT
 
 wait
