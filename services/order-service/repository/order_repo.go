@@ -18,7 +18,7 @@ func GetApprovedActiveOrders(ctx context.Context, db *sql.DB) ([]models.Order, e
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var orders []models.Order
 	for rows.Next() {
@@ -105,7 +105,7 @@ func GetPendingOrders(ctx context.Context, db *sql.DB) ([]models.Order, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var orders []models.Order
 	for rows.Next() {
@@ -135,7 +135,7 @@ func GetActuaryInfo(ctx context.Context, employeeDB *sql.DB, employeeID int64) (
 // IsActuary reports whether the employee has a row in actuary_info.
 func IsActuary(ctx context.Context, employeeDB *sql.DB, employeeID int64) bool {
 	var exists bool
-	employeeDB.QueryRowContext(ctx,
+	_ = employeeDB.QueryRowContext(ctx,
 		`SELECT EXISTS(SELECT 1 FROM actuary_info WHERE employee_id = $1)`, employeeID,
 	).Scan(&exists)
 	return exists
@@ -164,7 +164,7 @@ func ListOrders(ctx context.Context, db *sql.DB, statusFilter string, agentID in
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var orders []models.Order
 	for rows.Next() {

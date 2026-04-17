@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	exchangeRateBase  = "https://open.er-api.com/v6/latest"
-	frankfurterBase   = "https://api.frankfurter.app"
+	exchangeRateBase = "https://open.er-api.com/v6/latest"
+	frankfurterBase  = "https://api.frankfurter.app"
 )
 
 var forexHTTPClient = &http.Client{Timeout: 30 * time.Second}
