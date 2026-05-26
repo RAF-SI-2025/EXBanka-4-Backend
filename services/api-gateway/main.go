@@ -158,6 +158,7 @@ func main() {
 	r.POST("/bank/profit/fund-positions/:fundId/invest", middleware.RequireRole("SUPERVISOR"), handlers.BankInvestFund(fundClient))
 	r.POST("/bank/profit/fund-positions/:fundId/redeem", middleware.RequireRole("SUPERVISOR"), handlers.BankRedeemFund(fundClient))
 	r.POST("/api/payments/create", handlers.CreatePayment(paymentClient))
+	r.POST("/api/payments/preview", handlers.PreviewPayment(paymentClient))
 	r.GET("/api/payments", handlers.GetPayments(paymentClient))
 	r.GET("/api/payments/:paymentId", handlers.GetPaymentById(paymentClient))
 	r.POST("/api/transfers", handlers.CreateTransfer(paymentClient))

@@ -41,25 +41,29 @@ type otcMoneyAmount struct {
 }
 
 type otcNegotiationBody struct {
-	Stock          struct{ Ticker string `json:"ticker"` } `json:"stock"`
-	SettlementDate string                                   `json:"settlementDate"`
-	PricePerUnit   otcMoneyAmount                           `json:"pricePerUnit"`
-	Premium        otcMoneyAmount                           `json:"premium"`
-	BuyerID        otcPartyID                               `json:"buyerId"`
-	SellerID       otcPartyID                               `json:"sellerId"`
-	Amount         int32                                    `json:"amount"`
-	SellerType     string                                   `json:"sellerType"`
+	Stock struct {
+		Ticker string `json:"ticker"`
+	} `json:"stock"`
+	SettlementDate string         `json:"settlementDate"`
+	PricePerUnit   otcMoneyAmount `json:"pricePerUnit"`
+	Premium        otcMoneyAmount `json:"premium"`
+	BuyerID        otcPartyID     `json:"buyerId"`
+	SellerID       otcPartyID     `json:"sellerId"`
+	Amount         int32          `json:"amount"`
+	SellerType     string         `json:"sellerType"`
 }
 
 type otcNegotiationResponse struct {
-	Stock          struct{ Ticker string `json:"ticker"` } `json:"stock"`
-	SettlementDate string                                   `json:"settlementDate"`
-	PricePerUnit   otcMoneyAmount                           `json:"pricePerUnit"`
-	Premium        otcMoneyAmount                           `json:"premium"`
-	BuyerID        otcPartyID                               `json:"buyerId"`
-	SellerID       otcPartyID                               `json:"sellerId"`
-	Amount         int32                                    `json:"amount"`
-	IsOngoing      bool                                     `json:"isOngoing"`
+	Stock struct {
+		Ticker string `json:"ticker"`
+	} `json:"stock"`
+	SettlementDate string         `json:"settlementDate"`
+	PricePerUnit   otcMoneyAmount `json:"pricePerUnit"`
+	Premium        otcMoneyAmount `json:"premium"`
+	BuyerID        otcPartyID     `json:"buyerId"`
+	SellerID       otcPartyID     `json:"sellerId"`
+	Amount         int32          `json:"amount"`
+	IsOngoing      bool           `json:"isOngoing"`
 }
 
 func interbankNegToJSON(n *pb.InterbankNegotiationResponse) otcNegotiationResponse {

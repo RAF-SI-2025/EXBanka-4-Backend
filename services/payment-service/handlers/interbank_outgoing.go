@@ -60,8 +60,11 @@ type ibEnvelope struct {
 }
 
 type ibVoteResponse struct {
-	Vote    string   `json:"vote"`
-	Reasons []string `json:"reasons"`
+	Vote         string   `json:"vote"`
+	Reasons      []string `json:"reasons"`
+	ExchangeRate float64  `json:"exchange_rate,omitempty"`
+	Fee          float64  `json:"fee,omitempty"`
+	FinalAmount  float64  `json:"final_amount,omitempty"`
 }
 
 // generateUUID returns a random UUID v4 string without external deps.

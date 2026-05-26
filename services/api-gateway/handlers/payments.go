@@ -91,6 +91,56 @@ func CreatePayment(paymentClient pb.PaymentServiceClient) gin.HandlerFunc {
 	}
 }
 
+// PreviewPayment returns the estimated exchange rate and fee for a payment before confirmation.
+func PreviewPayment(paymentClient pb.PaymentServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			FromAccount      string  `json:"fromAccount"      binding:"required"`
+			RecipientAccount string  `json:"recipientAccount" binding:"required"`
+			Amount           float64 `json:"amount"           binding:"required,gt=0"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		clientID, err := middleware.GetUserIDFromToken(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "could not extract identity from token"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 15*time.Second)
+		defer cancel()
+
+		resp, err := paymentClient.PreviewPayment(ctx, &pb.PreviewPaymentRequest{
+			ClientId:         clientID,
+			FromAccount:      req.FromAccount,
+			RecipientAccount: req.RecipientAccount,
+			Amount:           req.Amount,
+		})
+		if err != nil {
+			switch status.Code(err) {
+			case codes.NotFound:
+				c.JSON(http.StatusNotFound, gin.H{"error": status.Convert(err).Message()})
+			case codes.PermissionDenied:
+				c.JSON(http.StatusForbidden, gin.H{"error": status.Convert(err).Message()})
+			default:
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"isCrossBank":  resp.IsCrossBank,
+			"exchangeRate": resp.ExchangeRate,
+			"fee":          resp.Fee,
+			"finalAmount":  resp.FinalAmount,
+			"fromCurrency": resp.FromCurrency,
+		})
+	}
+}
+
 type CreatePaymentRecipientRequest struct {
 	Name          string `json:"name"          binding:"required"`
 	AccountNumber string `json:"accountNumber" binding:"required"`

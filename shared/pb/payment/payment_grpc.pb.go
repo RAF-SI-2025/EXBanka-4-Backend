@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	PaymentService_CreatePayment_FullMethodName            = "/payment.PaymentService/CreatePayment"
+	PaymentService_PreviewPayment_FullMethodName           = "/payment.PaymentService/PreviewPayment"
 	PaymentService_GetPayments_FullMethodName              = "/payment.PaymentService/GetPayments"
 	PaymentService_GetPaymentById_FullMethodName           = "/payment.PaymentService/GetPaymentById"
 	PaymentService_CreateTransfer_FullMethodName           = "/payment.PaymentService/CreateTransfer"
@@ -39,6 +40,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PaymentServiceClient interface {
 	CreatePayment(ctx context.Context, in *CreatePaymentRequest, opts ...grpc.CallOption) (*CreatePaymentResponse, error)
+	PreviewPayment(ctx context.Context, in *PreviewPaymentRequest, opts ...grpc.CallOption) (*PreviewPaymentResponse, error)
 	GetPayments(ctx context.Context, in *GetPaymentsRequest, opts ...grpc.CallOption) (*GetPaymentsResponse, error)
 	GetPaymentById(ctx context.Context, in *GetPaymentByIdRequest, opts ...grpc.CallOption) (*GetPaymentByIdResponse, error)
 	CreateTransfer(ctx context.Context, in *CreateTransferRequest, opts ...grpc.CallOption) (*CreateTransferResponse, error)
@@ -65,6 +67,16 @@ func (c *paymentServiceClient) CreatePayment(ctx context.Context, in *CreatePaym
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreatePaymentResponse)
 	err := c.cc.Invoke(ctx, PaymentService_CreatePayment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paymentServiceClient) PreviewPayment(ctx context.Context, in *PreviewPaymentRequest, opts ...grpc.CallOption) (*PreviewPaymentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PreviewPaymentResponse)
+	err := c.cc.Invoke(ctx, PaymentService_PreviewPayment_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -196,6 +208,7 @@ func (c *paymentServiceClient) RollbackInterbankPayment(ctx context.Context, in 
 // for forward compatibility.
 type PaymentServiceServer interface {
 	CreatePayment(context.Context, *CreatePaymentRequest) (*CreatePaymentResponse, error)
+	PreviewPayment(context.Context, *PreviewPaymentRequest) (*PreviewPaymentResponse, error)
 	GetPayments(context.Context, *GetPaymentsRequest) (*GetPaymentsResponse, error)
 	GetPaymentById(context.Context, *GetPaymentByIdRequest) (*GetPaymentByIdResponse, error)
 	CreateTransfer(context.Context, *CreateTransferRequest) (*CreateTransferResponse, error)
@@ -220,6 +233,9 @@ type UnimplementedPaymentServiceServer struct{}
 
 func (UnimplementedPaymentServiceServer) CreatePayment(context.Context, *CreatePaymentRequest) (*CreatePaymentResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreatePayment not implemented")
+}
+func (UnimplementedPaymentServiceServer) PreviewPayment(context.Context, *PreviewPaymentRequest) (*PreviewPaymentResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PreviewPayment not implemented")
 }
 func (UnimplementedPaymentServiceServer) GetPayments(context.Context, *GetPaymentsRequest) (*GetPaymentsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPayments not implemented")
@@ -292,6 +308,24 @@ func _PaymentService_CreatePayment_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(PaymentServiceServer).CreatePayment(ctx, req.(*CreatePaymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PaymentService_PreviewPayment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PreviewPaymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaymentServiceServer).PreviewPayment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PaymentService_PreviewPayment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaymentServiceServer).PreviewPayment(ctx, req.(*PreviewPaymentRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -522,6 +556,10 @@ var PaymentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreatePayment",
 			Handler:    _PaymentService_CreatePayment_Handler,
+		},
+		{
+			MethodName: "PreviewPayment",
+			Handler:    _PaymentService_PreviewPayment_Handler,
 		},
 		{
 			MethodName: "GetPayments",

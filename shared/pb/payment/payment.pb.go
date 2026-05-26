@@ -1993,6 +1993,150 @@ func (*CommitRollbackInterbankResponse) Descriptor() ([]byte, []int) {
 	return file_payment_proto_rawDescGZIP(), []int{30}
 }
 
+type PreviewPaymentRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	FromAccount      string                 `protobuf:"bytes,1,opt,name=from_account,json=fromAccount,proto3" json:"from_account,omitempty"`
+	RecipientAccount string                 `protobuf:"bytes,2,opt,name=recipient_account,json=recipientAccount,proto3" json:"recipient_account,omitempty"`
+	Amount           float64                `protobuf:"fixed64,3,opt,name=amount,proto3" json:"amount,omitempty"`
+	ClientId         int64                  `protobuf:"varint,4,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *PreviewPaymentRequest) Reset() {
+	*x = PreviewPaymentRequest{}
+	mi := &file_payment_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PreviewPaymentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PreviewPaymentRequest) ProtoMessage() {}
+
+func (x *PreviewPaymentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PreviewPaymentRequest.ProtoReflect.Descriptor instead.
+func (*PreviewPaymentRequest) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *PreviewPaymentRequest) GetFromAccount() string {
+	if x != nil {
+		return x.FromAccount
+	}
+	return ""
+}
+
+func (x *PreviewPaymentRequest) GetRecipientAccount() string {
+	if x != nil {
+		return x.RecipientAccount
+	}
+	return ""
+}
+
+func (x *PreviewPaymentRequest) GetAmount() float64 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+func (x *PreviewPaymentRequest) GetClientId() int64 {
+	if x != nil {
+		return x.ClientId
+	}
+	return 0
+}
+
+type PreviewPaymentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IsCrossBank   bool                   `protobuf:"varint,1,opt,name=is_cross_bank,json=isCrossBank,proto3" json:"is_cross_bank,omitempty"`
+	ExchangeRate  float64                `protobuf:"fixed64,2,opt,name=exchange_rate,json=exchangeRate,proto3" json:"exchange_rate,omitempty"`
+	Fee           float64                `protobuf:"fixed64,3,opt,name=fee,proto3" json:"fee,omitempty"`
+	FinalAmount   float64                `protobuf:"fixed64,4,opt,name=final_amount,json=finalAmount,proto3" json:"final_amount,omitempty"`
+	FromCurrency  string                 `protobuf:"bytes,5,opt,name=from_currency,json=fromCurrency,proto3" json:"from_currency,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PreviewPaymentResponse) Reset() {
+	*x = PreviewPaymentResponse{}
+	mi := &file_payment_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PreviewPaymentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PreviewPaymentResponse) ProtoMessage() {}
+
+func (x *PreviewPaymentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PreviewPaymentResponse.ProtoReflect.Descriptor instead.
+func (*PreviewPaymentResponse) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *PreviewPaymentResponse) GetIsCrossBank() bool {
+	if x != nil {
+		return x.IsCrossBank
+	}
+	return false
+}
+
+func (x *PreviewPaymentResponse) GetExchangeRate() float64 {
+	if x != nil {
+		return x.ExchangeRate
+	}
+	return 0
+}
+
+func (x *PreviewPaymentResponse) GetFee() float64 {
+	if x != nil {
+		return x.Fee
+	}
+	return 0
+}
+
+func (x *PreviewPaymentResponse) GetFinalAmount() float64 {
+	if x != nil {
+		return x.FinalAmount
+	}
+	return 0
+}
+
+func (x *PreviewPaymentResponse) GetFromCurrency() string {
+	if x != nil {
+		return x.FromCurrency
+	}
+	return ""
+}
+
 var File_payment_proto protoreflect.FileDescriptor
 
 const file_payment_proto_rawDesc = "" +
@@ -2150,9 +2294,22 @@ const file_payment_proto_rawDesc = "" +
 	"\areasons\x18\x02 \x03(\v2\x18.payment.InterbankReasonR\areasons\"h\n" +
 	"\x1eCommitRollbackInterbankRequest\x12F\n" +
 	"\x0etransaction_id\x18\x01 \x01(\v2\x1f.payment.InterbankTransactionIdR\rtransactionId\"!\n" +
-	"\x1fCommitRollbackInterbankResponse2\xfe\t\n" +
+	"\x1fCommitRollbackInterbankResponse\"\x9c\x01\n" +
+	"\x15PreviewPaymentRequest\x12!\n" +
+	"\ffrom_account\x18\x01 \x01(\tR\vfromAccount\x12+\n" +
+	"\x11recipient_account\x18\x02 \x01(\tR\x10recipientAccount\x12\x16\n" +
+	"\x06amount\x18\x03 \x01(\x01R\x06amount\x12\x1b\n" +
+	"\tclient_id\x18\x04 \x01(\x03R\bclientId\"\xbb\x01\n" +
+	"\x16PreviewPaymentResponse\x12\"\n" +
+	"\ris_cross_bank\x18\x01 \x01(\bR\visCrossBank\x12#\n" +
+	"\rexchange_rate\x18\x02 \x01(\x01R\fexchangeRate\x12\x10\n" +
+	"\x03fee\x18\x03 \x01(\x01R\x03fee\x12!\n" +
+	"\ffinal_amount\x18\x04 \x01(\x01R\vfinalAmount\x12#\n" +
+	"\rfrom_currency\x18\x05 \x01(\tR\ffromCurrency2\xd1\n" +
+	"\n" +
 	"\x0ePaymentService\x12N\n" +
-	"\rCreatePayment\x12\x1d.payment.CreatePaymentRequest\x1a\x1e.payment.CreatePaymentResponse\x12H\n" +
+	"\rCreatePayment\x12\x1d.payment.CreatePaymentRequest\x1a\x1e.payment.CreatePaymentResponse\x12Q\n" +
+	"\x0ePreviewPayment\x12\x1e.payment.PreviewPaymentRequest\x1a\x1f.payment.PreviewPaymentResponse\x12H\n" +
 	"\vGetPayments\x12\x1b.payment.GetPaymentsRequest\x1a\x1c.payment.GetPaymentsResponse\x12Q\n" +
 	"\x0eGetPaymentById\x12\x1e.payment.GetPaymentByIdRequest\x1a\x1f.payment.GetPaymentByIdResponse\x12Q\n" +
 	"\x0eCreateTransfer\x12\x1e.payment.CreateTransferRequest\x1a\x1f.payment.CreateTransferResponse\x12i\n" +
@@ -2178,7 +2335,7 @@ func file_payment_proto_rawDescGZIP() []byte {
 	return file_payment_proto_rawDescData
 }
 
-var file_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
 var file_payment_proto_goTypes = []any{
 	(*CreatePaymentRequest)(nil),             // 0: payment.CreatePaymentRequest
 	(*CreatePaymentResponse)(nil),            // 1: payment.CreatePaymentResponse
@@ -2211,6 +2368,8 @@ var file_payment_proto_goTypes = []any{
 	(*PrepareInterbankPaymentResponse)(nil),  // 28: payment.PrepareInterbankPaymentResponse
 	(*CommitRollbackInterbankRequest)(nil),   // 29: payment.CommitRollbackInterbankRequest
 	(*CommitRollbackInterbankResponse)(nil),  // 30: payment.CommitRollbackInterbankResponse
+	(*PreviewPaymentRequest)(nil),            // 31: payment.PreviewPaymentRequest
+	(*PreviewPaymentResponse)(nil),           // 32: payment.PreviewPaymentResponse
 }
 var file_payment_proto_depIdxs = []int32{
 	2,  // 0: payment.CreatePaymentRecipientResponse.recipient:type_name -> payment.PaymentRecipient
@@ -2225,33 +2384,35 @@ var file_payment_proto_depIdxs = []int32{
 	26, // 9: payment.PrepareInterbankPaymentResponse.reasons:type_name -> payment.InterbankReason
 	23, // 10: payment.CommitRollbackInterbankRequest.transaction_id:type_name -> payment.InterbankTransactionId
 	0,  // 11: payment.PaymentService.CreatePayment:input_type -> payment.CreatePaymentRequest
-	16, // 12: payment.PaymentService.GetPayments:input_type -> payment.GetPaymentsRequest
-	14, // 13: payment.PaymentService.GetPaymentById:input_type -> payment.GetPaymentByIdRequest
-	18, // 14: payment.PaymentService.CreateTransfer:input_type -> payment.CreateTransferRequest
-	5,  // 15: payment.PaymentService.CreatePaymentRecipient:input_type -> payment.CreatePaymentRecipientRequest
-	7,  // 16: payment.PaymentService.GetPaymentRecipients:input_type -> payment.GetPaymentRecipientsRequest
-	11, // 17: payment.PaymentService.UpdatePaymentRecipient:input_type -> payment.UpdatePaymentRecipientRequest
-	9,  // 18: payment.PaymentService.DeletePaymentRecipient:input_type -> payment.DeletePaymentRecipientRequest
-	3,  // 19: payment.PaymentService.ReorderPaymentRecipients:input_type -> payment.ReorderPaymentRecipientsRequest
-	21, // 20: payment.PaymentService.GetTransfers:input_type -> payment.GetTransfersRequest
-	27, // 21: payment.PaymentService.PrepareInterbankPayment:input_type -> payment.PrepareInterbankPaymentRequest
-	29, // 22: payment.PaymentService.CommitInterbankPayment:input_type -> payment.CommitRollbackInterbankRequest
-	29, // 23: payment.PaymentService.RollbackInterbankPayment:input_type -> payment.CommitRollbackInterbankRequest
-	1,  // 24: payment.PaymentService.CreatePayment:output_type -> payment.CreatePaymentResponse
-	17, // 25: payment.PaymentService.GetPayments:output_type -> payment.GetPaymentsResponse
-	15, // 26: payment.PaymentService.GetPaymentById:output_type -> payment.GetPaymentByIdResponse
-	19, // 27: payment.PaymentService.CreateTransfer:output_type -> payment.CreateTransferResponse
-	6,  // 28: payment.PaymentService.CreatePaymentRecipient:output_type -> payment.CreatePaymentRecipientResponse
-	8,  // 29: payment.PaymentService.GetPaymentRecipients:output_type -> payment.GetPaymentRecipientsResponse
-	12, // 30: payment.PaymentService.UpdatePaymentRecipient:output_type -> payment.UpdatePaymentRecipientResponse
-	10, // 31: payment.PaymentService.DeletePaymentRecipient:output_type -> payment.DeletePaymentRecipientResponse
-	4,  // 32: payment.PaymentService.ReorderPaymentRecipients:output_type -> payment.ReorderPaymentRecipientsResponse
-	22, // 33: payment.PaymentService.GetTransfers:output_type -> payment.GetTransfersResponse
-	28, // 34: payment.PaymentService.PrepareInterbankPayment:output_type -> payment.PrepareInterbankPaymentResponse
-	30, // 35: payment.PaymentService.CommitInterbankPayment:output_type -> payment.CommitRollbackInterbankResponse
-	30, // 36: payment.PaymentService.RollbackInterbankPayment:output_type -> payment.CommitRollbackInterbankResponse
-	24, // [24:37] is the sub-list for method output_type
-	11, // [11:24] is the sub-list for method input_type
+	31, // 12: payment.PaymentService.PreviewPayment:input_type -> payment.PreviewPaymentRequest
+	16, // 13: payment.PaymentService.GetPayments:input_type -> payment.GetPaymentsRequest
+	14, // 14: payment.PaymentService.GetPaymentById:input_type -> payment.GetPaymentByIdRequest
+	18, // 15: payment.PaymentService.CreateTransfer:input_type -> payment.CreateTransferRequest
+	5,  // 16: payment.PaymentService.CreatePaymentRecipient:input_type -> payment.CreatePaymentRecipientRequest
+	7,  // 17: payment.PaymentService.GetPaymentRecipients:input_type -> payment.GetPaymentRecipientsRequest
+	11, // 18: payment.PaymentService.UpdatePaymentRecipient:input_type -> payment.UpdatePaymentRecipientRequest
+	9,  // 19: payment.PaymentService.DeletePaymentRecipient:input_type -> payment.DeletePaymentRecipientRequest
+	3,  // 20: payment.PaymentService.ReorderPaymentRecipients:input_type -> payment.ReorderPaymentRecipientsRequest
+	21, // 21: payment.PaymentService.GetTransfers:input_type -> payment.GetTransfersRequest
+	27, // 22: payment.PaymentService.PrepareInterbankPayment:input_type -> payment.PrepareInterbankPaymentRequest
+	29, // 23: payment.PaymentService.CommitInterbankPayment:input_type -> payment.CommitRollbackInterbankRequest
+	29, // 24: payment.PaymentService.RollbackInterbankPayment:input_type -> payment.CommitRollbackInterbankRequest
+	1,  // 25: payment.PaymentService.CreatePayment:output_type -> payment.CreatePaymentResponse
+	32, // 26: payment.PaymentService.PreviewPayment:output_type -> payment.PreviewPaymentResponse
+	17, // 27: payment.PaymentService.GetPayments:output_type -> payment.GetPaymentsResponse
+	15, // 28: payment.PaymentService.GetPaymentById:output_type -> payment.GetPaymentByIdResponse
+	19, // 29: payment.PaymentService.CreateTransfer:output_type -> payment.CreateTransferResponse
+	6,  // 30: payment.PaymentService.CreatePaymentRecipient:output_type -> payment.CreatePaymentRecipientResponse
+	8,  // 31: payment.PaymentService.GetPaymentRecipients:output_type -> payment.GetPaymentRecipientsResponse
+	12, // 32: payment.PaymentService.UpdatePaymentRecipient:output_type -> payment.UpdatePaymentRecipientResponse
+	10, // 33: payment.PaymentService.DeletePaymentRecipient:output_type -> payment.DeletePaymentRecipientResponse
+	4,  // 34: payment.PaymentService.ReorderPaymentRecipients:output_type -> payment.ReorderPaymentRecipientsResponse
+	22, // 35: payment.PaymentService.GetTransfers:output_type -> payment.GetTransfersResponse
+	28, // 36: payment.PaymentService.PrepareInterbankPayment:output_type -> payment.PrepareInterbankPaymentResponse
+	30, // 37: payment.PaymentService.CommitInterbankPayment:output_type -> payment.CommitRollbackInterbankResponse
+	30, // 38: payment.PaymentService.RollbackInterbankPayment:output_type -> payment.CommitRollbackInterbankResponse
+	25, // [25:39] is the sub-list for method output_type
+	11, // [11:25] is the sub-list for method input_type
 	11, // [11:11] is the sub-list for extension type_name
 	11, // [11:11] is the sub-list for extension extendee
 	0,  // [0:11] is the sub-list for field type_name
@@ -2268,7 +2429,7 @@ func file_payment_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_payment_proto_rawDesc), len(file_payment_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   31,
+			NumMessages:   33,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
