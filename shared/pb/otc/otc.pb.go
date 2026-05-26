@@ -102,19 +102,21 @@ func (x *PingResponse) GetMessage() string {
 }
 
 type CreateNegotiationRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	BuyerId        int64                  `protobuf:"varint,1,opt,name=buyer_id,json=buyerId,proto3" json:"buyer_id,omitempty"`
-	BuyerType      string                 `protobuf:"bytes,2,opt,name=buyer_type,json=buyerType,proto3" json:"buyer_type,omitempty"` // CLIENT or EMPLOYEE
-	SellerId       int64                  `protobuf:"varint,3,opt,name=seller_id,json=sellerId,proto3" json:"seller_id,omitempty"`
-	SellerType     string                 `protobuf:"bytes,4,opt,name=seller_type,json=sellerType,proto3" json:"seller_type,omitempty"` // CLIENT or EMPLOYEE
-	Ticker         string                 `protobuf:"bytes,5,opt,name=ticker,proto3" json:"ticker,omitempty"`
-	Amount         int32                  `protobuf:"varint,6,opt,name=amount,proto3" json:"amount,omitempty"`
-	PricePerStock  float64                `protobuf:"fixed64,7,opt,name=price_per_stock,json=pricePerStock,proto3" json:"price_per_stock,omitempty"`
-	SettlementDate string                 `protobuf:"bytes,8,opt,name=settlement_date,json=settlementDate,proto3" json:"settlement_date,omitempty"` // YYYY-MM-DD
-	Premium        float64                `protobuf:"fixed64,9,opt,name=premium,proto3" json:"premium,omitempty"`
-	Currency       string                 `protobuf:"bytes,10,opt,name=currency,proto3" json:"currency,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	BuyerId             int64                  `protobuf:"varint,1,opt,name=buyer_id,json=buyerId,proto3" json:"buyer_id,omitempty"`
+	BuyerType           string                 `protobuf:"bytes,2,opt,name=buyer_type,json=buyerType,proto3" json:"buyer_type,omitempty"` // CLIENT or EMPLOYEE
+	SellerId            int64                  `protobuf:"varint,3,opt,name=seller_id,json=sellerId,proto3" json:"seller_id,omitempty"`
+	SellerType          string                 `protobuf:"bytes,4,opt,name=seller_type,json=sellerType,proto3" json:"seller_type,omitempty"` // CLIENT or EMPLOYEE
+	Ticker              string                 `protobuf:"bytes,5,opt,name=ticker,proto3" json:"ticker,omitempty"`
+	Amount              int32                  `protobuf:"varint,6,opt,name=amount,proto3" json:"amount,omitempty"`
+	PricePerStock       float64                `protobuf:"fixed64,7,opt,name=price_per_stock,json=pricePerStock,proto3" json:"price_per_stock,omitempty"`
+	SettlementDate      string                 `protobuf:"bytes,8,opt,name=settlement_date,json=settlementDate,proto3" json:"settlement_date,omitempty"` // YYYY-MM-DD
+	Premium             float64                `protobuf:"fixed64,9,opt,name=premium,proto3" json:"premium,omitempty"`
+	Currency            string                 `protobuf:"bytes,10,opt,name=currency,proto3" json:"currency,omitempty"`
+	SellerRoutingNumber int32                  `protobuf:"varint,11,opt,name=seller_routing_number,json=sellerRoutingNumber,proto3" json:"seller_routing_number,omitempty"` // 0 = intra-bank
+	SellerExternalId    string                 `protobuf:"bytes,12,opt,name=seller_external_id,json=sellerExternalId,proto3" json:"seller_external_id,omitempty"`           // seller's ID on partner bank
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *CreateNegotiationRequest) Reset() {
@@ -213,6 +215,20 @@ func (x *CreateNegotiationRequest) GetPremium() float64 {
 func (x *CreateNegotiationRequest) GetCurrency() string {
 	if x != nil {
 		return x.Currency
+	}
+	return ""
+}
+
+func (x *CreateNegotiationRequest) GetSellerRoutingNumber() int32 {
+	if x != nil {
+		return x.SellerRoutingNumber
+	}
+	return 0
+}
+
+func (x *CreateNegotiationRequest) GetSellerExternalId() string {
+	if x != nil {
+		return x.SellerExternalId
 	}
 	return ""
 }
@@ -1825,6 +1841,202 @@ func (x *InterbankCounterOfferRequest) GetSettlementDate() string {
 	return ""
 }
 
+type OtcInterbankPrepareRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	IdemRoutingNumber string                 `protobuf:"bytes,1,opt,name=idem_routing_number,json=idemRoutingNumber,proto3" json:"idem_routing_number,omitempty"`
+	IdemKey           string                 `protobuf:"bytes,2,opt,name=idem_key,json=idemKey,proto3" json:"idem_key,omitempty"`
+	TxRoutingNumber   string                 `protobuf:"bytes,3,opt,name=tx_routing_number,json=txRoutingNumber,proto3" json:"tx_routing_number,omitempty"`
+	TxId              string                 `protobuf:"bytes,4,opt,name=tx_id,json=txId,proto3" json:"tx_id,omitempty"`
+	NegotiationId     int64                  `protobuf:"varint,5,opt,name=negotiation_id,json=negotiationId,proto3" json:"negotiation_id,omitempty"`
+	StockAmount       int32                  `protobuf:"varint,6,opt,name=stock_amount,json=stockAmount,proto3" json:"stock_amount,omitempty"`
+	IsAccept          bool                   `protobuf:"varint,7,opt,name=is_accept,json=isAccept,proto3" json:"is_accept,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *OtcInterbankPrepareRequest) Reset() {
+	*x = OtcInterbankPrepareRequest{}
+	mi := &file_otc_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OtcInterbankPrepareRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OtcInterbankPrepareRequest) ProtoMessage() {}
+
+func (x *OtcInterbankPrepareRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_otc_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OtcInterbankPrepareRequest.ProtoReflect.Descriptor instead.
+func (*OtcInterbankPrepareRequest) Descriptor() ([]byte, []int) {
+	return file_otc_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *OtcInterbankPrepareRequest) GetIdemRoutingNumber() string {
+	if x != nil {
+		return x.IdemRoutingNumber
+	}
+	return ""
+}
+
+func (x *OtcInterbankPrepareRequest) GetIdemKey() string {
+	if x != nil {
+		return x.IdemKey
+	}
+	return ""
+}
+
+func (x *OtcInterbankPrepareRequest) GetTxRoutingNumber() string {
+	if x != nil {
+		return x.TxRoutingNumber
+	}
+	return ""
+}
+
+func (x *OtcInterbankPrepareRequest) GetTxId() string {
+	if x != nil {
+		return x.TxId
+	}
+	return ""
+}
+
+func (x *OtcInterbankPrepareRequest) GetNegotiationId() int64 {
+	if x != nil {
+		return x.NegotiationId
+	}
+	return 0
+}
+
+func (x *OtcInterbankPrepareRequest) GetStockAmount() int32 {
+	if x != nil {
+		return x.StockAmount
+	}
+	return 0
+}
+
+func (x *OtcInterbankPrepareRequest) GetIsAccept() bool {
+	if x != nil {
+		return x.IsAccept
+	}
+	return false
+}
+
+type OtcInterbankVoteResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Vote          string                 `protobuf:"bytes,1,opt,name=vote,proto3" json:"vote,omitempty"`
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OtcInterbankVoteResponse) Reset() {
+	*x = OtcInterbankVoteResponse{}
+	mi := &file_otc_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OtcInterbankVoteResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OtcInterbankVoteResponse) ProtoMessage() {}
+
+func (x *OtcInterbankVoteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_otc_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OtcInterbankVoteResponse.ProtoReflect.Descriptor instead.
+func (*OtcInterbankVoteResponse) Descriptor() ([]byte, []int) {
+	return file_otc_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *OtcInterbankVoteResponse) GetVote() string {
+	if x != nil {
+		return x.Vote
+	}
+	return ""
+}
+
+func (x *OtcInterbankVoteResponse) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type OtcInterbankTxRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	TxRoutingNumber string                 `protobuf:"bytes,1,opt,name=tx_routing_number,json=txRoutingNumber,proto3" json:"tx_routing_number,omitempty"`
+	TxId            string                 `protobuf:"bytes,2,opt,name=tx_id,json=txId,proto3" json:"tx_id,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *OtcInterbankTxRequest) Reset() {
+	*x = OtcInterbankTxRequest{}
+	mi := &file_otc_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OtcInterbankTxRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OtcInterbankTxRequest) ProtoMessage() {}
+
+func (x *OtcInterbankTxRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_otc_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OtcInterbankTxRequest.ProtoReflect.Descriptor instead.
+func (*OtcInterbankTxRequest) Descriptor() ([]byte, []int) {
+	return file_otc_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *OtcInterbankTxRequest) GetTxRoutingNumber() string {
+	if x != nil {
+		return x.TxRoutingNumber
+	}
+	return ""
+}
+
+func (x *OtcInterbankTxRequest) GetTxId() string {
+	if x != nil {
+		return x.TxId
+	}
+	return ""
+}
+
 var File_otc_proto protoreflect.FileDescriptor
 
 const file_otc_proto_rawDesc = "" +
@@ -1832,7 +2044,7 @@ const file_otc_proto_rawDesc = "" +
 	"\totc.proto\x12\x03otc\"\r\n" +
 	"\vPingRequest\"(\n" +
 	"\fPingResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"\xc9\x02\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"\xab\x03\n" +
 	"\x18CreateNegotiationRequest\x12\x19\n" +
 	"\bbuyer_id\x18\x01 \x01(\x03R\abuyerId\x12\x1d\n" +
 	"\n" +
@@ -1846,7 +2058,9 @@ const file_otc_proto_rawDesc = "" +
 	"\x0fsettlement_date\x18\b \x01(\tR\x0esettlementDate\x12\x18\n" +
 	"\apremium\x18\t \x01(\x01R\apremium\x12\x1a\n" +
 	"\bcurrency\x18\n" +
-	" \x01(\tR\bcurrency\"\xfd\x01\n" +
+	" \x01(\tR\bcurrency\x122\n" +
+	"\x15seller_routing_number\x18\v \x01(\x05R\x13sellerRoutingNumber\x12,\n" +
+	"\x12seller_external_id\x18\f \x01(\tR\x10sellerExternalId\"\xfd\x01\n" +
 	"\x13CounterOfferRequest\x12%\n" +
 	"\x0enegotiation_id\x18\x01 \x01(\x03R\rnegotiationId\x12\x1b\n" +
 	"\tcaller_id\x18\x02 \x01(\x03R\bcallerId\x12\x1f\n" +
@@ -2008,7 +2222,21 @@ const file_otc_proto_rawDesc = "" +
 	"\x0eprice_per_unit\x18\x03 \x01(\x01R\fpricePerUnit\x12\x18\n" +
 	"\apremium\x18\x04 \x01(\x01R\apremium\x12\x16\n" +
 	"\x06amount\x18\x05 \x01(\x05R\x06amount\x12'\n" +
-	"\x0fsettlement_date\x18\x06 \x01(\tR\x0esettlementDate2\xb1\t\n" +
+	"\x0fsettlement_date\x18\x06 \x01(\tR\x0esettlementDate\"\x8f\x02\n" +
+	"\x1aOtcInterbankPrepareRequest\x12.\n" +
+	"\x13idem_routing_number\x18\x01 \x01(\tR\x11idemRoutingNumber\x12\x19\n" +
+	"\bidem_key\x18\x02 \x01(\tR\aidemKey\x12*\n" +
+	"\x11tx_routing_number\x18\x03 \x01(\tR\x0ftxRoutingNumber\x12\x13\n" +
+	"\x05tx_id\x18\x04 \x01(\tR\x04txId\x12%\n" +
+	"\x0enegotiation_id\x18\x05 \x01(\x03R\rnegotiationId\x12!\n" +
+	"\fstock_amount\x18\x06 \x01(\x05R\vstockAmount\x12\x1b\n" +
+	"\tis_accept\x18\a \x01(\bR\bisAccept\"F\n" +
+	"\x18OtcInterbankVoteResponse\x12\x12\n" +
+	"\x04vote\x18\x01 \x01(\tR\x04vote\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"X\n" +
+	"\x15OtcInterbankTxRequest\x12*\n" +
+	"\x11tx_routing_number\x18\x01 \x01(\tR\x0ftxRoutingNumber\x12\x13\n" +
+	"\x05tx_id\x18\x02 \x01(\tR\x04txId2\x9c\v\n" +
 	"\n" +
 	"OtcService\x12+\n" +
 	"\x04Ping\x12\x10.otc.PingRequest\x1a\x11.otc.PingResponse\x12L\n" +
@@ -2025,7 +2253,10 @@ const file_otc_proto_rawDesc = "" +
 	"\x15InterbankCounterOffer\x12!.otc.InterbankCounterOfferRequest\x1a!.otc.InterbankNegotiationResponse\x12`\n" +
 	"\x17InterbankGetNegotiation\x12\".otc.InterbankNegotiationIdRequest\x1a!.otc.InterbankNegotiationResponse\x12W\n" +
 	"\x1aInterbankDeleteNegotiation\x12\".otc.InterbankNegotiationIdRequest\x1a\x15.otc.OtcEmptyResponse\x12W\n" +
-	"\x1aInterbankAcceptNegotiation\x12\".otc.InterbankNegotiationIdRequest\x1a\x15.otc.OtcEmptyResponseB8Z6github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/otcb\x06proto3"
+	"\x1aInterbankAcceptNegotiation\x12\".otc.InterbankNegotiationIdRequest\x1a\x15.otc.OtcEmptyResponse\x12U\n" +
+	"\x13PrepareOtcInterbank\x12\x1f.otc.OtcInterbankPrepareRequest\x1a\x1d.otc.OtcInterbankVoteResponse\x12G\n" +
+	"\x12CommitOtcInterbank\x12\x1a.otc.OtcInterbankTxRequest\x1a\x15.otc.OtcEmptyResponse\x12I\n" +
+	"\x14RollbackOtcInterbank\x12\x1a.otc.OtcInterbankTxRequest\x1a\x15.otc.OtcEmptyResponseB8Z6github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/otcb\x06proto3"
 
 var (
 	file_otc_proto_rawDescOnce sync.Once
@@ -2039,7 +2270,7 @@ func file_otc_proto_rawDescGZIP() []byte {
 	return file_otc_proto_rawDescData
 }
 
-var file_otc_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_otc_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_otc_proto_goTypes = []any{
 	(*PingRequest)(nil),                       // 0: otc.PingRequest
 	(*PingResponse)(nil),                      // 1: otc.PingResponse
@@ -2064,6 +2295,9 @@ var file_otc_proto_goTypes = []any{
 	(*InterbankNegotiationResponse)(nil),      // 20: otc.InterbankNegotiationResponse
 	(*InterbankNegotiationIdRequest)(nil),     // 21: otc.InterbankNegotiationIdRequest
 	(*InterbankCounterOfferRequest)(nil),      // 22: otc.InterbankCounterOfferRequest
+	(*OtcInterbankPrepareRequest)(nil),        // 23: otc.OtcInterbankPrepareRequest
+	(*OtcInterbankVoteResponse)(nil),          // 24: otc.OtcInterbankVoteResponse
+	(*OtcInterbankTxRequest)(nil),             // 25: otc.OtcInterbankTxRequest
 }
 var file_otc_proto_depIdxs = []int32{
 	8,  // 0: otc.ListNegotiationsResponse.negotiations:type_name -> otc.NegotiationResponse
@@ -2084,23 +2318,29 @@ var file_otc_proto_depIdxs = []int32{
 	21, // 15: otc.OtcService.InterbankGetNegotiation:input_type -> otc.InterbankNegotiationIdRequest
 	21, // 16: otc.OtcService.InterbankDeleteNegotiation:input_type -> otc.InterbankNegotiationIdRequest
 	21, // 17: otc.OtcService.InterbankAcceptNegotiation:input_type -> otc.InterbankNegotiationIdRequest
-	1,  // 18: otc.OtcService.Ping:output_type -> otc.PingResponse
-	8,  // 19: otc.OtcService.CreateNegotiation:output_type -> otc.NegotiationResponse
-	9,  // 20: otc.OtcService.ListNegotiations:output_type -> otc.ListNegotiationsResponse
-	8,  // 21: otc.OtcService.GetNegotiation:output_type -> otc.NegotiationResponse
-	8,  // 22: otc.OtcService.CounterOffer:output_type -> otc.NegotiationResponse
-	8,  // 23: otc.OtcService.AcceptNegotiation:output_type -> otc.NegotiationResponse
-	8,  // 24: otc.OtcService.RejectNegotiation:output_type -> otc.NegotiationResponse
-	12, // 25: otc.OtcService.ListContracts:output_type -> otc.ListContractsResponse
-	14, // 26: otc.OtcService.ExerciseContract:output_type -> otc.ExerciseContractResponse
-	17, // 27: otc.OtcService.GetMarket:output_type -> otc.GetMarketResponse
-	20, // 28: otc.OtcService.CreateInterbankNegotiation:output_type -> otc.InterbankNegotiationResponse
-	20, // 29: otc.OtcService.InterbankCounterOffer:output_type -> otc.InterbankNegotiationResponse
-	20, // 30: otc.OtcService.InterbankGetNegotiation:output_type -> otc.InterbankNegotiationResponse
-	18, // 31: otc.OtcService.InterbankDeleteNegotiation:output_type -> otc.OtcEmptyResponse
-	18, // 32: otc.OtcService.InterbankAcceptNegotiation:output_type -> otc.OtcEmptyResponse
-	18, // [18:33] is the sub-list for method output_type
-	3,  // [3:18] is the sub-list for method input_type
+	23, // 18: otc.OtcService.PrepareOtcInterbank:input_type -> otc.OtcInterbankPrepareRequest
+	25, // 19: otc.OtcService.CommitOtcInterbank:input_type -> otc.OtcInterbankTxRequest
+	25, // 20: otc.OtcService.RollbackOtcInterbank:input_type -> otc.OtcInterbankTxRequest
+	1,  // 21: otc.OtcService.Ping:output_type -> otc.PingResponse
+	8,  // 22: otc.OtcService.CreateNegotiation:output_type -> otc.NegotiationResponse
+	9,  // 23: otc.OtcService.ListNegotiations:output_type -> otc.ListNegotiationsResponse
+	8,  // 24: otc.OtcService.GetNegotiation:output_type -> otc.NegotiationResponse
+	8,  // 25: otc.OtcService.CounterOffer:output_type -> otc.NegotiationResponse
+	8,  // 26: otc.OtcService.AcceptNegotiation:output_type -> otc.NegotiationResponse
+	8,  // 27: otc.OtcService.RejectNegotiation:output_type -> otc.NegotiationResponse
+	12, // 28: otc.OtcService.ListContracts:output_type -> otc.ListContractsResponse
+	14, // 29: otc.OtcService.ExerciseContract:output_type -> otc.ExerciseContractResponse
+	17, // 30: otc.OtcService.GetMarket:output_type -> otc.GetMarketResponse
+	20, // 31: otc.OtcService.CreateInterbankNegotiation:output_type -> otc.InterbankNegotiationResponse
+	20, // 32: otc.OtcService.InterbankCounterOffer:output_type -> otc.InterbankNegotiationResponse
+	20, // 33: otc.OtcService.InterbankGetNegotiation:output_type -> otc.InterbankNegotiationResponse
+	18, // 34: otc.OtcService.InterbankDeleteNegotiation:output_type -> otc.OtcEmptyResponse
+	18, // 35: otc.OtcService.InterbankAcceptNegotiation:output_type -> otc.OtcEmptyResponse
+	24, // 36: otc.OtcService.PrepareOtcInterbank:output_type -> otc.OtcInterbankVoteResponse
+	18, // 37: otc.OtcService.CommitOtcInterbank:output_type -> otc.OtcEmptyResponse
+	18, // 38: otc.OtcService.RollbackOtcInterbank:output_type -> otc.OtcEmptyResponse
+	21, // [21:39] is the sub-list for method output_type
+	3,  // [3:21] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name
 	3,  // [3:3] is the sub-list for extension extendee
 	0,  // [0:3] is the sub-list for field type_name
@@ -2117,7 +2357,7 @@ func file_otc_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_otc_proto_rawDesc), len(file_otc_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   23,
+			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

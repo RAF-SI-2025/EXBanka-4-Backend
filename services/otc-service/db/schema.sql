@@ -57,3 +57,23 @@ CREATE TABLE IF NOT EXISTS otc_saga_log (
     timestamp    TIMESTAMP NOT NULL DEFAULT NOW(),
     error_msg    TEXT
 );
+
+-- Migration: partner_negotiation_id = lokalni ID pregovora na partner banci (za outgoing OPTION posting)
+ALTER TABLE otc_negotiations ADD COLUMN IF NOT EXISTS partner_negotiation_id BIGINT;
+
+-- Tabela za tracking incoming cross-bank 2PC transakcija koje uključuju OPTION postinge
+CREATE TABLE IF NOT EXISTS otc_interbank_tx (
+    id                  BIGSERIAL PRIMARY KEY,
+    idem_routing_number VARCHAR(20)  NOT NULL,
+    idem_key            VARCHAR(100) NOT NULL,
+    tx_routing_number   VARCHAR(20),
+    tx_id               VARCHAR(100),
+    negotiation_id      BIGINT       NOT NULL REFERENCES otc_negotiations(id),
+    tx_type             VARCHAR(20)  NOT NULL,
+    stock_amount        INT          NOT NULL,
+    status              VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
+    cached_vote         VARCHAR(10),
+    created_at          TIMESTAMP    NOT NULL DEFAULT NOW(),
+    UNIQUE(idem_routing_number, idem_key)
+);
+ALTER TABLE otc_interbank_tx ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT NOW();

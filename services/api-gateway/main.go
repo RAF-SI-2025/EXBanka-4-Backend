@@ -122,7 +122,7 @@ func main() {
 	r := gin.Default()
 
 	// Inter-bank 2PC endpoint — authenticated by X-Api-Key, no JWT
-	r.POST("/interbank", handlers.InterbankHandler(paymentClient))
+	r.POST("/interbank", handlers.InterbankHandler(paymentClient, otcClient))
 	// Public stock listing for partner banks — authenticated by X-Api-Key, no JWT
 	r.GET("/public-stock", handlers.GetPublicStock(otcClient))
 

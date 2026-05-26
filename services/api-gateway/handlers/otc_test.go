@@ -106,6 +106,32 @@ func (s *stubOtcClient) GetMarket(ctx context.Context, in *pb.GetMarketRequest, 
 	return nil, fmt.Errorf("not implemented")
 }
 
+// Interbank stubs (no test-specific fn wiring needed for current tests).
+func (s *stubOtcClient) CreateInterbankNegotiation(_ context.Context, _ *pb.CreateInterbankNegotiationRequest, _ ...grpc.CallOption) (*pb.InterbankNegotiationResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubOtcClient) InterbankCounterOffer(_ context.Context, _ *pb.InterbankCounterOfferRequest, _ ...grpc.CallOption) (*pb.InterbankNegotiationResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubOtcClient) InterbankGetNegotiation(_ context.Context, _ *pb.InterbankNegotiationIdRequest, _ ...grpc.CallOption) (*pb.InterbankNegotiationResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubOtcClient) InterbankDeleteNegotiation(_ context.Context, _ *pb.InterbankNegotiationIdRequest, _ ...grpc.CallOption) (*pb.OtcEmptyResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubOtcClient) InterbankAcceptNegotiation(_ context.Context, _ *pb.InterbankNegotiationIdRequest, _ ...grpc.CallOption) (*pb.OtcEmptyResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubOtcClient) PrepareOtcInterbank(_ context.Context, _ *pb.OtcInterbankPrepareRequest, _ ...grpc.CallOption) (*pb.OtcInterbankVoteResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubOtcClient) CommitOtcInterbank(_ context.Context, _ *pb.OtcInterbankTxRequest, _ ...grpc.CallOption) (*pb.OtcEmptyResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubOtcClient) RollbackOtcInterbank(_ context.Context, _ *pb.OtcInterbankTxRequest, _ ...grpc.CallOption) (*pb.OtcEmptyResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
 // sampleNegotiation returns a sample NegotiationResponse for tests.
 func sampleNegotiation() *pb.NegotiationResponse {
 	return &pb.NegotiationResponse{

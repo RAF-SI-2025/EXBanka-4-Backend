@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/payment"
 	"google.golang.org/grpc/codes"
@@ -29,9 +30,13 @@ func (s *PaymentServer) PrepareInterbankPayment(ctx context.Context, req *pb.Pre
 		return nil, status.Errorf(codes.Internal, "failed to check idempotence: %v", err)
 	}
 
-	// Validate postings sum to zero per currency (double-entry: debits = credits)
+	// Validate monetary postings sum to zero per currency (double-entry: debits = credits).
+	// OPTION postings are non-monetary (stock instrument) and are excluded from this check.
 	totals := make(map[string]float64)
 	for _, p := range req.Postings {
+		if p.AccountType == "OPTION" {
+			continue
+		}
 		totals[p.Currency] += p.Amount
 	}
 	for currency, sum := range totals {
@@ -64,15 +69,37 @@ func (s *PaymentServer) PrepareInterbankPayment(ctx context.Context, req *pb.Pre
 		}, nil
 	}
 
-	// Verify receiver account exists, is ACTIVE, and currency matches
+	// Verify receiver account exists, is ACTIVE, and currency matches.
+	// PERSON postings identify the account by owner_id rather than account_number.
+	var resolvedAccountNum string
 	var accountStatus, accountCurrencyCode string
 	var currencyID int64
-	err = s.AccountDB.QueryRowContext(ctx,
-		`SELECT status, currency_id FROM accounts WHERE account_number = $1`,
-		creditPosting.AccountNum,
-	).Scan(&accountStatus, &currencyID)
+
+	if creditPosting.AccountType == "PERSON" {
+		ownerID, parseErr := strconv.ParseInt(creditPosting.AccountNum, 10, 64)
+		if parseErr != nil {
+			if err2 := s.insertInterbankTx(ctx, txRoutingNum, txID, idemRoutingNum, idemKey, "", 0, "", "NO"); err2 != nil {
+				return nil, err2
+			}
+			return &pb.PrepareInterbankPaymentResponse{
+				Vote:    "NO",
+				Reasons: []*pb.InterbankReason{{Reason: "NO_SUCH_ACCOUNT: invalid PERSON account num"}},
+			}, nil
+		}
+		err = s.AccountDB.QueryRowContext(ctx,
+			`SELECT account_number, status, currency_id FROM accounts
+			 WHERE owner_id = $1 AND status = 'ACTIVE' ORDER BY id LIMIT 1`, ownerID,
+		).Scan(&resolvedAccountNum, &accountStatus, &currencyID)
+	} else {
+		resolvedAccountNum = creditPosting.AccountNum
+		err = s.AccountDB.QueryRowContext(ctx,
+			`SELECT status, currency_id FROM accounts WHERE account_number = $1`,
+			creditPosting.AccountNum,
+		).Scan(&accountStatus, &currencyID)
+	}
+
 	if err == sql.ErrNoRows {
-		if err2 := s.insertInterbankTx(ctx, txRoutingNum, txID, idemRoutingNum, idemKey, creditPosting.AccountNum, creditPosting.Amount, creditPosting.Currency, "NO"); err2 != nil {
+		if err2 := s.insertInterbankTx(ctx, txRoutingNum, txID, idemRoutingNum, idemKey, resolvedAccountNum, creditPosting.Amount, creditPosting.Currency, "NO"); err2 != nil {
 			return nil, err2
 		}
 		return &pb.PrepareInterbankPaymentResponse{
@@ -84,7 +111,7 @@ func (s *PaymentServer) PrepareInterbankPayment(ctx context.Context, req *pb.Pre
 		return nil, status.Errorf(codes.Internal, "failed to look up receiver account: %v", err)
 	}
 	if accountStatus != "ACTIVE" {
-		if err2 := s.insertInterbankTx(ctx, txRoutingNum, txID, idemRoutingNum, idemKey, creditPosting.AccountNum, creditPosting.Amount, creditPosting.Currency, "NO"); err2 != nil {
+		if err2 := s.insertInterbankTx(ctx, txRoutingNum, txID, idemRoutingNum, idemKey, resolvedAccountNum, creditPosting.Amount, creditPosting.Currency, "NO"); err2 != nil {
 			return nil, err2
 		}
 		return &pb.PrepareInterbankPaymentResponse{
@@ -100,7 +127,7 @@ func (s *PaymentServer) PrepareInterbankPayment(ctx context.Context, req *pb.Pre
 		return nil, status.Errorf(codes.Internal, "failed to resolve account currency: %v", err)
 	}
 	if accountCurrencyCode != creditPosting.Currency {
-		if err2 := s.insertInterbankTx(ctx, txRoutingNum, txID, idemRoutingNum, idemKey, creditPosting.AccountNum, creditPosting.Amount, creditPosting.Currency, "NO"); err2 != nil {
+		if err2 := s.insertInterbankTx(ctx, txRoutingNum, txID, idemRoutingNum, idemKey, resolvedAccountNum, creditPosting.Amount, creditPosting.Currency, "NO"); err2 != nil {
 			return nil, err2
 		}
 		return &pb.PrepareInterbankPaymentResponse{
@@ -110,7 +137,7 @@ func (s *PaymentServer) PrepareInterbankPayment(ctx context.Context, req *pb.Pre
 	}
 
 	// All checks passed — store PENDING with cached YES vote
-	if err := s.insertInterbankTx(ctx, txRoutingNum, txID, idemRoutingNum, idemKey, creditPosting.AccountNum, creditPosting.Amount, creditPosting.Currency, "YES"); err != nil {
+	if err := s.insertInterbankTx(ctx, txRoutingNum, txID, idemRoutingNum, idemKey, resolvedAccountNum, creditPosting.Amount, creditPosting.Currency, "YES"); err != nil {
 		return nil, err
 	}
 	return &pb.PrepareInterbankPaymentResponse{Vote: "YES"}, nil

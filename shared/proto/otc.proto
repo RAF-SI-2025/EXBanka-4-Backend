@@ -19,22 +19,28 @@ service OtcService {
   rpc InterbankGetNegotiation(InterbankNegotiationIdRequest)        returns (InterbankNegotiationResponse);
   rpc InterbankDeleteNegotiation(InterbankNegotiationIdRequest)     returns (OtcEmptyResponse);
   rpc InterbankAcceptNegotiation(InterbankNegotiationIdRequest)     returns (OtcEmptyResponse);
+  // Incoming 2PC — OPTION posting handling (called from api-gateway /interbank endpoint)
+  rpc PrepareOtcInterbank(OtcInterbankPrepareRequest) returns (OtcInterbankVoteResponse);
+  rpc CommitOtcInterbank(OtcInterbankTxRequest)       returns (OtcEmptyResponse);
+  rpc RollbackOtcInterbank(OtcInterbankTxRequest)     returns (OtcEmptyResponse);
 }
 
 message PingRequest {}
 message PingResponse { string message = 1; }
 
 message CreateNegotiationRequest {
-  int64  buyer_id        = 1;
-  string buyer_type      = 2; // CLIENT or EMPLOYEE
-  int64  seller_id       = 3;
-  string seller_type     = 4; // CLIENT or EMPLOYEE
-  string ticker          = 5;
-  int32  amount          = 6;
-  double price_per_stock = 7;
-  string settlement_date = 8; // YYYY-MM-DD
-  double premium         = 9;
-  string currency        = 10;
+  int64  buyer_id              = 1;
+  string buyer_type            = 2; // CLIENT or EMPLOYEE
+  int64  seller_id             = 3;
+  string seller_type           = 4; // CLIENT or EMPLOYEE
+  string ticker                = 5;
+  int32  amount                = 6;
+  double price_per_stock       = 7;
+  string settlement_date       = 8; // YYYY-MM-DD
+  double premium               = 9;
+  string currency              = 10;
+  int32  seller_routing_number = 11; // 0 = intra-bank
+  string seller_external_id    = 12; // seller's ID on partner bank
 }
 
 message CounterOfferRequest {
@@ -203,4 +209,24 @@ message InterbankCounterOfferRequest {
   double premium          = 4;
   int32  amount           = 5;
   string settlement_date  = 6;
+}
+
+message OtcInterbankPrepareRequest {
+  string idem_routing_number = 1;
+  string idem_key            = 2;
+  string tx_routing_number   = 3;
+  string tx_id               = 4;
+  int64  negotiation_id      = 5;
+  int32  stock_amount        = 6;
+  bool   is_accept           = 7;
+}
+
+message OtcInterbankVoteResponse {
+  string vote   = 1;
+  string reason = 2;
+}
+
+message OtcInterbankTxRequest {
+  string tx_routing_number = 1;
+  string tx_id             = 2;
 }
