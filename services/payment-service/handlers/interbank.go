@@ -161,34 +161,31 @@ func (s *PaymentServer) CommitInterbankPayment(ctx context.Context, req *pb.Comm
 		return nil, status.Errorf(codes.Internal, "failed to look up interbank transaction: %v", err)
 	}
 
-	if txStatus == "COMMITTED" {
-		return &pb.CommitRollbackInterbankResponse{}, nil
-	}
 	if txStatus == "ROLLED_BACK" {
 		return nil, status.Errorf(codes.FailedPrecondition, "transaction was already rolled back")
 	}
 
-	// Credit the receiver account and mark committed in a single DB transaction
-	dbTx, err := s.AccountDB.BeginTx(ctx, nil)
+	// Atomically claim the commit only if still PENDING — this is the idempotence guard.
+	// A retry will see 0 rows affected and exit before touching accounts, preventing double credit.
+	res, err := s.DB.ExecContext(ctx,
+		`UPDATE interbank_transactions SET status = 'COMMITTED' WHERE id = $1 AND status = 'PENDING'`, id,
+	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to begin transaction: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to claim commit: %v", err)
 	}
-	defer func() { _ = dbTx.Rollback() }()
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to read rows affected: %v", err)
+	}
+	if rows == 0 {
+		return &pb.CommitRollbackInterbankResponse{}, nil
+	}
 
-	if _, err = dbTx.ExecContext(ctx,
+	if _, err = s.AccountDB.ExecContext(ctx,
 		`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE account_number = $2`,
 		amount, toAccount,
 	); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to credit receiver account: %v", err)
-	}
-	if err = dbTx.Commit(); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to commit account credit: %v", err)
-	}
-
-	if _, err = s.DB.ExecContext(ctx,
-		`UPDATE interbank_transactions SET status = 'COMMITTED' WHERE id = $1`, id,
-	); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update interbank transaction status: %v", err)
 	}
 	return &pb.CommitRollbackInterbankResponse{}, nil
 }

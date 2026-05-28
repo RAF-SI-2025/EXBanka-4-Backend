@@ -526,7 +526,10 @@ func GetPublicStock(client pb.OtcServiceClient) gin.HandlerFunc {
 			Amount int32  `json:"amount"`
 		}
 		type stock struct {
-			Ticker string `json:"ticker"`
+			Ticker   string  `json:"ticker"`
+			Name     string  `json:"name"`
+			Price    float64 `json:"price"`
+			Currency string  `json:"currency"`
 		}
 		type stockEntry struct {
 			Stock   stock         `json:"stock"`
@@ -537,7 +540,12 @@ func GetPublicStock(client pb.OtcServiceClient) gin.HandlerFunc {
 		for _, item := range resp.Items {
 			entry, ok := byTicker[item.Ticker]
 			if !ok {
-				entry = &stockEntry{Stock: stock{Ticker: item.Ticker}}
+				entry = &stockEntry{Stock: stock{
+					Ticker:   item.Ticker,
+					Name:     item.Name,
+					Price:    item.PricePerStock,
+					Currency: item.Currency,
+				}}
 				byTicker[item.Ticker] = entry
 			}
 			entry.Sellers = append(entry.Sellers, sellerEntry{

@@ -270,6 +270,7 @@ func main() {
 	r.GET("/otc/contracts", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.ListContracts(otcClient))
 	r.POST("/otc/contracts/:id/exercise", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.ExerciseContract(otcClient))
 	r.GET("/otc/market", middleware.RequireRole("CLIENT", "SUPERVISOR"), handlers.GetMarket(otcClient))
+	r.GET("/api/otc/external-stocks", middleware.RequireRole("CLIENT", "SUPERVISOR"), handlers.GetExternalStocks())
 	r.PUT("/client/portfolio/:ticker/public-mode", middleware.RequireRole("CLIENT", "SUPERVISOR"), handlers.SetPublicMode(portfolioClient))
 
 	// Investment funds

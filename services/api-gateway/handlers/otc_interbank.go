@@ -267,6 +267,41 @@ func IncomingAcceptNegotiation(otcClient pb.OtcServiceClient) gin.HandlerFunc {
 	}
 }
 
+// GetExternalStocks proxies GET /public-stock from the configured partner bank.
+// Returns { items, bankName } or an empty list if the partner is unreachable.
+func GetExternalStocks() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		partnerRouting := os.Getenv("PARTNER_ROUTING_NUMBER")
+		bank, err := gwinterbank.ResolveBankByRoutingNumber(partnerRouting)
+		if err != nil || bank.BankURL == "" {
+			c.JSON(http.StatusOK, gin.H{"items": []any{}, "bankName": ""})
+			return
+		}
+
+		req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodGet, bank.BankURL+"/public-stock", nil)
+		if err != nil {
+			c.JSON(http.StatusOK, gin.H{"items": []any{}, "bankName": bank.BankName})
+			return
+		}
+		req.Header.Set("X-Api-Key", bank.APIKey)
+
+		httpClient := &http.Client{Timeout: otcInterbankTimeout}
+		resp, err := httpClient.Do(req)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			c.JSON(http.StatusOK, gin.H{"items": []any{}, "bankName": bank.BankName})
+			return
+		}
+		defer resp.Body.Close()
+
+		var items []any
+		if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
+			c.JSON(http.StatusOK, gin.H{"items": []any{}, "bankName": bank.BankName})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"items": items, "bankName": bank.BankName})
+	}
+}
+
 // parseInterbankNegPath extracts (routingNumber, externalId) from path params.
 func parseInterbankNegPath(c *gin.Context) (int32, string, bool) {
 	var routing int32
