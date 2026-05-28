@@ -193,6 +193,7 @@ func (s *OtcServer) ListNegotiations(ctx context.Context, req *pb.ListNegotiatio
 		SELECT id FROM otc_negotiations
 		WHERE (seller_id = $1 AND seller_type = $2)
 		   OR (buyer_id  = $1 AND buyer_type  = $2)
+		   OR ($2 = 'EMPLOYEE' AND seller_id = 0 AND seller_type = 'EMPLOYEE')
 		ORDER BY last_modified DESC`,
 		req.CallerId, req.CallerType,
 	)
@@ -251,7 +252,7 @@ func (s *OtcServer) CounterOffer(ctx context.Context, req *pb.CounterOfferReques
 		return nil, status.Errorf(codes.Internal, "failed to load negotiation: %v", err)
 	}
 
-	isSeller := req.CallerId == sellerID && req.CallerType == sellerType
+	isSeller := req.CallerType == sellerType && (req.CallerId == sellerID || sellerID == 0)
 	isBuyer := req.CallerId == buyerID && req.CallerType == buyerType
 	if !isSeller && !isBuyer {
 		return nil, status.Error(codes.PermissionDenied, "caller is not a participant in this negotiation")
@@ -318,7 +319,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 		return nil, status.Errorf(codes.Internal, "failed to load negotiation: %v", err)
 	}
 
-	isSeller := req.CallerId == sellerID && req.CallerType == sellerType
+	isSeller := req.CallerType == sellerType && (req.CallerId == sellerID || sellerID == 0)
 	isBuyer := req.CallerId == buyerID && req.CallerType == buyerType
 	if !isSeller && !isBuyer {
 		return nil, status.Error(codes.PermissionDenied, "caller is not a participant in this negotiation")
@@ -482,7 +483,7 @@ func (s *OtcServer) RejectNegotiation(ctx context.Context, req *pb.RejectNegotia
 		return nil, status.Errorf(codes.Internal, "failed to load negotiation: %v", err)
 	}
 
-	isSeller := req.CallerId == sellerID && req.CallerType == sellerType
+	isSeller := req.CallerType == sellerType && (req.CallerId == sellerID || sellerID == 0)
 	isBuyer := req.CallerId == buyerID && req.CallerType == buyerType
 	if !isSeller && !isBuyer {
 		return nil, status.Error(codes.PermissionDenied, "caller is not a participant in this negotiation")
@@ -514,7 +515,8 @@ func (s *OtcServer) ListContracts(ctx context.Context, req *pb.ListContractsRequ
 		       settlement_date::text, status, created_at
 		FROM otc_contracts
 		WHERE ((seller_id = $1 AND seller_type = $2)
-		    OR  (buyer_id  = $1 AND buyer_type  = $2))`
+		    OR  (buyer_id  = $1 AND buyer_type  = $2)
+		    OR  ($2 = 'EMPLOYEE' AND seller_id = 0 AND seller_type = 'EMPLOYEE'))`
 	args := []interface{}{req.CallerId, req.CallerType}
 
 	if req.StatusFilter != "" {
