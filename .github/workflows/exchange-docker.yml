@@ -37,7 +37,7 @@ jobs:
         with:
           context: .
           file: services/exchange-service/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: ${{ github.event_name == 'push' }}
           tags: ghcr.io/raf-si-2025/exbanka-4-backend/exchange-service:${{ github.sha }}
 
   deploy:
