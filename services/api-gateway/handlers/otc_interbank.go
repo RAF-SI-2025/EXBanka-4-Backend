@@ -18,7 +18,7 @@ import (
 
 func gatewayOwnRoutingInt() int32 {
 	var n int32
-	fmt.Sscanf(os.Getenv("OWN_ROUTING_NUMBER"), "%d", &n)
+	_, _ = fmt.Sscanf(os.Getenv("OWN_ROUTING_NUMBER"), "%d", &n)
 	return n
 }
 
@@ -291,7 +291,7 @@ func GetExternalStocks() gin.HandlerFunc {
 			c.JSON(http.StatusOK, gin.H{"items": []any{}, "bankName": bank.BankName})
 			return
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		var items []any
 		if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
@@ -349,7 +349,7 @@ func ForwardNegotiationToPartner(body otcNegotiationBody, partnerRoutingNumber s
 	if err != nil {
 		return 0, "", fmt.Errorf("partner request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		return 0, "", fmt.Errorf("partner returned status %d", resp.StatusCode)

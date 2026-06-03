@@ -28,7 +28,7 @@ func newAuthServerFull(t *testing.T) (*AuthServer, sqlmock.Sqlmock) {
 	t.Helper()
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 	s := &AuthServer{
 		DB:             db,
 		EmployeeClient: new(mockEmployeeClient),
@@ -42,7 +42,7 @@ func newAuthServerWithRedis(t *testing.T) (*AuthServer, sqlmock.Sqlmock, *minire
 	t.Helper()
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 	mr := miniredis.RunT(t)
 	rc := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	s := &AuthServer{
@@ -151,7 +151,7 @@ func TestPollApproval_Redis_PendingExpired(t *testing.T) {
 	past := time.Now().Add(-time.Hour).UTC().Format(time.RFC3339)
 	cached := approvalCache{Status: "PENDING", ActionType: "LOGIN", Payload: `{}`, ExpiresAt: past}
 	data, _ := json.Marshal(cached)
-	mr.Set(approvalCacheKey(42), string(data))
+	_ = mr.Set(approvalCacheKey(42), string(data))
 
 	dbMock.ExpectExec("UPDATE two_factor_approvals SET status = 'EXPIRED'").
 		WithArgs(int64(42)).
@@ -175,7 +175,7 @@ func TestPollApproval_Redis_ApprovedLogin(t *testing.T) {
 	future := time.Now().Add(time.Hour).UTC().Format(time.RFC3339)
 	cached := approvalCache{Status: "APPROVED", ActionType: "LOGIN", Payload: string(payload), ExpiresAt: future}
 	data, _ := json.Marshal(cached)
-	mr.Set(approvalCacheKey(55), string(data))
+	_ = mr.Set(approvalCacheKey(55), string(data))
 
 	resp, err := s.PollApproval(context.Background(), &pb_auth.PollApprovalRequest{Id: 55})
 	require.NoError(t, err)
