@@ -1561,6 +1561,582 @@ func (x *GetTransfersResponse) GetTransfers() []*Transfer {
 	return nil
 }
 
+type InterbankTransactionId struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RoutingNumber int32                  `protobuf:"varint,1,opt,name=routing_number,json=routingNumber,proto3" json:"routing_number,omitempty"`
+	Id            string                 `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InterbankTransactionId) Reset() {
+	*x = InterbankTransactionId{}
+	mi := &file_payment_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InterbankTransactionId) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InterbankTransactionId) ProtoMessage() {}
+
+func (x *InterbankTransactionId) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InterbankTransactionId.ProtoReflect.Descriptor instead.
+func (*InterbankTransactionId) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *InterbankTransactionId) GetRoutingNumber() int32 {
+	if x != nil {
+		return x.RoutingNumber
+	}
+	return 0
+}
+
+func (x *InterbankTransactionId) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type InterbankIdempotenceKey struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	RoutingNumber       int32                  `protobuf:"varint,1,opt,name=routing_number,json=routingNumber,proto3" json:"routing_number,omitempty"`
+	LocallyGeneratedKey string                 `protobuf:"bytes,2,opt,name=locally_generated_key,json=locallyGeneratedKey,proto3" json:"locally_generated_key,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *InterbankIdempotenceKey) Reset() {
+	*x = InterbankIdempotenceKey{}
+	mi := &file_payment_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InterbankIdempotenceKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InterbankIdempotenceKey) ProtoMessage() {}
+
+func (x *InterbankIdempotenceKey) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InterbankIdempotenceKey.ProtoReflect.Descriptor instead.
+func (*InterbankIdempotenceKey) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *InterbankIdempotenceKey) GetRoutingNumber() int32 {
+	if x != nil {
+		return x.RoutingNumber
+	}
+	return 0
+}
+
+func (x *InterbankIdempotenceKey) GetLocallyGeneratedKey() string {
+	if x != nil {
+		return x.LocallyGeneratedKey
+	}
+	return ""
+}
+
+type InterbankPosting struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccountType   string                 `protobuf:"bytes,1,opt,name=account_type,json=accountType,proto3" json:"account_type,omitempty"` // PERSON | ACCOUNT | OPTION
+	AccountNum    string                 `protobuf:"bytes,2,opt,name=account_num,json=accountNum,proto3" json:"account_num,omitempty"`
+	Amount        float64                `protobuf:"fixed64,3,opt,name=amount,proto3" json:"amount,omitempty"`                      // negative = debit, positive = credit
+	AssetType     string                 `protobuf:"bytes,4,opt,name=asset_type,json=assetType,proto3" json:"asset_type,omitempty"` // MONAS | STOCK | OPTION
+	Currency      string                 `protobuf:"bytes,5,opt,name=currency,proto3" json:"currency,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InterbankPosting) Reset() {
+	*x = InterbankPosting{}
+	mi := &file_payment_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InterbankPosting) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InterbankPosting) ProtoMessage() {}
+
+func (x *InterbankPosting) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InterbankPosting.ProtoReflect.Descriptor instead.
+func (*InterbankPosting) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *InterbankPosting) GetAccountType() string {
+	if x != nil {
+		return x.AccountType
+	}
+	return ""
+}
+
+func (x *InterbankPosting) GetAccountNum() string {
+	if x != nil {
+		return x.AccountNum
+	}
+	return ""
+}
+
+func (x *InterbankPosting) GetAmount() float64 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+func (x *InterbankPosting) GetAssetType() string {
+	if x != nil {
+		return x.AssetType
+	}
+	return ""
+}
+
+func (x *InterbankPosting) GetCurrency() string {
+	if x != nil {
+		return x.Currency
+	}
+	return ""
+}
+
+type InterbankReason struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Reason        string                 `protobuf:"bytes,1,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InterbankReason) Reset() {
+	*x = InterbankReason{}
+	mi := &file_payment_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InterbankReason) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InterbankReason) ProtoMessage() {}
+
+func (x *InterbankReason) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InterbankReason.ProtoReflect.Descriptor instead.
+func (*InterbankReason) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *InterbankReason) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type PrepareInterbankPaymentRequest struct {
+	state          protoimpl.MessageState   `protogen:"open.v1"`
+	IdempotenceKey *InterbankIdempotenceKey `protobuf:"bytes,1,opt,name=idempotence_key,json=idempotenceKey,proto3" json:"idempotence_key,omitempty"`
+	TransactionId  *InterbankTransactionId  `protobuf:"bytes,2,opt,name=transaction_id,json=transactionId,proto3" json:"transaction_id,omitempty"`
+	Postings       []*InterbankPosting      `protobuf:"bytes,3,rep,name=postings,proto3" json:"postings,omitempty"`
+	PaymentCode    string                   `protobuf:"bytes,4,opt,name=payment_code,json=paymentCode,proto3" json:"payment_code,omitempty"`
+	PaymentPurpose string                   `protobuf:"bytes,5,opt,name=payment_purpose,json=paymentPurpose,proto3" json:"payment_purpose,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *PrepareInterbankPaymentRequest) Reset() {
+	*x = PrepareInterbankPaymentRequest{}
+	mi := &file_payment_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrepareInterbankPaymentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrepareInterbankPaymentRequest) ProtoMessage() {}
+
+func (x *PrepareInterbankPaymentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrepareInterbankPaymentRequest.ProtoReflect.Descriptor instead.
+func (*PrepareInterbankPaymentRequest) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *PrepareInterbankPaymentRequest) GetIdempotenceKey() *InterbankIdempotenceKey {
+	if x != nil {
+		return x.IdempotenceKey
+	}
+	return nil
+}
+
+func (x *PrepareInterbankPaymentRequest) GetTransactionId() *InterbankTransactionId {
+	if x != nil {
+		return x.TransactionId
+	}
+	return nil
+}
+
+func (x *PrepareInterbankPaymentRequest) GetPostings() []*InterbankPosting {
+	if x != nil {
+		return x.Postings
+	}
+	return nil
+}
+
+func (x *PrepareInterbankPaymentRequest) GetPaymentCode() string {
+	if x != nil {
+		return x.PaymentCode
+	}
+	return ""
+}
+
+func (x *PrepareInterbankPaymentRequest) GetPaymentPurpose() string {
+	if x != nil {
+		return x.PaymentPurpose
+	}
+	return ""
+}
+
+type PrepareInterbankPaymentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Vote          string                 `protobuf:"bytes,1,opt,name=vote,proto3" json:"vote,omitempty"` // "YES" or "NO"
+	Reasons       []*InterbankReason     `protobuf:"bytes,2,rep,name=reasons,proto3" json:"reasons,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrepareInterbankPaymentResponse) Reset() {
+	*x = PrepareInterbankPaymentResponse{}
+	mi := &file_payment_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrepareInterbankPaymentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrepareInterbankPaymentResponse) ProtoMessage() {}
+
+func (x *PrepareInterbankPaymentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrepareInterbankPaymentResponse.ProtoReflect.Descriptor instead.
+func (*PrepareInterbankPaymentResponse) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *PrepareInterbankPaymentResponse) GetVote() string {
+	if x != nil {
+		return x.Vote
+	}
+	return ""
+}
+
+func (x *PrepareInterbankPaymentResponse) GetReasons() []*InterbankReason {
+	if x != nil {
+		return x.Reasons
+	}
+	return nil
+}
+
+type CommitRollbackInterbankRequest struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	TransactionId *InterbankTransactionId `protobuf:"bytes,1,opt,name=transaction_id,json=transactionId,proto3" json:"transaction_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CommitRollbackInterbankRequest) Reset() {
+	*x = CommitRollbackInterbankRequest{}
+	mi := &file_payment_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommitRollbackInterbankRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommitRollbackInterbankRequest) ProtoMessage() {}
+
+func (x *CommitRollbackInterbankRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommitRollbackInterbankRequest.ProtoReflect.Descriptor instead.
+func (*CommitRollbackInterbankRequest) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *CommitRollbackInterbankRequest) GetTransactionId() *InterbankTransactionId {
+	if x != nil {
+		return x.TransactionId
+	}
+	return nil
+}
+
+type CommitRollbackInterbankResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CommitRollbackInterbankResponse) Reset() {
+	*x = CommitRollbackInterbankResponse{}
+	mi := &file_payment_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommitRollbackInterbankResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommitRollbackInterbankResponse) ProtoMessage() {}
+
+func (x *CommitRollbackInterbankResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommitRollbackInterbankResponse.ProtoReflect.Descriptor instead.
+func (*CommitRollbackInterbankResponse) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{30}
+}
+
+type PreviewPaymentRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	FromAccount      string                 `protobuf:"bytes,1,opt,name=from_account,json=fromAccount,proto3" json:"from_account,omitempty"`
+	RecipientAccount string                 `protobuf:"bytes,2,opt,name=recipient_account,json=recipientAccount,proto3" json:"recipient_account,omitempty"`
+	Amount           float64                `protobuf:"fixed64,3,opt,name=amount,proto3" json:"amount,omitempty"`
+	ClientId         int64                  `protobuf:"varint,4,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *PreviewPaymentRequest) Reset() {
+	*x = PreviewPaymentRequest{}
+	mi := &file_payment_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PreviewPaymentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PreviewPaymentRequest) ProtoMessage() {}
+
+func (x *PreviewPaymentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PreviewPaymentRequest.ProtoReflect.Descriptor instead.
+func (*PreviewPaymentRequest) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *PreviewPaymentRequest) GetFromAccount() string {
+	if x != nil {
+		return x.FromAccount
+	}
+	return ""
+}
+
+func (x *PreviewPaymentRequest) GetRecipientAccount() string {
+	if x != nil {
+		return x.RecipientAccount
+	}
+	return ""
+}
+
+func (x *PreviewPaymentRequest) GetAmount() float64 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+func (x *PreviewPaymentRequest) GetClientId() int64 {
+	if x != nil {
+		return x.ClientId
+	}
+	return 0
+}
+
+type PreviewPaymentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IsCrossBank   bool                   `protobuf:"varint,1,opt,name=is_cross_bank,json=isCrossBank,proto3" json:"is_cross_bank,omitempty"`
+	ExchangeRate  float64                `protobuf:"fixed64,2,opt,name=exchange_rate,json=exchangeRate,proto3" json:"exchange_rate,omitempty"`
+	Fee           float64                `protobuf:"fixed64,3,opt,name=fee,proto3" json:"fee,omitempty"`
+	FinalAmount   float64                `protobuf:"fixed64,4,opt,name=final_amount,json=finalAmount,proto3" json:"final_amount,omitempty"`
+	FromCurrency  string                 `protobuf:"bytes,5,opt,name=from_currency,json=fromCurrency,proto3" json:"from_currency,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PreviewPaymentResponse) Reset() {
+	*x = PreviewPaymentResponse{}
+	mi := &file_payment_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PreviewPaymentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PreviewPaymentResponse) ProtoMessage() {}
+
+func (x *PreviewPaymentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PreviewPaymentResponse.ProtoReflect.Descriptor instead.
+func (*PreviewPaymentResponse) Descriptor() ([]byte, []int) {
+	return file_payment_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *PreviewPaymentResponse) GetIsCrossBank() bool {
+	if x != nil {
+		return x.IsCrossBank
+	}
+	return false
+}
+
+func (x *PreviewPaymentResponse) GetExchangeRate() float64 {
+	if x != nil {
+		return x.ExchangeRate
+	}
+	return 0
+}
+
+func (x *PreviewPaymentResponse) GetFee() float64 {
+	if x != nil {
+		return x.Fee
+	}
+	return 0
+}
+
+func (x *PreviewPaymentResponse) GetFinalAmount() float64 {
+	if x != nil {
+		return x.FinalAmount
+	}
+	return 0
+}
+
+func (x *PreviewPaymentResponse) GetFromCurrency() string {
+	if x != nil {
+		return x.FromCurrency
+	}
+	return ""
+}
+
 var File_payment_proto protoreflect.FileDescriptor
 
 const file_payment_proto_rawDesc = "" +
@@ -1690,9 +2266,50 @@ const file_payment_proto_rawDesc = "" +
 	"\x13GetTransfersRequest\x12\x1b\n" +
 	"\tclient_id\x18\x01 \x01(\x03R\bclientId\"G\n" +
 	"\x14GetTransfersResponse\x12/\n" +
-	"\ttransfers\x18\x01 \x03(\v2\x11.payment.TransferR\ttransfers2\xb4\a\n" +
+	"\ttransfers\x18\x01 \x03(\v2\x11.payment.TransferR\ttransfers\"O\n" +
+	"\x16InterbankTransactionId\x12%\n" +
+	"\x0erouting_number\x18\x01 \x01(\x05R\rroutingNumber\x12\x0e\n" +
+	"\x02id\x18\x02 \x01(\tR\x02id\"t\n" +
+	"\x17InterbankIdempotenceKey\x12%\n" +
+	"\x0erouting_number\x18\x01 \x01(\x05R\rroutingNumber\x122\n" +
+	"\x15locally_generated_key\x18\x02 \x01(\tR\x13locallyGeneratedKey\"\xa9\x01\n" +
+	"\x10InterbankPosting\x12!\n" +
+	"\faccount_type\x18\x01 \x01(\tR\vaccountType\x12\x1f\n" +
+	"\vaccount_num\x18\x02 \x01(\tR\n" +
+	"accountNum\x12\x16\n" +
+	"\x06amount\x18\x03 \x01(\x01R\x06amount\x12\x1d\n" +
+	"\n" +
+	"asset_type\x18\x04 \x01(\tR\tassetType\x12\x1a\n" +
+	"\bcurrency\x18\x05 \x01(\tR\bcurrency\")\n" +
+	"\x0fInterbankReason\x12\x16\n" +
+	"\x06reason\x18\x01 \x01(\tR\x06reason\"\xb6\x02\n" +
+	"\x1ePrepareInterbankPaymentRequest\x12I\n" +
+	"\x0fidempotence_key\x18\x01 \x01(\v2 .payment.InterbankIdempotenceKeyR\x0eidempotenceKey\x12F\n" +
+	"\x0etransaction_id\x18\x02 \x01(\v2\x1f.payment.InterbankTransactionIdR\rtransactionId\x125\n" +
+	"\bpostings\x18\x03 \x03(\v2\x19.payment.InterbankPostingR\bpostings\x12!\n" +
+	"\fpayment_code\x18\x04 \x01(\tR\vpaymentCode\x12'\n" +
+	"\x0fpayment_purpose\x18\x05 \x01(\tR\x0epaymentPurpose\"i\n" +
+	"\x1fPrepareInterbankPaymentResponse\x12\x12\n" +
+	"\x04vote\x18\x01 \x01(\tR\x04vote\x122\n" +
+	"\areasons\x18\x02 \x03(\v2\x18.payment.InterbankReasonR\areasons\"h\n" +
+	"\x1eCommitRollbackInterbankRequest\x12F\n" +
+	"\x0etransaction_id\x18\x01 \x01(\v2\x1f.payment.InterbankTransactionIdR\rtransactionId\"!\n" +
+	"\x1fCommitRollbackInterbankResponse\"\x9c\x01\n" +
+	"\x15PreviewPaymentRequest\x12!\n" +
+	"\ffrom_account\x18\x01 \x01(\tR\vfromAccount\x12+\n" +
+	"\x11recipient_account\x18\x02 \x01(\tR\x10recipientAccount\x12\x16\n" +
+	"\x06amount\x18\x03 \x01(\x01R\x06amount\x12\x1b\n" +
+	"\tclient_id\x18\x04 \x01(\x03R\bclientId\"\xbb\x01\n" +
+	"\x16PreviewPaymentResponse\x12\"\n" +
+	"\ris_cross_bank\x18\x01 \x01(\bR\visCrossBank\x12#\n" +
+	"\rexchange_rate\x18\x02 \x01(\x01R\fexchangeRate\x12\x10\n" +
+	"\x03fee\x18\x03 \x01(\x01R\x03fee\x12!\n" +
+	"\ffinal_amount\x18\x04 \x01(\x01R\vfinalAmount\x12#\n" +
+	"\rfrom_currency\x18\x05 \x01(\tR\ffromCurrency2\xd1\n" +
+	"\n" +
 	"\x0ePaymentService\x12N\n" +
-	"\rCreatePayment\x12\x1d.payment.CreatePaymentRequest\x1a\x1e.payment.CreatePaymentResponse\x12H\n" +
+	"\rCreatePayment\x12\x1d.payment.CreatePaymentRequest\x1a\x1e.payment.CreatePaymentResponse\x12Q\n" +
+	"\x0ePreviewPayment\x12\x1e.payment.PreviewPaymentRequest\x1a\x1f.payment.PreviewPaymentResponse\x12H\n" +
 	"\vGetPayments\x12\x1b.payment.GetPaymentsRequest\x1a\x1c.payment.GetPaymentsResponse\x12Q\n" +
 	"\x0eGetPaymentById\x12\x1e.payment.GetPaymentByIdRequest\x1a\x1f.payment.GetPaymentByIdResponse\x12Q\n" +
 	"\x0eCreateTransfer\x12\x1e.payment.CreateTransferRequest\x1a\x1f.payment.CreateTransferResponse\x12i\n" +
@@ -1701,7 +2318,10 @@ const file_payment_proto_rawDesc = "" +
 	"\x16UpdatePaymentRecipient\x12&.payment.UpdatePaymentRecipientRequest\x1a'.payment.UpdatePaymentRecipientResponse\x12i\n" +
 	"\x16DeletePaymentRecipient\x12&.payment.DeletePaymentRecipientRequest\x1a'.payment.DeletePaymentRecipientResponse\x12o\n" +
 	"\x18ReorderPaymentRecipients\x12(.payment.ReorderPaymentRecipientsRequest\x1a).payment.ReorderPaymentRecipientsResponse\x12K\n" +
-	"\fGetTransfers\x12\x1c.payment.GetTransfersRequest\x1a\x1d.payment.GetTransfersResponseB<Z:github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/paymentb\x06proto3"
+	"\fGetTransfers\x12\x1c.payment.GetTransfersRequest\x1a\x1d.payment.GetTransfersResponse\x12l\n" +
+	"\x17PrepareInterbankPayment\x12'.payment.PrepareInterbankPaymentRequest\x1a(.payment.PrepareInterbankPaymentResponse\x12k\n" +
+	"\x16CommitInterbankPayment\x12'.payment.CommitRollbackInterbankRequest\x1a(.payment.CommitRollbackInterbankResponse\x12m\n" +
+	"\x18RollbackInterbankPayment\x12'.payment.CommitRollbackInterbankRequest\x1a(.payment.CommitRollbackInterbankResponseB<Z:github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/paymentb\x06proto3"
 
 var (
 	file_payment_proto_rawDescOnce sync.Once
@@ -1715,7 +2335,7 @@ func file_payment_proto_rawDescGZIP() []byte {
 	return file_payment_proto_rawDescData
 }
 
-var file_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
 var file_payment_proto_goTypes = []any{
 	(*CreatePaymentRequest)(nil),             // 0: payment.CreatePaymentRequest
 	(*CreatePaymentResponse)(nil),            // 1: payment.CreatePaymentResponse
@@ -1740,6 +2360,16 @@ var file_payment_proto_goTypes = []any{
 	(*Transfer)(nil),                         // 20: payment.Transfer
 	(*GetTransfersRequest)(nil),              // 21: payment.GetTransfersRequest
 	(*GetTransfersResponse)(nil),             // 22: payment.GetTransfersResponse
+	(*InterbankTransactionId)(nil),           // 23: payment.InterbankTransactionId
+	(*InterbankIdempotenceKey)(nil),          // 24: payment.InterbankIdempotenceKey
+	(*InterbankPosting)(nil),                 // 25: payment.InterbankPosting
+	(*InterbankReason)(nil),                  // 26: payment.InterbankReason
+	(*PrepareInterbankPaymentRequest)(nil),   // 27: payment.PrepareInterbankPaymentRequest
+	(*PrepareInterbankPaymentResponse)(nil),  // 28: payment.PrepareInterbankPaymentResponse
+	(*CommitRollbackInterbankRequest)(nil),   // 29: payment.CommitRollbackInterbankRequest
+	(*CommitRollbackInterbankResponse)(nil),  // 30: payment.CommitRollbackInterbankResponse
+	(*PreviewPaymentRequest)(nil),            // 31: payment.PreviewPaymentRequest
+	(*PreviewPaymentResponse)(nil),           // 32: payment.PreviewPaymentResponse
 }
 var file_payment_proto_depIdxs = []int32{
 	2,  // 0: payment.CreatePaymentRecipientResponse.recipient:type_name -> payment.PaymentRecipient
@@ -1748,31 +2378,44 @@ var file_payment_proto_depIdxs = []int32{
 	13, // 3: payment.GetPaymentByIdResponse.payment:type_name -> payment.Payment
 	13, // 4: payment.GetPaymentsResponse.payments:type_name -> payment.Payment
 	20, // 5: payment.GetTransfersResponse.transfers:type_name -> payment.Transfer
-	0,  // 6: payment.PaymentService.CreatePayment:input_type -> payment.CreatePaymentRequest
-	16, // 7: payment.PaymentService.GetPayments:input_type -> payment.GetPaymentsRequest
-	14, // 8: payment.PaymentService.GetPaymentById:input_type -> payment.GetPaymentByIdRequest
-	18, // 9: payment.PaymentService.CreateTransfer:input_type -> payment.CreateTransferRequest
-	5,  // 10: payment.PaymentService.CreatePaymentRecipient:input_type -> payment.CreatePaymentRecipientRequest
-	7,  // 11: payment.PaymentService.GetPaymentRecipients:input_type -> payment.GetPaymentRecipientsRequest
-	11, // 12: payment.PaymentService.UpdatePaymentRecipient:input_type -> payment.UpdatePaymentRecipientRequest
-	9,  // 13: payment.PaymentService.DeletePaymentRecipient:input_type -> payment.DeletePaymentRecipientRequest
-	3,  // 14: payment.PaymentService.ReorderPaymentRecipients:input_type -> payment.ReorderPaymentRecipientsRequest
-	21, // 15: payment.PaymentService.GetTransfers:input_type -> payment.GetTransfersRequest
-	1,  // 16: payment.PaymentService.CreatePayment:output_type -> payment.CreatePaymentResponse
-	17, // 17: payment.PaymentService.GetPayments:output_type -> payment.GetPaymentsResponse
-	15, // 18: payment.PaymentService.GetPaymentById:output_type -> payment.GetPaymentByIdResponse
-	19, // 19: payment.PaymentService.CreateTransfer:output_type -> payment.CreateTransferResponse
-	6,  // 20: payment.PaymentService.CreatePaymentRecipient:output_type -> payment.CreatePaymentRecipientResponse
-	8,  // 21: payment.PaymentService.GetPaymentRecipients:output_type -> payment.GetPaymentRecipientsResponse
-	12, // 22: payment.PaymentService.UpdatePaymentRecipient:output_type -> payment.UpdatePaymentRecipientResponse
-	10, // 23: payment.PaymentService.DeletePaymentRecipient:output_type -> payment.DeletePaymentRecipientResponse
-	4,  // 24: payment.PaymentService.ReorderPaymentRecipients:output_type -> payment.ReorderPaymentRecipientsResponse
-	22, // 25: payment.PaymentService.GetTransfers:output_type -> payment.GetTransfersResponse
-	16, // [16:26] is the sub-list for method output_type
-	6,  // [6:16] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	24, // 6: payment.PrepareInterbankPaymentRequest.idempotence_key:type_name -> payment.InterbankIdempotenceKey
+	23, // 7: payment.PrepareInterbankPaymentRequest.transaction_id:type_name -> payment.InterbankTransactionId
+	25, // 8: payment.PrepareInterbankPaymentRequest.postings:type_name -> payment.InterbankPosting
+	26, // 9: payment.PrepareInterbankPaymentResponse.reasons:type_name -> payment.InterbankReason
+	23, // 10: payment.CommitRollbackInterbankRequest.transaction_id:type_name -> payment.InterbankTransactionId
+	0,  // 11: payment.PaymentService.CreatePayment:input_type -> payment.CreatePaymentRequest
+	31, // 12: payment.PaymentService.PreviewPayment:input_type -> payment.PreviewPaymentRequest
+	16, // 13: payment.PaymentService.GetPayments:input_type -> payment.GetPaymentsRequest
+	14, // 14: payment.PaymentService.GetPaymentById:input_type -> payment.GetPaymentByIdRequest
+	18, // 15: payment.PaymentService.CreateTransfer:input_type -> payment.CreateTransferRequest
+	5,  // 16: payment.PaymentService.CreatePaymentRecipient:input_type -> payment.CreatePaymentRecipientRequest
+	7,  // 17: payment.PaymentService.GetPaymentRecipients:input_type -> payment.GetPaymentRecipientsRequest
+	11, // 18: payment.PaymentService.UpdatePaymentRecipient:input_type -> payment.UpdatePaymentRecipientRequest
+	9,  // 19: payment.PaymentService.DeletePaymentRecipient:input_type -> payment.DeletePaymentRecipientRequest
+	3,  // 20: payment.PaymentService.ReorderPaymentRecipients:input_type -> payment.ReorderPaymentRecipientsRequest
+	21, // 21: payment.PaymentService.GetTransfers:input_type -> payment.GetTransfersRequest
+	27, // 22: payment.PaymentService.PrepareInterbankPayment:input_type -> payment.PrepareInterbankPaymentRequest
+	29, // 23: payment.PaymentService.CommitInterbankPayment:input_type -> payment.CommitRollbackInterbankRequest
+	29, // 24: payment.PaymentService.RollbackInterbankPayment:input_type -> payment.CommitRollbackInterbankRequest
+	1,  // 25: payment.PaymentService.CreatePayment:output_type -> payment.CreatePaymentResponse
+	32, // 26: payment.PaymentService.PreviewPayment:output_type -> payment.PreviewPaymentResponse
+	17, // 27: payment.PaymentService.GetPayments:output_type -> payment.GetPaymentsResponse
+	15, // 28: payment.PaymentService.GetPaymentById:output_type -> payment.GetPaymentByIdResponse
+	19, // 29: payment.PaymentService.CreateTransfer:output_type -> payment.CreateTransferResponse
+	6,  // 30: payment.PaymentService.CreatePaymentRecipient:output_type -> payment.CreatePaymentRecipientResponse
+	8,  // 31: payment.PaymentService.GetPaymentRecipients:output_type -> payment.GetPaymentRecipientsResponse
+	12, // 32: payment.PaymentService.UpdatePaymentRecipient:output_type -> payment.UpdatePaymentRecipientResponse
+	10, // 33: payment.PaymentService.DeletePaymentRecipient:output_type -> payment.DeletePaymentRecipientResponse
+	4,  // 34: payment.PaymentService.ReorderPaymentRecipients:output_type -> payment.ReorderPaymentRecipientsResponse
+	22, // 35: payment.PaymentService.GetTransfers:output_type -> payment.GetTransfersResponse
+	28, // 36: payment.PaymentService.PrepareInterbankPayment:output_type -> payment.PrepareInterbankPaymentResponse
+	30, // 37: payment.PaymentService.CommitInterbankPayment:output_type -> payment.CommitRollbackInterbankResponse
+	30, // 38: payment.PaymentService.RollbackInterbankPayment:output_type -> payment.CommitRollbackInterbankResponse
+	25, // [25:39] is the sub-list for method output_type
+	11, // [11:25] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_payment_proto_init() }
@@ -1786,7 +2429,7 @@ func file_payment_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_payment_proto_rawDesc), len(file_payment_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   23,
+			NumMessages:   33,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

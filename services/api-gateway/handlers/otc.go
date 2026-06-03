@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -71,14 +72,16 @@ func CreateNegotiation(client pb.OtcServiceClient) gin.HandlerFunc {
 		callerType := middleware.GetCallerRoleFromToken(c)
 
 		var req struct {
-			SellerId       *int64  `json:"sellerId"       binding:"required"`
-			SellerType     string  `json:"sellerType"     binding:"required"`
-			Ticker         string  `json:"ticker"         binding:"required"`
-			Amount         int32   `json:"amount"         binding:"required"`
-			PricePerStock  float64 `json:"pricePerStock"  binding:"required"`
-			SettlementDate string  `json:"settlementDate" binding:"required"`
-			Premium        float64 `json:"premium"`
-			Currency       string  `json:"currency"       binding:"required"`
+			SellerId            *int64  `json:"sellerId"            binding:"required"`
+			SellerType          string  `json:"sellerType"          binding:"required"`
+			SellerRoutingNumber int32   `json:"sellerRoutingNumber"`
+			SellerExternalId    string  `json:"sellerExternalId"`
+			Ticker              string  `json:"ticker"              binding:"required"`
+			Amount              int32   `json:"amount"              binding:"required"`
+			PricePerStock       float64 `json:"pricePerStock"       binding:"required"`
+			SettlementDate      string  `json:"settlementDate"      binding:"required"`
+			Premium             float64 `json:"premium"`
+			Currency            string  `json:"currency"            binding:"required"`
 		}
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -89,16 +92,18 @@ func CreateNegotiation(client pb.OtcServiceClient) gin.HandlerFunc {
 		defer cancel()
 
 		resp, err := client.CreateNegotiation(ctx, &pb.CreateNegotiationRequest{
-			BuyerId:        callerID,
-			BuyerType:      callerType,
-			SellerId:       *req.SellerId,
-			SellerType:     req.SellerType,
-			Ticker:         req.Ticker,
-			Amount:         req.Amount,
-			PricePerStock:  req.PricePerStock,
-			SettlementDate: req.SettlementDate,
-			Premium:        req.Premium,
-			Currency:       req.Currency,
+			BuyerId:             callerID,
+			BuyerType:           callerType,
+			SellerId:            *req.SellerId,
+			SellerType:          req.SellerType,
+			SellerRoutingNumber: req.SellerRoutingNumber,
+			SellerExternalId:    req.SellerExternalId,
+			Ticker:              req.Ticker,
+			Amount:              req.Amount,
+			PricePerStock:       req.PricePerStock,
+			SettlementDate:      req.SettlementDate,
+			Premium:             req.Premium,
+			Currency:            req.Currency,
 		})
 		if err != nil {
 			mapOtcError(c, err)
@@ -487,5 +492,75 @@ func SetPublicMode(portfolioClient pb_portfolio.PortfolioServiceClient) gin.Hand
 			"ticker":   resp.Ticker,
 			"isPublic": resp.IsPublic,
 		})
+	}
+}
+
+func GetPublicStock(client pb.OtcServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		apiKey := os.Getenv("OWN_INTERBANK_API_KEY")
+		if apiKey == "" || c.GetHeader("X-Api-Key") != apiKey {
+			c.Status(http.StatusUnauthorized)
+			return
+		}
+
+		routingNumber, _ := strconv.Atoi(os.Getenv("OWN_ROUTING_NUMBER"))
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+		defer cancel()
+
+		resp, err := client.GetMarket(ctx, &pb.GetMarketRequest{
+			CallerId:   0,
+			CallerType: "CLIENT",
+		})
+		if err != nil {
+			mapOtcError(c, err)
+			return
+		}
+
+		type seller struct {
+			RoutingNumber int    `json:"routingNumber"`
+			ID            string `json:"id"`
+		}
+		type sellerEntry struct {
+			Seller seller `json:"seller"`
+			Amount int32  `json:"amount"`
+		}
+		type stock struct {
+			Ticker   string  `json:"ticker"`
+			Name     string  `json:"name"`
+			Price    float64 `json:"price"`
+			Currency string  `json:"currency"`
+		}
+		type stockEntry struct {
+			Stock   stock         `json:"stock"`
+			Sellers []sellerEntry `json:"sellers"`
+		}
+
+		byTicker := make(map[string]*stockEntry)
+		for _, item := range resp.Items {
+			entry, ok := byTicker[item.Ticker]
+			if !ok {
+				entry = &stockEntry{Stock: stock{
+					Ticker:   item.Ticker,
+					Name:     item.Name,
+					Price:    item.PricePerStock,
+					Currency: item.Currency,
+				}}
+				byTicker[item.Ticker] = entry
+			}
+			entry.Sellers = append(entry.Sellers, sellerEntry{
+				Seller: seller{
+					RoutingNumber: routingNumber,
+					ID:            strconv.FormatInt(item.OwnerId, 10),
+				},
+				Amount: item.Amount,
+			})
+		}
+
+		result := make([]*stockEntry, 0, len(byTicker))
+		for _, v := range byTicker {
+			result = append(result, v)
+		}
+		c.JSON(http.StatusOK, result)
 	}
 }

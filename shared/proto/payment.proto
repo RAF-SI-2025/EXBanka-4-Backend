@@ -137,15 +137,77 @@ message Transfer {
 message GetTransfersRequest  { int64 client_id = 1; }
 message GetTransfersResponse { repeated Transfer transfers = 1; }
 
+// ── Interbank 2-Phase Commit messages ────────────────────────────────────────
+
+message InterbankTransactionId {
+  int32  routing_number = 1;
+  string id             = 2;
+}
+
+message InterbankIdempotenceKey {
+  int32  routing_number         = 1;
+  string locally_generated_key  = 2;
+}
+
+message InterbankPosting {
+  string account_type = 1; // PERSON | ACCOUNT | OPTION
+  string account_num  = 2;
+  double amount       = 3; // negative = debit, positive = credit
+  string asset_type   = 4; // MONAS | STOCK | OPTION
+  string currency     = 5;
+}
+
+message InterbankReason {
+  string reason = 1;
+}
+
+message PrepareInterbankPaymentRequest {
+  InterbankIdempotenceKey   idempotence_key = 1;
+  InterbankTransactionId    transaction_id  = 2;
+  repeated InterbankPosting postings        = 3;
+  string                    payment_code    = 4;
+  string                    payment_purpose = 5;
+}
+
+message PrepareInterbankPaymentResponse {
+  string                   vote    = 1; // "YES" or "NO"
+  repeated InterbankReason reasons = 2;
+}
+
+message CommitRollbackInterbankRequest {
+  InterbankTransactionId transaction_id = 1;
+}
+
+message CommitRollbackInterbankResponse {}
+
+message PreviewPaymentRequest {
+  string from_account      = 1;
+  string recipient_account = 2;
+  double amount            = 3;
+  int64  client_id         = 4;
+}
+
+message PreviewPaymentResponse {
+  bool   is_cross_bank  = 1;
+  double exchange_rate  = 2;
+  double fee            = 3;
+  double final_amount   = 4;
+  string from_currency  = 5;
+}
+
 service PaymentService {
-  rpc CreatePayment(CreatePaymentRequest)                     returns (CreatePaymentResponse);
-  rpc GetPayments(GetPaymentsRequest)                         returns (GetPaymentsResponse);
-  rpc GetPaymentById(GetPaymentByIdRequest)                   returns (GetPaymentByIdResponse);
-  rpc CreateTransfer(CreateTransferRequest)                   returns (CreateTransferResponse);
-  rpc CreatePaymentRecipient(CreatePaymentRecipientRequest)   returns (CreatePaymentRecipientResponse);
-  rpc GetPaymentRecipients(GetPaymentRecipientsRequest)       returns (GetPaymentRecipientsResponse);
-  rpc UpdatePaymentRecipient(UpdatePaymentRecipientRequest)   returns (UpdatePaymentRecipientResponse);
-  rpc DeletePaymentRecipient(DeletePaymentRecipientRequest)   returns (DeletePaymentRecipientResponse);
+  rpc CreatePayment(CreatePaymentRequest)                       returns (CreatePaymentResponse);
+  rpc PreviewPayment(PreviewPaymentRequest)                     returns (PreviewPaymentResponse);
+  rpc GetPayments(GetPaymentsRequest)                           returns (GetPaymentsResponse);
+  rpc GetPaymentById(GetPaymentByIdRequest)                     returns (GetPaymentByIdResponse);
+  rpc CreateTransfer(CreateTransferRequest)                     returns (CreateTransferResponse);
+  rpc CreatePaymentRecipient(CreatePaymentRecipientRequest)     returns (CreatePaymentRecipientResponse);
+  rpc GetPaymentRecipients(GetPaymentRecipientsRequest)         returns (GetPaymentRecipientsResponse);
+  rpc UpdatePaymentRecipient(UpdatePaymentRecipientRequest)     returns (UpdatePaymentRecipientResponse);
+  rpc DeletePaymentRecipient(DeletePaymentRecipientRequest)     returns (DeletePaymentRecipientResponse);
   rpc ReorderPaymentRecipients(ReorderPaymentRecipientsRequest) returns (ReorderPaymentRecipientsResponse);
-  rpc GetTransfers(GetTransfersRequest)                       returns (GetTransfersResponse);
+  rpc GetTransfers(GetTransfersRequest)                         returns (GetTransfersResponse);
+  rpc PrepareInterbankPayment(PrepareInterbankPaymentRequest)   returns (PrepareInterbankPaymentResponse);
+  rpc CommitInterbankPayment(CommitRollbackInterbankRequest)    returns (CommitRollbackInterbankResponse);
+  rpc RollbackInterbankPayment(CommitRollbackInterbankRequest)  returns (CommitRollbackInterbankResponse);
 }

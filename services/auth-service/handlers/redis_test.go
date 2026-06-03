@@ -244,7 +244,7 @@ func TestLoadApprovalCache_NilRedis_ReturnsNil(t *testing.T) {
 func TestLoadApprovalCache_InvalidJSON_ReturnsNil(t *testing.T) {
 	mr, rdb := newAuthRedis(t)
 	s := &AuthServer{Redis: rdb}
-	mr.Set(approvalCacheKey(50), "not-json")
+	_ = mr.Set(approvalCacheKey(50), "not-json")
 	assert.Nil(t, s.loadApprovalCache(context.Background(), 50))
 }
 

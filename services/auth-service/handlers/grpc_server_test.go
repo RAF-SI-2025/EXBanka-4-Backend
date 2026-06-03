@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 
@@ -142,6 +143,10 @@ func (m *mockEmployeeClient) ResetAllActuaryUsedLimits(ctx context.Context, in *
 
 func (m *mockEmployeeClient) GetActuaryPerformers(ctx context.Context, in *pb_emp.GetActuaryPerformersRequest, opts ...grpc.CallOption) (*pb_emp.GetActuaryPerformersResponse, error) {
 	return nil, nil
+}
+
+func (m *mockEmployeeClient) GetSupervisors(ctx context.Context, in *pb_emp.GetSupervisorsRequest, opts ...grpc.CallOption) (*pb_emp.GetSupervisorsResponse, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 type mockEmailClient struct {

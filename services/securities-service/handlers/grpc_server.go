@@ -532,20 +532,20 @@ func (s *SecuritiesServer) GetListings(ctx context.Context, req *pb.GetListingsR
 	var listings []*pb.ListingSummary
 	for rows.Next() {
 		var (
-			id                     int64
-			ticker, name           string
-			lType, acronym, curr   string
-			price, ask, bid        float64
-			volume                 int64
-			change                 float64
-			outshares              int64
-			contractSize           float64
-			stockListingID         sql.NullInt64
-			stockPrice             float64
-			optionType             sql.NullString
-			strikePrice            sql.NullFloat64
-			settlementDate         sql.NullTime
-			openInterest           sql.NullInt64
+			id                   int64
+			ticker, name         string
+			lType, acronym, curr string
+			price, ask, bid      float64
+			volume               int64
+			change               float64
+			outshares            int64
+			contractSize         float64
+			stockListingID       sql.NullInt64
+			stockPrice           float64
+			optionType           sql.NullString
+			strikePrice          sql.NullFloat64
+			settlementDate       sql.NullTime
+			openInterest         sql.NullInt64
 		)
 		if err := rows.Scan(
 			&id, &ticker, &name, &lType, &acronym, &curr,
@@ -596,11 +596,11 @@ func (s *SecuritiesServer) GetListingById(ctx context.Context, req *pb.GetListin
 	}
 
 	var (
-		id                                int64
+		id                                 int64
 		ticker, name, lType, acronym, curr string
-		price, ask, bid              float64
-		volume                       int64
-		change                       float64
+		price, ask, bid                    float64
+		volume                             int64
+		change                             float64
 		// stock
 		outshares     sql.NullInt64
 		dividendYield sql.NullFloat64

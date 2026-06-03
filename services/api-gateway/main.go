@@ -121,6 +121,18 @@ func main() {
 
 	r := gin.Default()
 
+	// Inter-bank 2PC endpoint — authenticated by X-Api-Key, no JWT
+	r.POST("/interbank", handlers.InterbankHandler(paymentClient, otcClient))
+	// Public stock listing for partner banks — authenticated by X-Api-Key, no JWT
+	r.GET("/public-stock", handlers.GetPublicStock(otcClient))
+
+	// OTC interbank endpoints (partner bank calls, no JWT)
+	r.POST("/otc/interbank/negotiations", handlers.IncomingCreateNegotiation(otcClient))
+	r.PUT("/otc/interbank/negotiations/:routingNumber/:id", handlers.IncomingCounterOffer(otcClient))
+	r.GET("/otc/interbank/negotiations/:routingNumber/:id", handlers.IncomingGetNegotiation(otcClient))
+	r.DELETE("/otc/interbank/negotiations/:routingNumber/:id", handlers.IncomingDeleteNegotiation(otcClient))
+	r.GET("/otc/interbank/negotiations/:routingNumber/:id/accept", handlers.IncomingAcceptNegotiation(otcClient))
+
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -146,6 +158,7 @@ func main() {
 	r.POST("/bank/profit/fund-positions/:fundId/invest", middleware.RequireRole("SUPERVISOR"), handlers.BankInvestFund(fundClient))
 	r.POST("/bank/profit/fund-positions/:fundId/redeem", middleware.RequireRole("SUPERVISOR"), handlers.BankRedeemFund(fundClient))
 	r.POST("/api/payments/create", handlers.CreatePayment(paymentClient))
+	r.POST("/api/payments/preview", handlers.PreviewPayment(paymentClient))
 	r.GET("/api/payments", handlers.GetPayments(paymentClient))
 	r.GET("/api/payments/:paymentId", handlers.GetPaymentById(paymentClient))
 	r.POST("/api/transfers", handlers.CreateTransfer(paymentClient))
@@ -257,6 +270,7 @@ func main() {
 	r.GET("/otc/contracts", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.ListContracts(otcClient))
 	r.POST("/otc/contracts/:id/exercise", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.ExerciseContract(otcClient))
 	r.GET("/otc/market", middleware.RequireRole("CLIENT", "SUPERVISOR"), handlers.GetMarket(otcClient))
+	r.GET("/api/otc/external-stocks", middleware.RequireRole("CLIENT", "SUPERVISOR"), handlers.GetExternalStocks())
 	r.PUT("/client/portfolio/:ticker/public-mode", middleware.RequireRole("CLIENT", "SUPERVISOR"), handlers.SetPublicMode(portfolioClient))
 
 	// Investment funds

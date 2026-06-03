@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -234,6 +233,6 @@ func TestRateLimit_KeyFormat(t *testing.T) {
 
 	keys := mr.Keys()
 	require.Len(t, keys, 1)
-	expected := fmt.Sprintf("ratelimit:uid:7:/exchange/rates")
+	expected := "ratelimit:uid:7:/exchange/rates"
 	assert.Equal(t, expected, keys[0])
 }

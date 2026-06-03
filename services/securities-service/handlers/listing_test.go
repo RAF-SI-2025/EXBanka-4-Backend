@@ -16,14 +16,14 @@ import (
 
 // Column sets for row builders
 var listingSummaryCols = []string{
-	"id", "ticker", "name", "type", "acronym",
+	"id", "ticker", "name", "type", "acronym", "currency",
 	"price", "ask", "bid", "volume", "change",
 	"outstanding_shares", "contract_size", "stock_listing_id", "stock_price",
 	"option_type", "strike_price", "settlement_date", "open_interest",
 }
 
 var listingDetailCols = []string{
-	"id", "ticker", "name", "type", "acronym",
+	"id", "ticker", "name", "type", "acronym", "currency",
 	"price", "ask", "bid", "volume", "change",
 	"outstanding_shares", "dividend_yield",
 	"base_currency", "quote_currency", "liquidity",
@@ -59,7 +59,7 @@ func TestGetListings_StockDerivedFields(t *testing.T) {
 			// price=200, change=10 → prev=190, changePercent=5.263...
 			// maintenanceMargin(STOCK) = 0.5*200 = 100
 			// nominalValue(STOCK) = 200
-			AddRow(1, "AAPL", "Apple Inc", "STOCK", "NASDAQ",
+			AddRow(1, "AAPL", "Apple Inc", "STOCK", "NASDAQ", "USD",
 				200.0, 202.0, 198.0, int64(1000000), 10.0,
 				int64(5000000), 1.0, nil, 0.0,
 				nil, nil, nil, nil))
@@ -88,7 +88,7 @@ func TestGetListings_ForexDerivedFields(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows(listingSummaryCols).
 			// maintenanceMargin(FOREX_PAIR) = 1000 * 1.1 * 0.10 = 110
 			// nominalValue(FOREX_PAIR) = 1000 * 1.1 = 1100
-			AddRow(2, "EUR/USD", "Euro / US Dollar", "FOREX_PAIR", "FOREX",
+			AddRow(2, "EUR/USD", "Euro / US Dollar", "FOREX_PAIR", "FOREX", "USD",
 				1.1, 1.101, 1.099, int64(0), 0.0,
 				int64(0), 1.0, nil, 0.0,
 				nil, nil, nil, nil))
@@ -108,7 +108,7 @@ func TestGetListings_FuturesDerivedFields(t *testing.T) {
 	mock.ExpectQuery("SELECT l.id").
 		WillReturnRows(sqlmock.NewRows(listingSummaryCols).
 			// contractSize=1000, price=80 → maintenanceMargin = 1000*80*0.10 = 8000
-			AddRow(3, "CLJ25", "Crude Oil Jul 2025", "FUTURES_CONTRACT", "NYMEX",
+			AddRow(3, "CLJ25", "Crude Oil Jul 2025", "FUTURES_CONTRACT", "NYMEX", "USD",
 				80.0, 80.5, 79.5, int64(50000), 0.0,
 				int64(0), 1000.0, nil, 0.0,
 				nil, nil, nil, nil))
@@ -128,7 +128,7 @@ func TestGetListings_OptionDerivedFields(t *testing.T) {
 	mock.ExpectQuery("SELECT l.id").
 		WillReturnRows(sqlmock.NewRows(listingSummaryCols).
 			// stock_listing_id=1, stockPrice=200 → maintenanceMargin = 100*0.5*200 = 10000
-			AddRow(4, "AAPL240101C00150000", "AAPL Call", "OPTION", "CBOE",
+			AddRow(4, "AAPL240101C00150000", "AAPL Call", "OPTION", "CBOE", "USD",
 				5.0, 5.1, 4.9, int64(200), 0.0,
 				int64(0), 1.0, int64(1), 200.0,
 				nil, nil, nil, nil))
@@ -191,7 +191,7 @@ func TestGetListings_QueryDBError(t *testing.T) {
 
 func addStockDetailRow(rows *sqlmock.Rows) *sqlmock.Rows {
 	return rows.AddRow(
-		int64(1), "AAPL", "Apple Inc", "STOCK", "NASDAQ",
+		int64(1), "AAPL", "Apple Inc", "STOCK", "NASDAQ", "USD",
 		150.0, 151.0, 149.0, int64(500000), 5.0,
 		// stock
 		int64(1000000), 0.02,
@@ -238,7 +238,7 @@ func TestGetListingById_Forex(t *testing.T) {
 	mock.ExpectQuery("SELECT l.id, l.ticker").
 		WithArgs(int64(2)).
 		WillReturnRows(sqlmock.NewRows(listingDetailCols).AddRow(
-			int64(2), "EUR/USD", "Euro / US Dollar", "FOREX_PAIR", "FOREX",
+			int64(2), "EUR/USD", "Euro / US Dollar", "FOREX_PAIR", "FOREX", "USD",
 			1.1, 1.101, 1.099, int64(0), 0.0,
 			// stock (nil)
 			nil, nil,
@@ -270,7 +270,7 @@ func TestGetListingById_Futures(t *testing.T) {
 	mock.ExpectQuery("SELECT l.id, l.ticker").
 		WithArgs(int64(3)).
 		WillReturnRows(sqlmock.NewRows(listingDetailCols).AddRow(
-			int64(3), "CLJ25", "Crude Oil", "FUTURES_CONTRACT", "NYMEX",
+			int64(3), "CLJ25", "Crude Oil", "FUTURES_CONTRACT", "NYMEX", "USD",
 			80.0, 80.5, 79.5, int64(50000), 0.0,
 			// stock (nil)
 			nil, nil,
@@ -300,7 +300,7 @@ func TestGetListingById_Option(t *testing.T) {
 	mock.ExpectQuery("SELECT l.id, l.ticker").
 		WithArgs(int64(4)).
 		WillReturnRows(sqlmock.NewRows(listingDetailCols).AddRow(
-			int64(4), "AAPL250321C00150000", "AAPL Call 150", "OPTION", "CBOE",
+			int64(4), "AAPL250321C00150000", "AAPL Call 150", "OPTION", "CBOE", "USD",
 			5.0, 5.2, 4.8, int64(200), 0.0,
 			// stock (nil)
 			nil, nil,

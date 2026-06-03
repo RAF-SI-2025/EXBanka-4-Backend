@@ -39,3 +39,21 @@ jobs:
           file: services/api-gateway/Dockerfile
           push: ${{ github.event_name == 'push' }}
           tags: ghcr.io/raf-si-2025/exbanka-4-backend/api-gateway:${{ github.sha }}
+
+  deploy:
+    name: Deploy to Kubernetes
+    needs: docker
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl set image deployment/api-gateway api-gateway=ghcr.io/raf-si-2025/exbanka-4-backend/api-gateway:${{ github.sha }} -n exbanka-4

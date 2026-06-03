@@ -76,11 +76,11 @@ ON CONFLICT (account_number) DO NOTHING;
 
 -- Test account for Tara Dunjic (client id=1) — used for OTC testing
 INSERT INTO accounts (account_number, account_name, owner_id, employee_id, currency_id, account_type, account_subtype, balance, available_balance, expiration_date)
-SELECT '265000100000000101', 'Tara Personal USD', 1, 1, 4, 'personal', 'checking', 500000, 500000, CURRENT_DATE + INTERVAL '5 years'
-WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE account_number = '265000100000000101');
+SELECT '888000100000000101', 'Tara Personal USD', 1, 1, 4, 'personal', 'checking', 500000, 500000, CURRENT_DATE + INTERVAL '5 years'
+WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE account_number = '888000100000000101');
 
 -- Test account for Marko Markovic (client id=2) — used for OTC testing
 -- currency_id=4 is USD; owner_id matches the insertion order of client seed data
 INSERT INTO accounts (account_number, account_name, owner_id, employee_id, currency_id, account_type, account_subtype, balance, available_balance, expiration_date)
-SELECT '265000200000000201', 'Marko Personal USD', 2, 1, 4, 'personal', 'checking', 500000, 500000, CURRENT_DATE + INTERVAL '5 years'
-WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE account_number = '265000200000000201');
+SELECT '888000200000000201', 'Marko Personal USD', 2, 1, 4, 'personal', 'checking', 500000, 500000, CURRENT_DATE + INTERVAL '5 years'
+WHERE NOT EXISTS (SELECT 1 FROM accounts WHERE account_number = '888000200000000201');

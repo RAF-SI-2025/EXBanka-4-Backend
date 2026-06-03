@@ -90,7 +90,7 @@ func TestGetMyAccounts_HappyPath(t *testing.T) {
 
 	dbMock.ExpectQuery("SELECT").WillReturnRows(
 		sqlmock.NewRows([]string{"id", "account_name", "account_number", "available_balance", "currency_id"}).
-			AddRow(int64(1), "Moj racun", "265000100000000101", float64(1000), int64(1)),
+			AddRow(int64(1), "Moj racun", "888000100000000101", float64(1000), int64(1)),
 	)
 	exchangeMock.ExpectQuery("SELECT code FROM currencies").WillReturnRows(
 		sqlmock.NewRows([]string{"code"}).AddRow("RSD"),
@@ -118,7 +118,7 @@ func TestGetAccount_WrongOwner(t *testing.T) {
 	s, dbMock, _, _ := newServer(t)
 	dbMock.ExpectQuery("SELECT").WillReturnRows(
 		sqlmock.NewRows([]string{"id", "account_name", "account_number", "owner_id", "balance", "available_balance", "reserved_funds", "currency_id", "status", "account_type", "account_subtype", "daily_limit", "monthly_limit", "daily_spent", "monthly_spent", "company_id"}).
-			AddRow(int64(1), "Racun", "265000100000000101", int64(99), float64(500), float64(500), float64(0), int64(1), "ACTIVE", "personal", "", float64(0), float64(0), float64(0), float64(0), nil),
+			AddRow(int64(1), "Racun", "888000100000000101", int64(99), float64(500), float64(500), float64(0), int64(1), "ACTIVE", "personal", "", float64(0), float64(0), float64(0), float64(0), nil),
 	)
 
 	_, err := s.GetAccount(context.Background(), &pb.GetAccountRequest{AccountId: 1, OwnerId: 1})
@@ -130,7 +130,7 @@ func TestGetAccount_HappyPath(t *testing.T) {
 	s, dbMock, clientMock, exchangeMock := newServer(t)
 	dbMock.ExpectQuery("SELECT").WillReturnRows(
 		sqlmock.NewRows([]string{"id", "account_name", "account_number", "owner_id", "balance", "available_balance", "reserved_funds", "currency_id", "status", "account_type", "account_subtype", "daily_limit", "monthly_limit", "daily_spent", "monthly_spent", "company_id"}).
-			AddRow(int64(1), "Racun", "265000100000000101", int64(5), float64(1000), float64(900), float64(100), int64(1), "ACTIVE", "personal", "", float64(1000), float64(5000), float64(100), float64(200), nil),
+			AddRow(int64(1), "Racun", "888000100000000101", int64(5), float64(1000), float64(900), float64(100), int64(1), "ACTIVE", "personal", "", float64(1000), float64(5000), float64(100), float64(200), nil),
 	)
 	exchangeMock.ExpectQuery("SELECT code").WillReturnRows(sqlmock.NewRows([]string{"code"}).AddRow("RSD"))
 	clientMock.ExpectQuery("SELECT first_name").WillReturnRows(sqlmock.NewRows([]string{"first_name", "last_name"}).AddRow("Ana", "Anic"))
@@ -214,7 +214,7 @@ func TestGetAllAccounts_HappyPath(t *testing.T) {
 	s, dbMock, clientMock, exchangeMock := newServer(t)
 	dbMock.ExpectQuery("SELECT").WillReturnRows(
 		sqlmock.NewRows([]string{"id", "account_number", "account_name", "owner_id", "account_type", "currency_id", "available_balance", "account_subtype"}).
-			AddRow(int64(1), "265000100000000101", "Racun 1", int64(5), "personal", int64(1), float64(1000), ""),
+			AddRow(int64(1), "888000100000000101", "Racun 1", int64(5), "personal", int64(1), float64(1000), ""),
 	)
 	exchangeMock.ExpectQuery("SELECT code").WillReturnRows(sqlmock.NewRows([]string{"code"}).AddRow("RSD"))
 	clientMock.ExpectQuery("SELECT first_name").WillReturnRows(sqlmock.NewRows([]string{"first_name", "last_name"}).AddRow("Ana", "Anic"))
@@ -576,7 +576,7 @@ func TestGetBankAccounts_Happy(t *testing.T) {
 	s, dbMock, _, exchangeMock := newServer(t)
 	dbMock.ExpectQuery(`SELECT id, account_number`).WillReturnRows(
 		sqlmock.NewRows([]string{"id", "account_number", "account_name", "balance", "available_balance", "currency_id"}).
-			AddRow(int64(1), "265000000000000001", "EUR Bank", float64(1000000), float64(1000000), int64(2)),
+			AddRow(int64(1), "888000000000000001", "EUR Bank", float64(1000000), float64(1000000), int64(2)),
 	)
 	exchangeMock.ExpectQuery(`SELECT code FROM currencies`).WillReturnRows(
 		sqlmock.NewRows([]string{"code"}).AddRow("EUR"),

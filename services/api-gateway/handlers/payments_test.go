@@ -25,6 +25,7 @@ type stubPaymentClient struct {
 	deletePaymentRecipientFn   func(context.Context, *pb.DeletePaymentRecipientRequest, ...grpc.CallOption) (*pb.DeletePaymentRecipientResponse, error)
 	reorderPaymentRecipientsFn func(context.Context, *pb.ReorderPaymentRecipientsRequest, ...grpc.CallOption) (*pb.ReorderPaymentRecipientsResponse, error)
 	getTransfersFn             func(context.Context, *pb.GetTransfersRequest, ...grpc.CallOption) (*pb.GetTransfersResponse, error)
+	previewPaymentFn           func(context.Context, *pb.PreviewPaymentRequest, ...grpc.CallOption) (*pb.PreviewPaymentResponse, error)
 }
 
 func (s *stubPaymentClient) CreatePayment(ctx context.Context, in *pb.CreatePaymentRequest, opts ...grpc.CallOption) (*pb.CreatePaymentResponse, error) {
@@ -84,6 +85,21 @@ func (s *stubPaymentClient) ReorderPaymentRecipients(ctx context.Context, in *pb
 func (s *stubPaymentClient) GetTransfers(ctx context.Context, in *pb.GetTransfersRequest, opts ...grpc.CallOption) (*pb.GetTransfersResponse, error) {
 	if s.getTransfersFn != nil {
 		return s.getTransfersFn(ctx, in, opts...)
+	}
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubPaymentClient) PrepareInterbankPayment(ctx context.Context, in *pb.PrepareInterbankPaymentRequest, opts ...grpc.CallOption) (*pb.PrepareInterbankPaymentResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubPaymentClient) CommitInterbankPayment(ctx context.Context, in *pb.CommitRollbackInterbankRequest, opts ...grpc.CallOption) (*pb.CommitRollbackInterbankResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubPaymentClient) RollbackInterbankPayment(ctx context.Context, in *pb.CommitRollbackInterbankRequest, opts ...grpc.CallOption) (*pb.CommitRollbackInterbankResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubPaymentClient) PreviewPayment(ctx context.Context, in *pb.PreviewPaymentRequest, opts ...grpc.CallOption) (*pb.PreviewPaymentResponse, error) {
+	if s.previewPaymentFn != nil {
+		return s.previewPaymentFn(ctx, in, opts...)
 	}
 	return nil, fmt.Errorf("not implemented")
 }

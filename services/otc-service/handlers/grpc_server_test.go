@@ -690,7 +690,7 @@ func TestExerciseContract_InsufficientFunds(t *testing.T) {
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 0))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log"). // step 1 FAILED
-		WillReturnResult(sqlmock.NewResult(1, 1))
+								WillReturnResult(sqlmock.NewResult(1, 1))
 	mainMock.ExpectRollback()
 	_, err := s.ExerciseContract(context.Background(), &pb.ExerciseContractRequest{
 		ContractId: 1, CallerId: 20, CallerType: "CLIENT", BuyerAccountId: 100,
@@ -714,7 +714,7 @@ func TestExerciseContract_SellerNoShares(t *testing.T) {
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log"). // step 1 SUCCESS
-		WillReturnResult(sqlmock.NewResult(1, 1))
+								WillReturnResult(sqlmock.NewResult(1, 1))
 	// Step 2: atomic UPDATE returns 0 rows (no free shares)
 	mPort.ExpectExec("UPDATE portfolio_entry SET reserved_amount").
 		WillReturnResult(sqlmock.NewResult(0, 0))
@@ -724,7 +724,7 @@ func TestExerciseContract_SellerNoShares(t *testing.T) {
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance \\+").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log"). // step 1 COMPENSATED
-		WillReturnResult(sqlmock.NewResult(1, 1))
+								WillReturnResult(sqlmock.NewResult(1, 1))
 	mainMock.ExpectRollback()
 
 	_, err := s.ExerciseContract(context.Background(), &pb.ExerciseContractRequest{
@@ -1293,7 +1293,6 @@ func TestAcceptNegotiation_CreditSellerFails(t *testing.T) {
 	assert.Contains(t, status.Convert(err).Message(), "credit premium")
 }
 
-
 func TestAcceptNegotiation_InsertContractFails(t *testing.T) {
 	s, mainMock, _, _, mAcc, mPort, mSec := newTestServer(t)
 	mainMock.ExpectBegin()
@@ -1469,7 +1468,7 @@ func TestExerciseContract_Step1UpdateFails(t *testing.T) {
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnError(fmt.Errorf("db error"))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log"). // step 1 FAILED
-		WillReturnResult(sqlmock.NewResult(1, 1))
+								WillReturnResult(sqlmock.NewResult(1, 1))
 	mainMock.ExpectRollback()
 	_, err := s.ExerciseContract(context.Background(), &pb.ExerciseContractRequest{
 		ContractId: 1, CallerId: 20, CallerType: "CLIENT", BuyerAccountId: 100,

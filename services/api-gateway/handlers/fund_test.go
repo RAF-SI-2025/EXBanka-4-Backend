@@ -573,7 +573,7 @@ func TestBuyFundSecurities_TickerNotFound(t *testing.T) {
 			return &pb_sec.GetListingsResponse{Listings: []*pb_sec.ListingSummary{}}, nil
 		},
 	}
-	w := serveHandlerFull(BuyFundSecurities(&stubFundClient{}, sec, &stubOrderClient{}), "POST", "/investment/funds/:id/securities/buy", "/investment/funds/1/securities/buy", buyBody, makeSupervisorToken())
+	w := serveHandlerFull(BuyFundSecurities(&stubFundClient{}, sec, &stubOrderClient{}, &stubExchangeClient{}), "POST", "/investment/funds/:id/securities/buy", "/investment/funds/1/securities/buy", buyBody, makeSupervisorToken())
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("expected 404 got %d: %s", w.Code, w.Body.String())
 	}
@@ -590,7 +590,7 @@ func TestBuyFundSecurities_InsufficientLiquidity(t *testing.T) {
 			return &pb.ValidateFundAccountResponse{AccountId: 100, IsLiquid: false, LiquidAssets: 100.0}, nil
 		},
 	}
-	w := serveHandlerFull(BuyFundSecurities(fund, sec, &stubOrderClient{}), "POST", "/investment/funds/:id/securities/buy", "/investment/funds/1/securities/buy", buyBody, makeSupervisorToken())
+	w := serveHandlerFull(BuyFundSecurities(fund, sec, &stubOrderClient{}, &stubExchangeClient{}), "POST", "/investment/funds/:id/securities/buy", "/investment/funds/1/securities/buy", buyBody, makeSupervisorToken())
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400 got %d: %s", w.Code, w.Body.String())
 	}
@@ -607,7 +607,7 @@ func TestBuyFundSecurities_NotManager(t *testing.T) {
 			return nil, status.Error(codes.PermissionDenied, "not the fund manager")
 		},
 	}
-	w := serveHandlerFull(BuyFundSecurities(fund, sec, &stubOrderClient{}), "POST", "/investment/funds/:id/securities/buy", "/investment/funds/1/securities/buy", buyBody, makeSupervisorToken())
+	w := serveHandlerFull(BuyFundSecurities(fund, sec, &stubOrderClient{}, &stubExchangeClient{}), "POST", "/investment/funds/:id/securities/buy", "/investment/funds/1/securities/buy", buyBody, makeSupervisorToken())
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("expected 403 got %d: %s", w.Code, w.Body.String())
 	}
@@ -629,7 +629,7 @@ func TestBuyFundSecurities_Success(t *testing.T) {
 			return &pb_order.CreateOrderResponse{OrderId: 42, OrderType: "MARKET", Status: "APPROVED"}, nil
 		},
 	}
-	w := serveHandlerFull(BuyFundSecurities(fund, sec, order), "POST", "/investment/funds/:id/securities/buy", "/investment/funds/1/securities/buy", buyBody, makeSupervisorToken())
+	w := serveHandlerFull(BuyFundSecurities(fund, sec, order, &stubExchangeClient{}), "POST", "/investment/funds/:id/securities/buy", "/investment/funds/1/securities/buy", buyBody, makeSupervisorToken())
 	if w.Code != http.StatusCreated {
 		t.Fatalf("expected 201 got %d: %s", w.Code, w.Body.String())
 	}

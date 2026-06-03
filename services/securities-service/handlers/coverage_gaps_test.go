@@ -200,11 +200,11 @@ func TestIsExchangeOpen_InPreMarket(t *testing.T) {
 func TestPrePostMarketSegment(t *testing.T) {
 	window := 4 * time.Hour
 	tests := []struct {
-		name         string
-		t            string
-		open         string
-		close        string
-		want         string
+		name  string
+		t     string
+		open  string
+		close string
+		want  string
 	}{
 		{"pre_market 1h before open", "08:30", "09:30", "16:00", "pre_market"},
 		{"pre_market at boundary", "05:30", "09:30", "16:00", "pre_market"},
@@ -276,7 +276,7 @@ func TestGetListings_ScanError(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 	mock.ExpectQuery("SELECT l.id").
 		WillReturnRows(sqlmock.NewRows(listingSummaryCols).
-			AddRow("bad", "AAPL", "Apple", "STOCK", "NASDAQ",
+			AddRow("bad", "AAPL", "Apple", "STOCK", "NASDAQ", "USD",
 				150.0, 151.0, 149.0, int64(1000), 0.0,
 				int64(0), 1.0, nil, 0.0,
 				nil, nil, nil, nil))
@@ -294,7 +294,7 @@ func TestGetListings_WithOptionFields(t *testing.T) {
 	settlementDate := time.Date(2026, 12, 31, 0, 0, 0, 0, time.UTC)
 	mock.ExpectQuery("SELECT l.id").
 		WillReturnRows(sqlmock.NewRows(listingSummaryCols).
-			AddRow(int64(10), "AAPL260101C00150", "AAPL Call", "OPTION", "CBOE",
+			AddRow(int64(10), "AAPL260101C00150", "AAPL Call", "OPTION", "CBOE", "USD",
 				5.0, 5.1, 4.9, int64(200), 0.0,
 				int64(0), 1.0, int64(1), 200.0,
 				"CALL", 150.0, settlementDate, int64(5000)))

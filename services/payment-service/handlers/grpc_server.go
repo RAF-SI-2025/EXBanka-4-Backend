@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/payment-service/interbank"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/payment"
 	"github.com/lib/pq"
 	"google.golang.org/grpc/codes"
@@ -27,6 +28,14 @@ func (s *PaymentServer) CreatePayment(ctx context.Context, req *pb.CreatePayment
 	// Normalize account numbers — strip formatting dashes
 	req.FromAccount = strings.ReplaceAll(req.FromAccount, "-", "")
 	req.RecipientAccount = strings.ReplaceAll(req.RecipientAccount, "-", "")
+
+	// Route to the outgoing 2PC protocol when the recipient is at a known partner bank.
+	// Unknown or own-bank routing numbers fall through to the standard payment flow.
+	if routingNum := interbank.ExtractRoutingNumber(req.RecipientAccount); !interbank.IsOwnBank(routingNum) {
+		if bank, err := interbank.ResolveBankByRoutingNumber(routingNum); err == nil && bank.BankURL != "" {
+			return executeOutgoing2PC(ctx, s, req, routingNum)
+		}
+	}
 
 	// 1. Load fromAccount metadata (currency, owner) – no balance read yet
 	var fromID int64

@@ -58,7 +58,7 @@ func TestGetLoanInstallments_WithActualDate(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows(installmentColumns()).
 			AddRow(
 				int64(1), int64(1), float64(4500), float64(7.0), "RSD",
-				time.Now().AddDate(0, -1, 0), // expected
+				time.Now().AddDate(0, -1, 0),                // expected
 				sql.NullTime{Time: actualDate, Valid: true}, // actual non-null
 				"PAID",
 			))

@@ -33,3 +33,19 @@ CREATE TABLE payments (
     timestamp        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     status           VARCHAR     NOT NULL DEFAULT 'PROCESSING'
 );
+
+CREATE TABLE IF NOT EXISTS interbank_transactions (
+    id                  BIGSERIAL    PRIMARY KEY,
+    tx_routing_number   VARCHAR(10)  NOT NULL,
+    tx_id               VARCHAR(64)  NOT NULL,
+    idem_routing_number VARCHAR(10)  NOT NULL,
+    idem_key            VARCHAR(64)  NOT NULL,
+    status              VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
+    to_account          VARCHAR      NOT NULL,
+    amount              NUMERIC(20,2) NOT NULL,
+    currency            VARCHAR(10)  NOT NULL,
+    cached_vote         VARCHAR(3),
+    created_at          TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    UNIQUE (tx_routing_number, tx_id),
+    UNIQUE (idem_routing_number, idem_key)
+);

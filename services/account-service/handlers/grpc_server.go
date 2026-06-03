@@ -284,7 +284,7 @@ func (s *AccountServer) CreateAccount(ctx context.Context, req *pb.CreateAccount
 	}
 
 	// 3. Generate account number
-	accountNumber := utils.GenerateAccountNumber("265", "0001", accountTypeCode(req.AccountType))
+	accountNumber := utils.GenerateAccountNumber("888", "0001", accountTypeCode(req.AccountType))
 
 	// 4. Set expiration date 5 years from now
 	expirationDate := time.Now().AddDate(5, 0, 0).Format("2006-01-02")
