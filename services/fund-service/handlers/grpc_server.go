@@ -213,7 +213,7 @@ func (s *FundServer) fetchFundByID(ctx context.Context, id int64, includeAccount
 		`SELECT listing_id, quantity FROM fund_portfolio_positions WHERE fund_id = $1 AND quantity > 0`, id)
 	var portfolioValue float64
 	if pErr == nil {
-		defer portfolioRows.Close()
+		defer func() { _ = portfolioRows.Close() }()
 		for portfolioRows.Next() {
 			var listingID int64
 			var qty float64

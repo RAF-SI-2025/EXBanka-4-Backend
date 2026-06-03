@@ -75,7 +75,7 @@ func otcGenerateUUID() string {
 
 func otcOwnRoutingInt() int {
 	var n int
-	fmt.Sscanf(os.Getenv("OWN_ROUTING_NUMBER"), "%d", &n)
+	_, _ = fmt.Sscanf(os.Getenv("OWN_ROUTING_NUMBER"), "%d", &n)
 	return n
 }
 

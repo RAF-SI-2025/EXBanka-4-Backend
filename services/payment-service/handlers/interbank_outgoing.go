@@ -78,7 +78,7 @@ func generateUUID() string {
 // ownRoutingInt returns OWN_ROUTING_NUMBER as int.
 func ownRoutingInt() int {
 	var n int
-	fmt.Sscanf(os.Getenv("OWN_ROUTING_NUMBER"), "%d", &n)
+	_, _ = fmt.Sscanf(os.Getenv("OWN_ROUTING_NUMBER"), "%d", &n)
 	return n
 }
 
@@ -236,7 +236,7 @@ func executeOutgoing2PC(ctx context.Context, s *PaymentServer, req *pb.CreatePay
 		releaseReservation()
 		return nil, status.Errorf(codes.Unavailable, "NEW_TX request failed: %v", err)
 	}
-	defer newTxResp.Body.Close()
+	defer func() { _ = newTxResp.Body.Close() }()
 
 	if newTxResp.StatusCode != http.StatusOK {
 		releaseReservation()
@@ -269,7 +269,7 @@ func executeOutgoing2PC(ctx context.Context, s *PaymentServer, req *pb.CreatePay
 		releaseReservation()
 		return nil, status.Errorf(codes.Unavailable, "COMMIT_TX request failed: %v", err)
 	}
-	defer commitResp.Body.Close()
+	defer func() { _ = commitResp.Body.Close() }()
 
 	if commitResp.StatusCode != http.StatusNoContent {
 		sendRollback(ctx, bankURL, bank.APIKey, txID)

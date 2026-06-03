@@ -6,8 +6,8 @@ import (
 	"os"
 	"strconv"
 
-	pb     "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/payment"
 	pb_otc "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/otc"
+	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/payment"
 	"github.com/gin-gonic/gin"
 )
 

@@ -59,7 +59,7 @@ func TestLoadCachedListing_KeyMissing_ReturnsNil(t *testing.T) {
 
 func TestLoadCachedListing_InvalidProto_ReturnsNil(t *testing.T) {
 	mr, rdb := newMiniRedis(t)
-	mr.Set(listingCacheKey(1), "not-valid-proto-json")
+	_ = mr.Set(listingCacheKey(1), "not-valid-proto-json")
 
 	s := &SecuritiesServer{Redis: rdb}
 	assert.Nil(t, s.loadCachedListing(context.Background(), 1))
@@ -70,7 +70,7 @@ func TestLoadCachedListing_ValidCache_ReturnsResponse(t *testing.T) {
 	resp := sampleListingResponse(1)
 	data, err := protojson.Marshal(resp)
 	require.NoError(t, err)
-	mr.Set(listingCacheKey(1), string(data))
+	_ = mr.Set(listingCacheKey(1), string(data))
 
 	s := &SecuritiesServer{Redis: rdb}
 	result := s.loadCachedListing(context.Background(), 1)
@@ -185,7 +185,7 @@ func TestGetListingById_CacheMiss_QueriesDBAndPopulatesCache(t *testing.T) {
 
 	// Minimal DB row for a STOCK listing.
 	cols := []string{
-		"id", "ticker", "name", "type", "acronym",
+		"id", "ticker", "name", "type", "acronym", "currency",
 		"price", "ask", "bid", "volume", "change",
 		"outstanding_shares", "dividend_yield",
 		"base_currency", "quote_currency", "liquidity",
@@ -195,7 +195,7 @@ func TestGetListingById_CacheMiss_QueriesDBAndPopulatesCache(t *testing.T) {
 	}
 	mock.ExpectQuery(`SELECT l.id`).WillReturnRows(
 		sqlmock.NewRows(cols).AddRow(
-			int64(10), "MSFT", "Microsoft", "STOCK", "NASDAQ",
+			int64(10), "MSFT", "Microsoft", "STOCK", "NASDAQ", "USD",
 			300.0, 301.0, 299.0, int64(5000000), 5.0,
 			int64(7000000), 0.5,
 			nil, nil, nil,

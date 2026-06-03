@@ -186,6 +186,10 @@ func TestCreateFund_Happy(t *testing.T) {
 	}
 	s, fundMock, accountDBMock, empMock := newFundServer(t, acct)
 
+	// permissions check for manager
+	empMock.ExpectQuery("SELECT array_to_string").
+		WillReturnRows(sqlmock.NewRows([]string{"permissions"}).AddRow("SUPERVISOR"))
+
 	// INSERT fund returns id=1
 	fundMock.ExpectQuery("INSERT INTO investment_funds").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(1)))
@@ -230,7 +234,11 @@ func TestCreateFund_DuplicateName(t *testing.T) {
 			}, nil
 		},
 	}
-	s, fundMock, _, _ := newFundServer(t, acct)
+	s, fundMock, _, empMock := newFundServer(t, acct)
+
+	// permissions check for manager
+	empMock.ExpectQuery("SELECT array_to_string").
+		WillReturnRows(sqlmock.NewRows([]string{"permissions"}).AddRow("SUPERVISOR"))
 
 	// INSERT returns unique violation
 	fundMock.ExpectQuery("INSERT INTO investment_funds").
@@ -422,7 +430,11 @@ func TestCreateFund_AccountClientError(t *testing.T) {
 			return nil, fmt.Errorf("account service unavailable")
 		},
 	}
-	s, _, _, _ := newFundServer(t, acct)
+	s, _, _, empMock := newFundServer(t, acct)
+
+	// permissions check for manager
+	empMock.ExpectQuery("SELECT array_to_string").
+		WillReturnRows(sqlmock.NewRows([]string{"permissions"}).AddRow("SUPERVISOR"))
 
 	_, err := s.CreateFund(context.Background(), &pb.CreateFundRequest{
 		Name:                "New Fund",
@@ -464,7 +476,11 @@ func TestCreateFund_DBError(t *testing.T) {
 			}, nil
 		},
 	}
-	s, fundMock, _, _ := newFundServer(t, acct)
+	s, fundMock, _, empMock := newFundServer(t, acct)
+
+	// permissions check for manager
+	empMock.ExpectQuery("SELECT array_to_string").
+		WillReturnRows(sqlmock.NewRows([]string{"permissions"}).AddRow("SUPERVISOR"))
 
 	fundMock.ExpectQuery("INSERT INTO investment_funds").
 		WillReturnError(fmt.Errorf("connection reset by peer"))
@@ -847,13 +863,16 @@ func TestGetFundPortfolio_Happy(t *testing.T) {
 func TestWithdrawFund_Case1_Immediate(t *testing.T) {
 	s, fundMock, accountDBMock, empMock := newFundServer(t, &mockAccountClient{})
 
-	// SELECT fund: liquid_assets=500000, active=true
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
+	// SELECT fund: liquid_assets=500000, active=true, account_id=42
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
 		WithArgs(int64(1)).
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(500000.0, true))
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(500000.0, true, int64(42)))
 	// SELECT position
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
+	// Debit fund account
+	accountDBMock.ExpectExec("UPDATE accounts SET balance").
+		WillReturnResult(sqlmock.NewResult(1, 1))
 	// Credit destination account
 	accountDBMock.ExpectExec("UPDATE accounts SET balance").
 		WithArgs(1000.0, int64(99)).
@@ -884,11 +903,15 @@ func TestWithdrawFund_Case1_WithdrawAll(t *testing.T) {
 	// amount=0 means withdraw full position
 	s, fundMock, accountDBMock, empMock := newFundServer(t, &mockAccountClient{})
 
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
 		WithArgs(int64(1)).
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(500000.0, true))
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(500000.0, true, int64(42)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(2500.0))
+	// Debit fund account
+	accountDBMock.ExpectExec("UPDATE accounts SET balance").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	// Credit destination account
 	accountDBMock.ExpectExec("UPDATE accounts SET balance").
 		WithArgs(2500.0, int64(99)).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -924,9 +947,9 @@ func TestWithdrawFund_Case2_ClientAutoLiquidate(t *testing.T) {
 	s, fundMock, _, _ := newFundServerFull(t, &mockAccountClient{}, order)
 
 	// liquid_assets=100 < amount=1000 → Case 2
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
 		WithArgs(int64(1)).
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(100.0, true))
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(100.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
 	// fetch account_id, manager_id for SELL orders
@@ -957,9 +980,9 @@ func TestWithdrawFund_Case2_BankNoAutoLiquidate(t *testing.T) {
 	s, fundMock, _, _ := newFundServer(t, &mockAccountClient{})
 
 	// liquid_assets=100 < amount=1000, clientType=BANK → FailedPrecondition
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
 		WithArgs(int64(1)).
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(100.0, true))
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(100.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
 
@@ -1093,7 +1116,7 @@ func TestInvestFund_NegativeAmount(t *testing.T) {
 
 func TestInvestFund_FundNotFound(t *testing.T) {
 	s, fundMock, _, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT minimum_contribution, active FROM investment_funds").
+	fundMock.ExpectQuery("SELECT minimum_contribution, active, account_id FROM investment_funds").
 		WillReturnError(sql.ErrNoRows)
 	_, err := s.InvestFund(context.Background(), &pb.InvestFundRequest{FundId: 99, Amount: 1000})
 	require.Error(t, err)
@@ -1102,7 +1125,7 @@ func TestInvestFund_FundNotFound(t *testing.T) {
 
 func TestInvestFund_FundDBError(t *testing.T) {
 	s, fundMock, _, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT minimum_contribution, active FROM investment_funds").
+	fundMock.ExpectQuery("SELECT minimum_contribution, active, account_id FROM investment_funds").
 		WillReturnError(fmt.Errorf("connection reset"))
 	_, err := s.InvestFund(context.Background(), &pb.InvestFundRequest{FundId: 1, Amount: 1000})
 	require.Error(t, err)
@@ -1111,8 +1134,8 @@ func TestInvestFund_FundDBError(t *testing.T) {
 
 func TestInvestFund_FundInactive(t *testing.T) {
 	s, fundMock, _, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT minimum_contribution, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active"}).AddRow(500.0, false))
+	fundMock.ExpectQuery("SELECT minimum_contribution, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active", "account_id"}).AddRow(500.0, false, int64(0)))
 	_, err := s.InvestFund(context.Background(), &pb.InvestFundRequest{FundId: 1, Amount: 1000})
 	require.Error(t, err)
 	assert.Equal(t, codes.NotFound, status.Code(err))
@@ -1120,8 +1143,8 @@ func TestInvestFund_FundInactive(t *testing.T) {
 
 func TestInvestFund_BelowMinimum(t *testing.T) {
 	s, fundMock, _, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT minimum_contribution, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active"}).AddRow(5000.0, true))
+	fundMock.ExpectQuery("SELECT minimum_contribution, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active", "account_id"}).AddRow(5000.0, true, int64(0)))
 	_, err := s.InvestFund(context.Background(), &pb.InvestFundRequest{FundId: 1, Amount: 100})
 	require.Error(t, err)
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -1129,8 +1152,8 @@ func TestInvestFund_BelowMinimum(t *testing.T) {
 
 func TestInvestFund_AccountNotFound(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT minimum_contribution, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active"}).AddRow(500.0, true))
+	fundMock.ExpectQuery("SELECT minimum_contribution, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active", "account_id"}).AddRow(500.0, true, int64(0)))
 	accountDBMock.ExpectQuery("SELECT available_balance FROM accounts").
 		WillReturnError(sql.ErrNoRows)
 	_, err := s.InvestFund(context.Background(), &pb.InvestFundRequest{
@@ -1142,8 +1165,8 @@ func TestInvestFund_AccountNotFound(t *testing.T) {
 
 func TestInvestFund_AccountDBError(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT minimum_contribution, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active"}).AddRow(500.0, true))
+	fundMock.ExpectQuery("SELECT minimum_contribution, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active", "account_id"}).AddRow(500.0, true, int64(0)))
 	accountDBMock.ExpectQuery("SELECT available_balance FROM accounts").
 		WillReturnError(fmt.Errorf("db error"))
 	_, err := s.InvestFund(context.Background(), &pb.InvestFundRequest{
@@ -1155,8 +1178,8 @@ func TestInvestFund_AccountDBError(t *testing.T) {
 
 func TestInvestFund_InsufficientBalance(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT minimum_contribution, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active"}).AddRow(500.0, true))
+	fundMock.ExpectQuery("SELECT minimum_contribution, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active", "account_id"}).AddRow(500.0, true, int64(0)))
 	accountDBMock.ExpectQuery("SELECT available_balance FROM accounts").
 		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(200.0))
 	_, err := s.InvestFund(context.Background(), &pb.InvestFundRequest{
@@ -1168,8 +1191,8 @@ func TestInvestFund_InsufficientBalance(t *testing.T) {
 
 func TestInvestFund_DebitFails(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT minimum_contribution, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active"}).AddRow(500.0, true))
+	fundMock.ExpectQuery("SELECT minimum_contribution, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active", "account_id"}).AddRow(500.0, true, int64(0)))
 	accountDBMock.ExpectQuery("SELECT available_balance FROM accounts").
 		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(5000.0))
 	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance -").
@@ -1183,8 +1206,8 @@ func TestInvestFund_DebitFails(t *testing.T) {
 
 func TestInvestFund_BeginTxFails(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT minimum_contribution, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active"}).AddRow(500.0, true))
+	fundMock.ExpectQuery("SELECT minimum_contribution, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active", "account_id"}).AddRow(500.0, true, int64(0)))
 	accountDBMock.ExpectQuery("SELECT available_balance FROM accounts").
 		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(5000.0))
 	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance -").
@@ -1202,8 +1225,8 @@ func TestInvestFund_BeginTxFails(t *testing.T) {
 
 func TestInvestFund_UpdateLiquidAssetsFails(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT minimum_contribution, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active"}).AddRow(500.0, true))
+	fundMock.ExpectQuery("SELECT minimum_contribution, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active", "account_id"}).AddRow(500.0, true, int64(0)))
 	accountDBMock.ExpectQuery("SELECT available_balance FROM accounts").
 		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(5000.0))
 	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance -").
@@ -1223,8 +1246,8 @@ func TestInvestFund_UpdateLiquidAssetsFails(t *testing.T) {
 
 func TestInvestFund_UpsertPositionFails(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT minimum_contribution, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active"}).AddRow(500.0, true))
+	fundMock.ExpectQuery("SELECT minimum_contribution, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active", "account_id"}).AddRow(500.0, true, int64(0)))
 	accountDBMock.ExpectQuery("SELECT available_balance FROM accounts").
 		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(5000.0))
 	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance -").
@@ -1246,8 +1269,8 @@ func TestInvestFund_UpsertPositionFails(t *testing.T) {
 
 func TestInvestFund_InsertTransactionFails(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT minimum_contribution, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active"}).AddRow(500.0, true))
+	fundMock.ExpectQuery("SELECT minimum_contribution, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active", "account_id"}).AddRow(500.0, true, int64(0)))
 	accountDBMock.ExpectQuery("SELECT available_balance FROM accounts").
 		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(5000.0))
 	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance -").
@@ -1271,8 +1294,8 @@ func TestInvestFund_InsertTransactionFails(t *testing.T) {
 
 func TestInvestFund_CommitFails(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT minimum_contribution, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active"}).AddRow(500.0, true))
+	fundMock.ExpectQuery("SELECT minimum_contribution, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active", "account_id"}).AddRow(500.0, true, int64(0)))
 	accountDBMock.ExpectQuery("SELECT available_balance FROM accounts").
 		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(5000.0))
 	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance -").
@@ -1298,7 +1321,7 @@ func TestInvestFund_CommitFails(t *testing.T) {
 
 func TestWithdrawFund_FundNotFound(t *testing.T) {
 	s, fundMock, _, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
 		WillReturnError(sql.ErrNoRows)
 	_, err := s.WithdrawFund(context.Background(), &pb.WithdrawFundRequest{FundId: 99, ClientId: 1, ClientType: "CLIENT", Amount: 100})
 	require.Error(t, err)
@@ -1307,7 +1330,7 @@ func TestWithdrawFund_FundNotFound(t *testing.T) {
 
 func TestWithdrawFund_FundDBError(t *testing.T) {
 	s, fundMock, _, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
 		WillReturnError(fmt.Errorf("db error"))
 	_, err := s.WithdrawFund(context.Background(), &pb.WithdrawFundRequest{FundId: 1, ClientId: 1, ClientType: "CLIENT", Amount: 100})
 	require.Error(t, err)
@@ -1316,8 +1339,8 @@ func TestWithdrawFund_FundDBError(t *testing.T) {
 
 func TestWithdrawFund_FundInactive(t *testing.T) {
 	s, fundMock, _, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(10000.0, false))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(10000.0, false, int64(0)))
 	_, err := s.WithdrawFund(context.Background(), &pb.WithdrawFundRequest{FundId: 1, ClientId: 1, ClientType: "CLIENT", Amount: 100})
 	require.Error(t, err)
 	assert.Equal(t, codes.NotFound, status.Code(err))
@@ -1325,8 +1348,8 @@ func TestWithdrawFund_FundInactive(t *testing.T) {
 
 func TestWithdrawFund_PositionNotFound(t *testing.T) {
 	s, fundMock, _, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(10000.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(10000.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnError(sql.ErrNoRows)
 	_, err := s.WithdrawFund(context.Background(), &pb.WithdrawFundRequest{FundId: 1, ClientId: 7, ClientType: "CLIENT", Amount: 100})
@@ -1336,8 +1359,8 @@ func TestWithdrawFund_PositionNotFound(t *testing.T) {
 
 func TestWithdrawFund_PositionDBError(t *testing.T) {
 	s, fundMock, _, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(10000.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(10000.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnError(fmt.Errorf("db error"))
 	_, err := s.WithdrawFund(context.Background(), &pb.WithdrawFundRequest{FundId: 1, ClientId: 7, ClientType: "CLIENT", Amount: 100})
@@ -1347,8 +1370,8 @@ func TestWithdrawFund_PositionDBError(t *testing.T) {
 
 func TestWithdrawFund_AmountExceedsPosition(t *testing.T) {
 	s, fundMock, _, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(10000.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(10000.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(500.0))
 	_, err := s.WithdrawFund(context.Background(), &pb.WithdrawFundRequest{
@@ -1360,8 +1383,8 @@ func TestWithdrawFund_AmountExceedsPosition(t *testing.T) {
 
 func TestWithdrawFund_CreditAccountFails(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(10000.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(10000.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
 	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance \\+").
@@ -1375,8 +1398,8 @@ func TestWithdrawFund_CreditAccountFails(t *testing.T) {
 
 func TestWithdrawFund_BeginTxFails(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(10000.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(10000.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
 	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance \\+").
@@ -1393,8 +1416,8 @@ func TestWithdrawFund_BeginTxFails(t *testing.T) {
 
 func TestWithdrawFund_UpdateLiquidAssetsFails(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(10000.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(10000.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
 	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance \\+").
@@ -1414,8 +1437,8 @@ func TestWithdrawFund_UpdateLiquidAssetsFails(t *testing.T) {
 
 func TestWithdrawFund_UpdatePositionFails(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(10000.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(10000.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
 	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance \\+").
@@ -1437,8 +1460,8 @@ func TestWithdrawFund_UpdatePositionFails(t *testing.T) {
 
 func TestWithdrawFund_InsertTransactionFails(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(10000.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(10000.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
 	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance \\+").
@@ -1462,8 +1485,8 @@ func TestWithdrawFund_InsertTransactionFails(t *testing.T) {
 
 func TestWithdrawFund_CommitFails(t *testing.T) {
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(10000.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(10000.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
 	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance \\+").
@@ -1490,8 +1513,8 @@ func TestWithdrawFund_CommitFails(t *testing.T) {
 func TestAutoLiquidate_FetchFundDetailFails(t *testing.T) {
 	s, fundMock, _, _ := newFundServerFull(t, &mockAccountClient{}, &mockOrderClient{})
 	// fund select (liquid < amount → Case 2)
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(50.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(50.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
 	// autoLiquidate: SELECT account_id, manager_id
@@ -1506,8 +1529,8 @@ func TestAutoLiquidate_FetchFundDetailFails(t *testing.T) {
 
 func TestAutoLiquidate_PortfolioQueryFails(t *testing.T) {
 	s, fundMock, _, _ := newFundServerFull(t, &mockAccountClient{}, &mockOrderClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(50.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(50.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
 	fundMock.ExpectQuery("SELECT account_id, manager_id FROM investment_funds").
@@ -1523,8 +1546,8 @@ func TestAutoLiquidate_PortfolioQueryFails(t *testing.T) {
 
 func TestAutoLiquidate_InsertPendingFails(t *testing.T) {
 	s, fundMock, _, _ := newFundServerFull(t, &mockAccountClient{}, &mockOrderClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(50.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(50.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
 	fundMock.ExpectQuery("SELECT account_id, manager_id FROM investment_funds").
@@ -1831,8 +1854,8 @@ func TestGetFundPerformanceHistory_ScanError(t *testing.T) {
 
 func TestAutoLiquidate_ScanError(t *testing.T) {
 	s, fundMock, _, _ := newFundServerFull(t, &mockAccountClient{}, &mockOrderClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(50.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(50.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
 	fundMock.ExpectQuery("SELECT account_id, manager_id FROM investment_funds").
@@ -1898,8 +1921,8 @@ func TestAutoLiquidate_BreakWhenDeficitCovered(t *testing.T) {
 	s, fundMock, _, _ := newFundServerFull(t, &mockAccountClient{}, order)
 
 	// liquid=100, position=1000, deficit=900
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(100.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(100.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
 	fundMock.ExpectQuery("SELECT account_id, manager_id FROM investment_funds").
@@ -1924,8 +1947,8 @@ func TestAutoLiquidate_BreakWhenDeficitCovered(t *testing.T) {
 func TestWithdrawFund_FetchFundError(t *testing.T) {
 	// All steps succeed but fetchFundByID fails after commit
 	s, fundMock, accountDBMock, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(10000.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(10000.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(1000.0))
 	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance \\+").
@@ -1952,8 +1975,8 @@ func TestWithdrawFund_FetchFundError(t *testing.T) {
 func TestWithdrawFund_ZeroPositionZeroAmount(t *testing.T) {
 	// positionAmount=0, amount=0 → amount becomes positionAmount=0 → InvalidArgument "nothing to withdraw"
 	s, fundMock, _, _ := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT liquid_assets, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active"}).AddRow(10000.0, true))
+	fundMock.ExpectQuery("SELECT liquid_assets, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"liquid_assets", "active", "account_id"}).AddRow(10000.0, true, int64(0)))
 	fundMock.ExpectQuery("SELECT total_invested_amount FROM client_fund_positions").
 		WillReturnRows(sqlmock.NewRows([]string{"total_invested_amount"}).AddRow(0.0))
 	_, err := s.WithdrawFund(context.Background(), &pb.WithdrawFundRequest{
@@ -1965,11 +1988,15 @@ func TestWithdrawFund_ZeroPositionZeroAmount(t *testing.T) {
 
 func TestInvestFund_Happy(t *testing.T) {
 	s, fundMock, accountDBMock, empMock := newFundServer(t, &mockAccountClient{})
-	fundMock.ExpectQuery("SELECT minimum_contribution, active FROM investment_funds").
-		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active"}).AddRow(500.0, true))
+	fundMock.ExpectQuery("SELECT minimum_contribution, active, account_id FROM investment_funds").
+		WillReturnRows(sqlmock.NewRows([]string{"minimum_contribution", "active", "account_id"}).AddRow(500.0, true, int64(42)))
 	accountDBMock.ExpectQuery("SELECT available_balance FROM accounts").
 		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(5000.0))
+	// Debit source account
 	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance -").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	// Credit fund account
+	accountDBMock.ExpectExec("UPDATE accounts SET balance = balance \\+").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	fundMock.ExpectBegin()
 	fundMock.ExpectExec("UPDATE investment_funds SET liquid_assets = liquid_assets \\+").
