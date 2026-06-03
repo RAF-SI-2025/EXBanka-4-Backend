@@ -89,7 +89,7 @@ func (s *PaymentServer) previewCrossBank(ctx context.Context, req *pb.PreviewPay
 	if probeErr != nil || probeResp.StatusCode != http.StatusOK {
 		return fallback, nil
 	}
-	defer probeResp.Body.Close()
+	defer func() { _ = probeResp.Body.Close() }()
 
 	var vote ibVoteResponse
 	if err := json.NewDecoder(probeResp.Body).Decode(&vote); err != nil || vote.Vote != "YES" {
@@ -160,7 +160,6 @@ func (s *PaymentServer) previewOwnBank(ctx context.Context, req *pb.PreviewPayme
 	}
 
 	var exchangeRate, finalAmount float64
-	finalAmount = req.Amount
 	switch {
 	case fromCurrencyCode == "RSD":
 		toSelling, err := getRate(toCurrencyCode, "selling_rate")

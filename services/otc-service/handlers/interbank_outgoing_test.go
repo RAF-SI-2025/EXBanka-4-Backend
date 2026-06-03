@@ -50,24 +50,6 @@ func mockPartnerForwardServer(t *testing.T) *httptest.Server {
 	}))
 }
 
-// mockPartnerAcceptServer returns a test HTTP server that handles
-// GET /otc/interbank/negotiations/888/<id>/accept → 204.
-func mockPartnerAcceptServer(t *testing.T, forwardPath string) *httptest.Server {
-	t.Helper()
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/otc/interbank/negotiations":
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusCreated)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{"routingNumber": 999, "id": "42"})
-		case r.Method == http.MethodGet && r.URL.Path == forwardPath:
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			w.WriteHeader(http.StatusNotFound)
-		}
-	}))
-}
-
 // mock2PCServer returns an HTTP server handling NEW_TX (vote YES) and COMMIT_TX (204).
 func mock2PCServer(t *testing.T, voteYes bool) *httptest.Server {
 	t.Helper()
