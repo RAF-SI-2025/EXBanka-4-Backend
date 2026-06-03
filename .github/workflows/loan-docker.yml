@@ -37,14 +37,14 @@ jobs:
         with:
           context: .
           file: services/loan-service/Dockerfile
-          push: ${{ github.event_name == 'push' }}
+          push: ${{ github.ref == 'refs/heads/main' }}
           tags: ghcr.io/raf-si-2025/exbanka-4-backend/loan-service:${{ github.sha }}
 
   deploy:
     name: Deploy to Kubernetes
     needs: docker
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Setup kubectl
         uses: azure/setup-kubectl@v4
@@ -56,4 +56,4 @@ jobs:
 
       - name: Deploy to Kubernetes
         run: |
-          kubectl set image deployment/loan-service loan-service=ghcr.io/raf-si-2025/exbanka-4-backend/loan-service:${{ github.sha }} -n exbanka
+          kubectl set image deployment/loan-service loan-service=ghcr.io/raf-si-2025/exbanka-4-backend/loan-service:${{ github.sha }} -n exbanka-4
