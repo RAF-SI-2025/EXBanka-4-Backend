@@ -140,6 +140,7 @@ func TestAcceptNegotiation_CommitFails(t *testing.T) {
 	mainMock.ExpectQuery("SELECT COALESCE.*SUM").WillReturnRows(sqlmock.NewRows([]string{"sum"}).AddRow(int64(0)))
 	// BuyerAccountId=0 → findAccount buyer
 	mAcc.ExpectQuery("SELECT id FROM accounts WHERE owner_id").WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(100)))
+	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
 	mAcc.ExpectQuery("SELECT available_balance FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(float64(500)))
 	// findAccount seller
@@ -225,6 +226,7 @@ func exerciseStep1to4(t *testing.T, mainMock, mAcc, mPort, mSec sqlmock.Sqlmock,
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").WillReturnRows(contractRow(10, 20, future))
 	mSec.ExpectQuery("SELECT id FROM listing").WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(42)))
+	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
 	// Step 1
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log").WillReturnResult(sqlmock.NewResult(1, 1))
