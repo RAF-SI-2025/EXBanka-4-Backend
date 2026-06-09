@@ -455,6 +455,8 @@ func TestAcceptNegotiation_CrossBank_WithPremium_Happy(t *testing.T) {
 			AddRow(int32(999), int64(42), "ext-seller-1"))
 
 	// buyer balance check (BuyerAccountId=5 → skip findAccount)
+	accMock.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
+		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(1)))
 	accMock.ExpectQuery("SELECT available_balance").
 		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(float64(100.0)))
 	// buyer account number lookup
@@ -545,6 +547,8 @@ func TestAcceptNegotiation_CrossBank_InsufficientFunds(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id", "seller_external_id"}).
 			AddRow(int32(999), int64(42), "ext-seller-1"))
 	// BuyerAccountId=5 → no findAccount query; balance check: 10 < 50 → insufficient
+	accMock.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
+		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(1)))
 	accMock.ExpectQuery("SELECT available_balance").
 		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(float64(10.0)))
 	mainMock.ExpectRollback()
@@ -585,6 +589,8 @@ func TestAcceptNegotiation_CrossBank_2PCVoteNo(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id", "seller_external_id"}).
 			AddRow(int32(999), int64(42), "ext-seller-1"))
 	// BuyerAccountId=5 → no findAccount query
+	accMock.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
+		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(1)))
 	accMock.ExpectQuery("SELECT available_balance").
 		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(float64(100.0)))
 	accMock.ExpectQuery("SELECT account_number").

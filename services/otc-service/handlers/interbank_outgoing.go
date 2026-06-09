@@ -213,6 +213,14 @@ func (s *OtcServer) exerciseCrossBank(
 			return nil, status.Errorf(codes.Internal, "failed to find buyer account: %v", err)
 		}
 	}
+	buyerCurrencyID, err := getAccountCurrencyID(s.AccountDB, buyerAccountID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to read buyer account currency: %v", err)
+	}
+	totalCostToPay, err := convertAmount(s.ExchangeDB, totalCost, currencyID, buyerCurrencyID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "currency conversion failed: %v", err)
+	}
 	var buyerAccountNum string
 	if err = s.AccountDB.QueryRowContext(ctx,
 		`SELECT account_number FROM accounts WHERE id = $1`, buyerAccountID,
@@ -233,14 +241,14 @@ func (s *OtcServer) exerciseCrossBank(
 	result, err := s.AccountDB.ExecContext(ctx,
 		`UPDATE accounts SET available_balance = available_balance - $1
 		 WHERE id = $2 AND available_balance >= $1 AND balance >= $1`,
-		totalCost, buyerAccountID,
+		totalCostToPay, buyerAccountID,
 	)
 	if err != nil {
 		sagaLog(1, "FAILED", err.Error())
 		return nil, status.Errorf(codes.Internal, "step 1 failed: %v", err)
 	}
 	if rows, _ := result.RowsAffected(); rows == 0 {
-		sagaLog(1, "FAILED", fmt.Sprintf("insufficient funds: need %.2f", totalCost))
+		sagaLog(1, "FAILED", fmt.Sprintf("insufficient funds: need %.2f", totalCostToPay))
 		return nil, status.Error(codes.InvalidArgument, "Insufficient funds")
 	}
 	sagaLog(1, "SUCCESS", "")
@@ -248,7 +256,7 @@ func (s *OtcServer) exerciseCrossBank(
 	comp1 := func() {
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET available_balance = available_balance + $1 WHERE id = $2`,
-			totalCost, buyerAccountID)
+			totalCostToPay, buyerAccountID)
 		sagaLog(1, "COMPENSATED", "")
 	}
 
@@ -281,7 +289,7 @@ func (s *OtcServer) exerciseCrossBank(
 	// Step 3: Debit buyer balance (available_balance already reserved in step 1).
 	_, _ = s.AccountDB.ExecContext(ctx,
 		`UPDATE accounts SET balance = balance - $1, available_balance = available_balance + $1 WHERE id = $2`,
-		totalCost, buyerAccountID)
+		totalCostToPay, buyerAccountID)
 
 	// Step 4: Add shares to buyer's portfolio.
 	listingID, _ := listingIDForTicker(s.SecuritiesDB, ticker)
@@ -529,10 +537,18 @@ func (s *OtcServer) acceptCrossBank(
 				return nil, status.Errorf(codes.Internal, "failed to find buyer account: %v", err)
 			}
 		}
+		buyerCurrencyID, err := getAccountCurrencyID(s.AccountDB, buyerAccountID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to read buyer account currency: %v", err)
+		}
+		premiumToPay, err := convertAmount(s.ExchangeDB, premium, currencyID, buyerCurrencyID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "currency conversion failed: %v", err)
+		}
 		var buyerBalance float64
 		if err = s.AccountDB.QueryRowContext(ctx,
 			`SELECT available_balance FROM accounts WHERE id = $1`, buyerAccountID,
-		).Scan(&buyerBalance); err != nil || buyerBalance < premium {
+		).Scan(&buyerBalance); err != nil || buyerBalance < premiumToPay {
 			return nil, status.Error(codes.InvalidArgument, "Insufficient funds for premium")
 		}
 		var buyerAccountNum string
@@ -544,7 +560,7 @@ func (s *OtcServer) acceptCrossBank(
 
 		if _, err = s.AccountDB.ExecContext(ctx,
 			`UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`,
-			premium, buyerAccountID,
+			premiumToPay, buyerAccountID,
 		); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to debit buyer premium: %v", err)
 		}
@@ -560,7 +576,7 @@ func (s *OtcServer) acceptCrossBank(
 		if commitErr != nil || voteResult != "YES" {
 			retryExec(s.AccountDB,
 				`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
-				premium, buyerAccountID)
+				premiumToPay, buyerAccountID)
 			return nil, status.Errorf(codes.FailedPrecondition,
 				"partner rejected accept 2PC (vote=%s err=%v)", voteResult, commitErr)
 		}

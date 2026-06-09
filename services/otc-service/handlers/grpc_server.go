@@ -54,6 +54,7 @@ type OtcServer struct {
 	AccountDB    *sql.DB // account_db
 	PortfolioDB  *sql.DB // portfolio_db
 	SecuritiesDB *sql.DB // securities_db
+	ExchangeDB   *sql.DB // exchange_db (daily_exchange_rates)
 }
 
 func getUserName(employeeDB, clientDB *sql.DB, userID int64, userType string) string {
@@ -102,6 +103,54 @@ func findAccount(accountDB *sql.DB, ownerID int64, currencyID int64) (int64, err
 		return 0, fmt.Errorf("no active account found for owner %d with currency_id %d", ownerID, currencyID)
 	}
 	return id, err
+}
+
+// currencyCodeMap is the inverse of currencyIDMap.
+var currencyCodeMap = map[int64]string{
+	1: "RSD", 2: "EUR", 3: "CHF", 4: "USD",
+	5: "GBP", 6: "JPY", 7: "CAD", 8: "AUD",
+}
+
+// getAccountCurrencyID returns the currency_id of a given account.
+func getAccountCurrencyID(accountDB *sql.DB, accountID int64) (int64, error) {
+	var cid int64
+	err := accountDB.QueryRow(`SELECT currency_id FROM accounts WHERE id = $1`, accountID).Scan(&cid)
+	return cid, err
+}
+
+// convertAmount converts amount from fromCurrencyID to toCurrencyID using today's middle rates.
+// Returns amount unchanged when currencies are equal.
+func convertAmount(exchangeDB *sql.DB, amount float64, fromCurrencyID, toCurrencyID int64) (float64, error) {
+	if fromCurrencyID == toCurrencyID {
+		return amount, nil
+	}
+	fromCode, toCode := currencyCodeMap[fromCurrencyID], currencyCodeMap[toCurrencyID]
+
+	getRate := func(code string) (float64, error) {
+		if code == "RSD" {
+			return 1.0, nil
+		}
+		var r float64
+		err := exchangeDB.QueryRow(
+			`SELECT middle_rate FROM daily_exchange_rates WHERE currency_code = $1 AND date = CURRENT_DATE`,
+			code,
+		).Scan(&r)
+		if err != nil {
+			return 0, fmt.Errorf("no exchange rate for %s: %v", code, err)
+		}
+		return r, nil
+	}
+
+	fromRate, err := getRate(fromCode)
+	if err != nil {
+		return 0, err
+	}
+	toRate, err := getRate(toCode)
+	if err != nil {
+		return 0, err
+	}
+	// fromRate and toRate are both in RSD per 1 unit of currency
+	return amount * fromRate / toRate, nil
 }
 
 func (s *OtcServer) Ping(_ context.Context, _ *pb.PingRequest) (*pb.PingResponse, error) {
@@ -378,6 +427,14 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 			return nil, status.Errorf(codes.Internal, "failed to find buyer account: %v", err)
 		}
 	}
+	buyerCurrencyID, err := getAccountCurrencyID(s.AccountDB, buyerAccountID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to read buyer account currency: %v", err)
+	}
+	premiumToPay, err := convertAmount(s.ExchangeDB, premium, currencyID, buyerCurrencyID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "currency conversion failed: %v", err)
+	}
 	var buyerBalance float64
 	err = s.AccountDB.QueryRowContext(ctx,
 		`SELECT available_balance FROM accounts WHERE id = $1`, buyerAccountID,
@@ -385,7 +442,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check buyer balance: %v", err)
 	}
-	if buyerBalance < premium {
+	if buyerBalance < premiumToPay {
 		return nil, status.Error(codes.InvalidArgument, "Insufficient funds for premium")
 	}
 
@@ -398,7 +455,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	// --- Deduct buyer premium (with retry compensation on failure) ---
 	if _, err = s.AccountDB.ExecContext(ctx,
 		`UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`,
-		premium, buyerAccountID,
+		premiumToPay, buyerAccountID,
 	); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to deduct premium from buyer: %v", err)
 	}
@@ -410,7 +467,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	); err != nil {
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
-			premium, buyerAccountID)
+			premiumToPay, buyerAccountID)
 		return nil, status.Errorf(codes.Internal, "failed to credit premium to seller: %v", err)
 	}
 
@@ -427,7 +484,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	).Scan(&contractID); err != nil {
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
-			premium, buyerAccountID)
+			premiumToPay, buyerAccountID)
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`,
 			premium, sellerAccountID)
@@ -443,7 +500,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	); err != nil {
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
-			premium, buyerAccountID)
+			premiumToPay, buyerAccountID)
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`,
 			premium, sellerAccountID)
@@ -453,7 +510,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	if err = tx.Commit(); err != nil {
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
-			premium, buyerAccountID)
+			premiumToPay, buyerAccountID)
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`,
 			premium, sellerAccountID)
@@ -636,6 +693,14 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 			return nil, status.Errorf(codes.Internal, "failed to find buyer account: %v", err)
 		}
 	}
+	buyerCurrencyID, err := getAccountCurrencyID(s.AccountDB, buyerAccountID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to read buyer account currency: %v", err)
+	}
+	totalCostToPay, err := convertAmount(s.ExchangeDB, totalCost, currencyID, buyerCurrencyID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "currency conversion failed: %v", err)
+	}
 
 	// sagaLog writes a saga step record. It uses a fresh 5-second background context so
 	// it never blocks the calling goroutine (and therefore never prevents defer tx.Rollback()
@@ -652,18 +717,18 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	sellerPortfolioID := portfolioUserID(sellerID, sellerType)
 
 	// Step 1: Reserve buyer funds (deduct available_balance).
-	// Also checks balance >= totalCost to ensure consistency between the two balance fields.
+	// Also checks balance >= totalCostToPay to ensure consistency between the two balance fields.
 	result, err := s.AccountDB.ExecContext(ctx,
 		`UPDATE accounts SET available_balance = available_balance - $1
 		 WHERE id = $2 AND available_balance >= $1 AND balance >= $1`,
-		totalCost, buyerAccountID,
+		totalCostToPay, buyerAccountID,
 	)
 	if err != nil {
 		sagaLog(1, "FAILED", err.Error())
 		return nil, status.Errorf(codes.Internal, "step 1 failed: %v", err)
 	}
 	if rows, _ := result.RowsAffected(); rows == 0 {
-		sagaLog(1, "FAILED", fmt.Sprintf("insufficient funds: need %.2f", totalCost))
+		sagaLog(1, "FAILED", fmt.Sprintf("insufficient funds: need %.2f", totalCostToPay))
 		return nil, status.Error(codes.InvalidArgument, "Insufficient funds")
 	}
 	sagaLog(1, "SUCCESS", "")
@@ -671,7 +736,7 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	comp1 := func() {
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET available_balance = available_balance + $1 WHERE id = $2`,
-			totalCost, buyerAccountID)
+			totalCostToPay, buyerAccountID)
 		sagaLog(1, "COMPENSATED", "")
 	}
 
@@ -714,7 +779,7 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	}
 	if _, err = s.AccountDB.ExecContext(ctx,
 		`UPDATE accounts SET balance = balance - $1 WHERE id = $2`,
-		totalCost, buyerAccountID,
+		totalCostToPay, buyerAccountID,
 	); err != nil {
 		sagaLog(3, "FAILED", err.Error())
 		comp2()
@@ -725,7 +790,7 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 		`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
 		totalCost, sellerAccountID,
 	); err != nil {
-		retryExec(s.AccountDB, `UPDATE accounts SET balance = balance + $1 WHERE id = $2`, totalCost, buyerAccountID)
+		retryExec(s.AccountDB, `UPDATE accounts SET balance = balance + $1 WHERE id = $2`, totalCostToPay, buyerAccountID)
 		sagaLog(3, "FAILED", err.Error())
 		comp2()
 		comp1()
@@ -734,7 +799,7 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	sagaLog(3, "SUCCESS", "")
 
 	comp3 := func() {
-		retryExec(s.AccountDB, `UPDATE accounts SET balance = balance + $1 WHERE id = $2`, totalCost, buyerAccountID)
+		retryExec(s.AccountDB, `UPDATE accounts SET balance = balance + $1 WHERE id = $2`, totalCostToPay, buyerAccountID)
 		retryExec(s.AccountDB, `UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`, totalCost, sellerAccountID)
 		sagaLog(3, "COMPENSATED", "")
 	}
