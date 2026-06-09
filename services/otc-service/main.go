@@ -51,6 +51,12 @@ func main() {
 	}
 	defer func() { _ = securitiesDB.Close() }()
 
+	exchangeDB, err := otcdb.Connect(os.Getenv("EXCHANGE_DB_URL"))
+	if err != nil {
+		log.Fatalf("failed to connect to exchange_db: %v", err)
+	}
+	defer func() { _ = exchangeDB.Close() }()
+
 	// Hourly contract expiration: marks ACTIVE contracts as EXPIRED once the
 	// buyer's exercise window (settlementDate + 24h) has passed.
 	// Runs immediately on startup so stale contracts are cleaned up at boot.
@@ -82,6 +88,7 @@ func main() {
 		AccountDB:    accountDB,
 		PortfolioDB:  portfolioDB,
 		SecuritiesDB: securitiesDB,
+		ExchangeDB:   exchangeDB,
 	})
 
 	log.Printf("otc-service gRPC server listening on %s", grpcPort)
