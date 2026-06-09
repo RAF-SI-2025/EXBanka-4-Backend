@@ -269,9 +269,9 @@ func main() {
 	r.PUT("/otc/negotiations/:id/reject", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.RejectNegotiation(otcClient))
 	r.GET("/otc/contracts", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.ListContracts(otcClient))
 	r.POST("/otc/contracts/:id/exercise", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.ExerciseContract(otcClient))
-	r.GET("/otc/market", middleware.RequireRole("CLIENT", "SUPERVISOR"), handlers.GetMarket(otcClient))
-	r.GET("/api/otc/external-stocks", middleware.RequireRole("CLIENT", "SUPERVISOR"), handlers.GetExternalStocks())
-	r.PUT("/client/portfolio/:ticker/public-mode", middleware.RequireRole("CLIENT", "SUPERVISOR"), handlers.SetPublicMode(portfolioClient))
+	r.GET("/otc/market", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.GetMarket(otcClient))
+	r.GET("/api/otc/external-stocks", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.GetExternalStocks())
+	r.PUT("/client/portfolio/:ticker/public-mode", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.SetPublicMode(portfolioClient))
 
 	// Investment funds
 	r.POST("/investment/funds", middleware.RequireRole("SUPERVISOR"), handlers.CreateFund(fundClient))
