@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"time"
@@ -155,6 +156,29 @@ func convertAmount(exchangeDB *sql.DB, amount float64, fromCurrencyID, toCurrenc
 
 func (s *OtcServer) Ping(_ context.Context, _ *pb.PingRequest) (*pb.PingResponse, error) {
 	return &pb.PingResponse{Message: "otc-service ok"}, nil
+}
+
+func (s *OtcServer) recordOtcTax(userID int64, userType string, taxableAmount float64, currencyCode string, month, year int) {
+	if userType == "EMPLOYEE" {
+		return
+	}
+	fromID, ok := currencyIDMap[currencyCode]
+	if !ok {
+		return
+	}
+	amountRSD, err := convertAmount(s.ExchangeDB, taxableAmount, fromID, 1)
+	if err != nil {
+		return
+	}
+	taxRSD := amountRSD * 0.15
+	if taxRSD == 0 {
+		return
+	}
+	tctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, _ = s.PortfolioDB.ExecContext(tctx,
+		`INSERT INTO tax_record (user_id, user_type, amount_rsd, month, year) VALUES ($1, $2, $3, $4, $5)`,
+		userID, userType, taxRSD, month, year)
 }
 
 func (s *OtcServer) CreateNegotiation(ctx context.Context, req *pb.CreateNegotiationRequest) (*pb.NegotiationResponse, error) {
@@ -518,6 +542,9 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	}
 
 	_ = contractID
+	if sellerType != "INTERBANK" {
+		s.recordOtcTax(sellerID, sellerType, premium, currency, int(now.Month()), now.Year())
+	}
 	return s.fetchNegotiationByID(ctx, req.NegotiationId)
 }
 
@@ -645,14 +672,14 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	var sellerID, buyerID int64
 	var sellerType, buyerType, contractStatus, ticker, currency string
 	var amount int32
-	var strikePrice float64
+	var strikePrice, premium float64
 	var settlementDate time.Time
 	err = tx.QueryRowContext(ctx, `
 		SELECT seller_id, seller_type, buyer_id, buyer_type, status,
-		       ticker, amount, strike_price, currency, settlement_date
+		       ticker, amount, strike_price, premium, currency, settlement_date
 		FROM otc_contracts WHERE id = $1 FOR UPDATE`, req.ContractId,
 	).Scan(&sellerID, &sellerType, &buyerID, &buyerType, &contractStatus,
-		&ticker, &amount, &strikePrice, &currency, &settlementDate)
+		&ticker, &amount, &strikePrice, &premium, &currency, &settlementDate)
 	if err == sql.ErrNoRows {
 		return nil, status.Error(codes.NotFound, "contract not found")
 	} else if err != nil {
@@ -669,21 +696,33 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 		return nil, status.Error(codes.InvalidArgument, "Contract settlement date has passed")
 	}
 
+	listingID, err := listingIDForTicker(s.SecuritiesDB, ticker)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "ticker not found: %v", err)
+	}
+
 	// Cross-bank exercise: seller is on partner bank — delegate to 2PC flow.
 	if sellerType == "INTERBANK" {
-		return s.exerciseCrossBank(ctx, req, tx, sellerID, buyerID, buyerType,
+		resp, rerr := s.exerciseCrossBank(ctx, req, tx, sellerID, buyerID, buyerType,
 			amount, strikePrice, currency, ticker, settlementDate)
+		if rerr == nil && buyerType != "EMPLOYEE" {
+			var mktPrice float64
+			if qErr := s.SecuritiesDB.QueryRowContext(ctx,
+				`SELECT price FROM listing WHERE id = $1`, listingID).Scan(&mktPrice); qErr == nil {
+				profit := (mktPrice-strikePrice)*float64(amount) - premium
+				if profit > 0 {
+					t := time.Now()
+					s.recordOtcTax(buyerID, buyerType, profit, currency, int(t.Month()), t.Year())
+				}
+			}
+		}
+		return resp, rerr
 	}
 
 	totalCost := strikePrice * float64(amount)
 	currencyID, ok := currencyIDMap[currency]
 	if !ok {
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported currency: %s", currency)
-	}
-
-	listingID, err := listingIDForTicker(s.SecuritiesDB, ticker)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "ticker not found: %v", err)
 	}
 
 	buyerAccountID := req.BuyerAccountId
@@ -896,6 +935,17 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 		return nil, status.Errorf(codes.Internal, "step 5 commit failed: %v", err)
 	}
 	sagaLog(5, "SUCCESS", "")
+
+	if buyerType != "EMPLOYEE" {
+		var mktPrice float64
+		if qErr := s.SecuritiesDB.QueryRowContext(ctx,
+			`SELECT price FROM listing WHERE id = $1`, listingID).Scan(&mktPrice); qErr == nil {
+			profit := (mktPrice-strikePrice)*float64(amount) - premium
+			if profit > 0 {
+				s.recordOtcTax(buyerID, buyerType, profit, currency, int(now.Month()), now.Year())
+			}
+		}
+	}
 
 	return &pb.ExerciseContractResponse{
 		Status:     "EXERCISED",
@@ -1485,4 +1535,28 @@ func (s *OtcServer) RollbackOtcInterbank(ctx context.Context, req *pb.OtcInterba
 		req.TxRoutingNumber, req.TxId,
 	)
 	return &pb.OtcEmptyResponse{}, nil
+}
+
+// ExpireContracts atomically transitions ACTIVE contracts past their settlement window to EXPIRED,
+// then records a loss-credit tax entry for each buyer whose premium is now forfeit.
+func (s *OtcServer) ExpireContracts() {
+	rows, err := s.DB.Query(`
+		UPDATE otc_contracts SET status='EXPIRED'
+		WHERE status='ACTIVE' AND settlement_date + INTERVAL '1 day' < NOW()
+		RETURNING id, buyer_id, buyer_type, premium, currency`)
+	if err != nil {
+		log.Printf("contract expiration error: %v", err)
+		return
+	}
+	defer rows.Close()
+	now := time.Now()
+	for rows.Next() {
+		var id, buyerID int64
+		var buyerType, currency string
+		var prem float64
+		if err := rows.Scan(&id, &buyerID, &buyerType, &prem, &currency); err != nil {
+			continue
+		}
+		s.recordOtcTax(buyerID, buyerType, -prem, currency, int(now.Month()), now.Year())
+	}
 }
