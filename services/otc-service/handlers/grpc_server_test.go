@@ -99,13 +99,13 @@ func acceptNegRow(sellerID, buyerID int64, sellerType, buyerType, state, ticker,
 		"2026-12-31", float64(100.0))
 }
 
-// contractRow returns the 10 columns scanned in ExerciseContract's initial load.
+// contractRow returns the 11 columns scanned in ExerciseContract's initial load.
 func contractRow(sellerID, buyerID int64, settlementDate time.Time) *sqlmock.Rows {
 	return sqlmock.NewRows([]string{
 		"seller_id", "seller_type", "buyer_id", "buyer_type", "status",
-		"ticker", "amount", "strike_price", "currency", "settlement_date",
+		"ticker", "amount", "strike_price", "premium", "currency", "settlement_date",
 	}).AddRow(sellerID, "CLIENT", buyerID, "CLIENT", "ACTIVE",
-		"AAPL", int32(5), float64(100.0), "USD", settlementDate)
+		"AAPL", int32(5), float64(100.0), float64(10.0), "USD", settlementDate)
 }
 
 // ===== Ping =====
@@ -447,6 +447,12 @@ func TestAcceptNegotiation_InsufficientFunds(t *testing.T) {
 
 func TestAcceptNegotiation_HappyPath(t *testing.T) {
 	s, mainMock, _, mCli, mAcc, mPort, mSec := newTestServer(t)
+	// Add ExchangeDB mock so recordOtcTax can convert USD→RSD
+	exchDB, mExch, exchErr := sqlmock.New()
+	require.NoError(t, exchErr)
+	s.ExchangeDB = exchDB
+	t.Cleanup(func() { _ = exchDB.Close() })
+
 	// seller (10) accepts PENDING_SELLER; buyer is 20
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT seller_id").
@@ -475,6 +481,11 @@ func TestAcceptNegotiation_HappyPath(t *testing.T) {
 	mainMock.ExpectExec("UPDATE otc_negotiations").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectCommit()
+	// recordOtcTax: convert USD premium → RSD, then insert tax_record
+	mExch.ExpectQuery("SELECT middle_rate FROM daily_exchange_rates").
+		WillReturnRows(sqlmock.NewRows([]string{"middle_rate"}).AddRow(float64(117.5)))
+	mPort.ExpectExec("INSERT INTO tax_record").
+		WillReturnResult(sqlmock.NewResult(0, 1))
 	// fetchNegotiationByID
 	mainMock.ExpectQuery("SELECT id, ticker").
 		WillReturnRows(sqlmock.NewRows(negotiationColumns()).
@@ -495,6 +506,8 @@ func TestAcceptNegotiation_HappyPath(t *testing.T) {
 	assert.Equal(t, "ACCEPTED", resp.Status)
 	assert.NoError(t, mainMock.ExpectationsWereMet())
 	assert.NoError(t, mAcc.ExpectationsWereMet())
+	assert.NoError(t, mExch.ExpectationsWereMet())
+	assert.NoError(t, mPort.ExpectationsWereMet())
 }
 
 // ===== RejectNegotiation =====
@@ -670,9 +683,9 @@ func TestExerciseContract_NotActive(t *testing.T) {
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{
 			"seller_id", "seller_type", "buyer_id", "buyer_type", "status",
-			"ticker", "amount", "strike_price", "currency", "settlement_date",
+			"ticker", "amount", "strike_price", "premium", "currency", "settlement_date",
 		}).AddRow(int64(10), "CLIENT", int64(20), "CLIENT", "EXPIRED",
-			"AAPL", int32(5), float64(100.0), "USD", future))
+			"AAPL", int32(5), float64(100.0), float64(0.0), "USD", future))
 	mainMock.ExpectRollback()
 	_, err := s.ExerciseContract(context.Background(), &pb.ExerciseContractRequest{
 		ContractId: 1, CallerId: 20, CallerType: "CLIENT",
@@ -1427,9 +1440,9 @@ func TestExerciseContract_UnsupportedCurrency(t *testing.T) {
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{
 			"seller_id", "seller_type", "buyer_id", "buyer_type", "status",
-			"ticker", "amount", "strike_price", "currency", "settlement_date",
+			"ticker", "amount", "strike_price", "premium", "currency", "settlement_date",
 		}).AddRow(int64(10), "CLIENT", int64(20), "CLIENT", "ACTIVE",
-			"AAPL", int32(5), float64(100.0), "XYZ", future))
+			"AAPL", int32(5), float64(100.0), float64(0.0), "XYZ", future))
 	mSec.ExpectQuery("SELECT id FROM listing").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(42)))
 	mainMock.ExpectRollback()
@@ -1837,9 +1850,9 @@ func TestExerciseContract_EmployeeSeller(t *testing.T) {
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{
 			"seller_id", "seller_type", "buyer_id", "buyer_type", "status",
-			"ticker", "amount", "strike_price", "currency", "settlement_date",
+			"ticker", "amount", "strike_price", "premium", "currency", "settlement_date",
 		}).AddRow(int64(5), "EMPLOYEE", int64(20), "CLIENT", "ACTIVE",
-			"AAPL", int32(5), float64(100.0), "USD", future))
+			"AAPL", int32(5), float64(100.0), float64(10.0), "USD", future))
 	mSec.ExpectQuery("SELECT id FROM listing").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(42)))
 	// Step 1: atomic UPDATE succeeds

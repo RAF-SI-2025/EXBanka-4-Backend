@@ -26,11 +26,33 @@ func CollectUnpaid(ctx context.Context, portfolioDB, accountDB, exchangeDB *sql.
 		return fmt.Errorf("load unpaid records: %w", err)
 	}
 
+	// Group records by (user_id, user_type) and net per user so that OTC loss-credit
+	// records (negative amounts) correctly offset gains before collection.
+	type userKey struct {
+		id    int64
+		utype string
+	}
+	netByUser := map[userKey]float64{}
+	idsByUser := map[userKey][]int64{}
+	for _, rec := range records {
+		key := userKey{rec.UserID, rec.UserType}
+		netByUser[key] += rec.AmountRSD
+		idsByUser[key] = append(idsByUser[key], rec.ID)
+	}
+
 	// Cache exchange rates for the duration of this collection run.
 	var rates map[string]float64
 
-	for _, rec := range records {
-		accountID, err := getAccountForUser(ctx, portfolioDB, rec.UserID, rec.UserType)
+	for key, netRSD := range netByUser {
+		if netRSD <= 0 {
+			// Net loss — mark all records consumed; nothing to deduct.
+			for _, id := range idsByUser[key] {
+				_ = repository.MarkTaxPaid(ctx, portfolioDB, id)
+			}
+			continue
+		}
+
+		accountID, err := getAccountForUser(ctx, portfolioDB, key.id, key.utype)
 		if err != nil {
 			continue
 		}
@@ -40,7 +62,7 @@ func CollectUnpaid(ctx context.Context, portfolioDB, accountDB, exchangeDB *sql.
 			continue
 		}
 
-		deductAmount := rec.AmountRSD
+		deductAmount := netRSD
 		if currencyCode != "RSD" {
 			if rates == nil {
 				rates, err = fetchMiddleRates(ctx, exchangeClient)
@@ -52,18 +74,19 @@ func CollectUnpaid(ctx context.Context, portfolioDB, accountDB, exchangeDB *sql.
 			if !ok || middleRate == 0 {
 				continue
 			}
-			deductAmount = rec.AmountRSD / middleRate
+			deductAmount = netRSD / middleRate
 		}
 
 		if err := deductFromAccount(ctx, accountDB, accountID, deductAmount); err != nil {
 			continue
 		}
 
-		_ = repository.MarkTaxPaid(ctx, portfolioDB, rec.ID)
+		for _, id := range idsByUser[key] {
+			_ = repository.MarkTaxPaid(ctx, portfolioDB, id)
+		}
 
-		// Credit the state's RSD account with the full RSD amount (no FX conversion —
-		// the state account is always RSD).
-		_ = creditStateAccount(ctx, accountDB, rec.AmountRSD)
+		// Credit the state's RSD account with the full net RSD amount.
+		_ = creditStateAccount(ctx, accountDB, netRSD)
 	}
 	return nil
 }

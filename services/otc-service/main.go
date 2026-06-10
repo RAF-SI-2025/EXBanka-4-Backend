@@ -57,31 +57,13 @@ func main() {
 	}
 	defer func() { _ = exchangeDB.Close() }()
 
-	// Hourly contract expiration: marks ACTIVE contracts as EXPIRED once the
-	// buyer's exercise window (settlementDate + 24h) has passed.
-	// Runs immediately on startup so stale contracts are cleaned up at boot.
-	expireContracts := func() {
-		if _, err := otcDB.Exec(
-			`UPDATE otc_contracts SET status='EXPIRED'
-			 WHERE status='ACTIVE' AND settlement_date + INTERVAL '1 day' < NOW()`,
-		); err != nil {
-			log.Printf("contract expiration job error: %v", err)
-		}
-	}
-	go func() {
-		expireContracts()
-		for range time.Tick(time.Hour) {
-			expireContracts()
-		}
-	}()
-
 	lis, err := net.Listen("tcp", grpcPort)
 	if err != nil {
 		log.Fatalf("failed to listen on %s: %v", grpcPort, err)
 	}
 
 	srv := grpc.NewServer()
-	pb.RegisterOtcServiceServer(srv, &handlers.OtcServer{
+	srvImpl := &handlers.OtcServer{
 		DB:           otcDB,
 		EmployeeDB:   employeeDB,
 		ClientDB:     clientDB,
@@ -89,7 +71,17 @@ func main() {
 		PortfolioDB:  portfolioDB,
 		SecuritiesDB: securitiesDB,
 		ExchangeDB:   exchangeDB,
-	})
+	}
+	pb.RegisterOtcServiceServer(srv, srvImpl)
+
+	// Hourly contract expiration with tax loss recording.
+	// Runs immediately on startup so stale contracts are cleaned up at boot.
+	go func() {
+		srvImpl.ExpireContracts()
+		for range time.Tick(time.Hour) {
+			srvImpl.ExpireContracts()
+		}
+	}()
 
 	log.Printf("otc-service gRPC server listening on %s", grpcPort)
 	if err := srv.Serve(lis); err != nil {
