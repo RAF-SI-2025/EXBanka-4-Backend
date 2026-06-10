@@ -1548,7 +1548,7 @@ func (s *OtcServer) ExpireContracts() {
 		log.Printf("contract expiration error: %v", err)
 		return
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	now := time.Now()
 	for rows.Next() {
 		var id, buyerID int64
