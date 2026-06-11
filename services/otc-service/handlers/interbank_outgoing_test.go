@@ -502,7 +502,6 @@ func TestAcceptNegotiation_CrossBank_PartnerAcceptFails(t *testing.T) {
 	assert.Contains(t, err.Error(), "partner accept returned 403")
 }
 
-
 // ─── executeOtcOutgoing2PC: OPTION amount sign check ──────────────────────
 
 func TestOtcExercise2PC_OptionAmountIsNegative(t *testing.T) {
