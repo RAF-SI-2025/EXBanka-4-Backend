@@ -76,6 +76,7 @@ func GetTaxDebtList(ctx context.Context, db *sql.DB, userTypeFilter string) ([]T
 		FROM tax_record
 		WHERE ($1 = '' OR user_type = $1)
 		GROUP BY user_id, user_type
+		HAVING SUM(CASE WHEN is_paid = FALSE THEN amount_rsd ELSE 0 END) >= 0
 		ORDER BY user_id`,
 		userTypeFilter)
 	if err != nil {

@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -9,6 +11,8 @@ import (
 	pb_otc "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/otc"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/payment"
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type interbankTransactionId struct {
@@ -27,19 +31,36 @@ type interbankEnvelope struct {
 	Message        json.RawMessage         `json:"message"`
 }
 
+// Nested posting format as used by Banka 4.
+type ibPartyID struct {
+	RoutingNumber int32  `json:"routingNumber"`
+	ID            string `json:"id"`
+}
+type ibAccount struct {
+	Type string     `json:"type"` // "ACCOUNT" | "PERSON" | "OPTION"
+	Num  string     `json:"num,omitempty"`
+	ID   *ibPartyID `json:"id,omitempty"`
+}
+type ibAssetInner struct {
+	Currency      string     `json:"currency,omitempty"`
+	Ticker        string     `json:"ticker,omitempty"`
+	NegotiationID *ibPartyID `json:"negotiationId,omitempty"`
+}
+type ibAsset struct {
+	Type  string        `json:"type"` // "MONAS" | "STOCK" | "OPTION"
+	Asset *ibAssetInner `json:"asset,omitempty"`
+}
+type interbankPosting struct {
+	Account ibAccount `json:"account"`
+	Amount  float64   `json:"amount"`
+	Asset   ibAsset   `json:"asset"`
+}
+
 type newTxMessage struct {
 	TransactionId  interbankTransactionId `json:"transactionId"`
 	Postings       []interbankPosting     `json:"postings"`
 	PaymentCode    string                 `json:"paymentCode"`
 	PaymentPurpose string                 `json:"paymentPurpose"`
-}
-
-type interbankPosting struct {
-	AccountType string  `json:"accountType"`
-	AccountNum  string  `json:"accountNum"`
-	Amount      float64 `json:"amount"`
-	AssetType   string  `json:"assetType"`
-	Currency    string  `json:"currency"`
 }
 
 type commitRollbackMessage struct {
@@ -82,27 +103,86 @@ func handleNewTx(c *gin.Context, client pb.PaymentServiceClient, otcClient pb_ot
 		return
 	}
 
-	// Detect OPTION posting (cross-bank OTC).
-	var optionPosting *interbankPosting
-	for i := range msg.Postings {
-		if msg.Postings[i].AccountType == "OPTION" {
-			optionPosting = &msg.Postings[i]
-			break
-		}
-	}
-
-	pbPostings := make([]*pb.InterbankPosting, len(msg.Postings))
-	for i, p := range msg.Postings {
-		pbPostings[i] = &pb.InterbankPosting{
-			AccountType: p.AccountType,
-			AccountNum:  p.AccountNum,
-			Amount:      p.Amount,
-			AssetType:   p.AssetType,
-			Currency:    p.Currency,
-		}
-	}
-
 	ctx := c.Request.Context()
+	ownRouting := gatewayOwnRoutingInt()
+
+	// Detect OTC postings in the nested Banka 4 format.
+	var exercisePosting, acceptPosting *interbankPosting
+	for i := range msg.Postings {
+		p := &msg.Postings[i]
+		if p.Account.ID == nil {
+			continue
+		}
+		rn := p.Account.ID.RoutingNumber
+		// Exercise: OPTION account on our bank gives STOCK (amount < 0 means asset leaves)
+		if p.Account.Type == "OPTION" && rn == ownRouting && p.Asset.Type == "STOCK" && p.Amount < 0 {
+			exercisePosting = p
+		}
+		// Accept: PERSON account on our bank receives OPTION right (amount > 0 means asset enters)
+		if p.Account.Type == "PERSON" && rn == ownRouting && p.Asset.Type == "OPTION" && p.Amount > 0 {
+			acceptPosting = p
+		}
+	}
+
+	if exercisePosting != nil || acceptPosting != nil {
+		// OTC transaction — skip payment service entirely.
+		var negID int64
+		var stockAmt int32
+		var isAccept bool
+		if acceptPosting != nil {
+			if acceptPosting.Asset.Asset != nil && acceptPosting.Asset.Asset.NegotiationID != nil {
+				negID, _ = strconv.ParseInt(acceptPosting.Asset.Asset.NegotiationID.ID, 10, 64)
+			}
+			stockAmt = 1
+			isAccept = true
+		} else {
+			negID, _ = strconv.ParseInt(exercisePosting.Account.ID.ID, 10, 64)
+			stockAmt = int32(math.Abs(exercisePosting.Amount))
+			isAccept = false
+		}
+		otcResp, otcErr := otcClient.PrepareOtcInterbank(ctx, &pb_otc.OtcInterbankPrepareRequest{
+			IdemRoutingNumber: fmt.Sprintf("%d", env.IdempotenceKey.RoutingNumber),
+			IdemKey:           env.IdempotenceKey.LocallyGeneratedKey,
+			TxRoutingNumber:   fmt.Sprintf("%d", msg.TransactionId.RoutingNumber),
+			TxId:              msg.TransactionId.ID,
+			NegotiationId:     negID,
+			StockAmount:       stockAmt,
+			IsAccept:          isAccept,
+		})
+		vote := "NO"
+		reason := ""
+		if otcErr == nil && otcResp != nil && otcResp.Vote == "YES" {
+			vote = "YES"
+		} else if otcResp != nil {
+			reason = otcResp.Reason
+		}
+		c.JSON(http.StatusOK, gin.H{"vote": vote, "reasons": []string{reason}})
+		return
+	}
+
+	// Non-OTC: convert nested Banka 4 format → flat proto for payment service.
+	var protoPostings []*pb.InterbankPosting
+	for _, p := range msg.Postings {
+		accountNum := p.Account.Num // set for "ACCOUNT" type
+		if accountNum == "" && p.Account.ID != nil {
+			accountNum = p.Account.ID.ID // set for "PERSON" type
+		}
+		currency := ""
+		if p.Asset.Asset != nil {
+			currency = p.Asset.Asset.Currency
+		}
+		protoPostings = append(protoPostings, &pb.InterbankPosting{
+			AccountType: p.Account.Type,
+			AccountNum:  accountNum,
+			Amount:      p.Amount,
+			AssetType:   p.Asset.Type,
+			Currency:    currency,
+		})
+	}
+
+	type reason struct {
+		Reason string `json:"reason"`
+	}
 
 	paymentResp, err := client.PrepareInterbankPayment(ctx, &pb.PrepareInterbankPaymentRequest{
 		IdempotenceKey: &pb.InterbankIdempotenceKey{
@@ -113,7 +193,7 @@ func handleNewTx(c *gin.Context, client pb.PaymentServiceClient, otcClient pb_ot
 			RoutingNumber: msg.TransactionId.RoutingNumber,
 			Id:            msg.TransactionId.ID,
 		},
-		Postings:       pbPostings,
+		Postings:       protoPostings,
 		PaymentCode:    msg.PaymentCode,
 		PaymentPurpose: msg.PaymentPurpose,
 	})
@@ -122,63 +202,7 @@ func handleNewTx(c *gin.Context, client pb.PaymentServiceClient, otcClient pb_ot
 		return
 	}
 
-	type reason struct {
-		Reason string `json:"reason"`
-	}
-
-	if optionPosting != nil {
-		negID, parseErr := strconv.ParseInt(optionPosting.AccountNum, 10, 64)
-		if parseErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid OPTION account num"})
-			return
-		}
-		stockAmount := int32(optionPosting.Amount)
-		if stockAmount < 0 {
-			stockAmount = -stockAmount
-		}
-
-		otcResp, otcErr := otcClient.PrepareOtcInterbank(ctx, &pb_otc.OtcInterbankPrepareRequest{
-			IdemRoutingNumber: strconv.Itoa(int(env.IdempotenceKey.RoutingNumber)),
-			IdemKey:           env.IdempotenceKey.LocallyGeneratedKey,
-			TxRoutingNumber:   strconv.Itoa(int(msg.TransactionId.RoutingNumber)),
-			TxId:              msg.TransactionId.ID,
-			NegotiationId:     negID,
-			StockAmount:       stockAmount,
-			IsAccept:          optionPosting.Amount > 0,
-		})
-
-		// If OTC voted NO (or errored), rollback payment if it voted YES.
-		if otcErr != nil || (otcResp != nil && otcResp.Vote != "YES") {
-			if paymentResp.Vote == "YES" {
-				_, _ = client.RollbackInterbankPayment(ctx, &pb.CommitRollbackInterbankRequest{
-					TransactionId: &pb.InterbankTransactionId{
-						RoutingNumber: msg.TransactionId.RoutingNumber,
-						Id:            msg.TransactionId.ID,
-					},
-				})
-			}
-			otcReason := "OTC_INTERNAL_ERROR"
-			if otcResp != nil {
-				otcReason = otcResp.Reason
-			}
-			c.JSON(http.StatusOK, gin.H{"vote": "NO", "reasons": []reason{{Reason: otcReason}}})
-			return
-		}
-
-		// If payment voted NO, rollback OTC.
-		if paymentResp.Vote != "YES" {
-			_, _ = otcClient.RollbackOtcInterbank(ctx, &pb_otc.OtcInterbankTxRequest{
-				TxRoutingNumber: strconv.Itoa(int(msg.TransactionId.RoutingNumber)),
-				TxId:            msg.TransactionId.ID,
-			})
-			reasons := make([]reason, len(paymentResp.Reasons))
-			for i, r := range paymentResp.Reasons {
-				reasons[i] = reason{Reason: r.Reason}
-			}
-			c.JSON(http.StatusOK, gin.H{"vote": "NO", "reasons": reasons})
-			return
-		}
-	} else if paymentResp.Vote != "YES" {
+	if paymentResp.Vote != "YES" {
 		reasons := make([]reason, len(paymentResp.Reasons))
 		for i, r := range paymentResp.Reasons {
 			reasons[i] = reason{Reason: r.Reason}
@@ -213,13 +237,18 @@ func handleCommitRollbackTx(c *gin.Context, client pb.PaymentServiceClient, otcC
 		_, _ = client.RollbackInterbankPayment(ctx, paymentReq)
 		_, _ = otcClient.RollbackOtcInterbank(ctx, otcReq)
 	} else {
+		// Payment service returns codes.NotFound for OTC-only transactions — treat as no-op.
 		if _, err := client.CommitInterbankPayment(ctx, paymentReq); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+			if status.Code(err) != codes.NotFound {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
 		}
 		if _, err := otcClient.CommitOtcInterbank(ctx, otcReq); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
+			if status.Code(err) != codes.NotFound {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
 		}
 	}
 	c.Status(http.StatusNoContent)

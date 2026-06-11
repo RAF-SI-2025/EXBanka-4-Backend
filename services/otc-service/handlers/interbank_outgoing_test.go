@@ -33,11 +33,11 @@ func setupPartnerEnv(t *testing.T, partnerURL string) {
 }
 
 // mockPartnerForwardServer returns a test HTTP server that accepts
-// POST /otc/interbank/negotiations and returns {"routingNumber":999,"id":"42"}.
+// POST /negotiations and returns {"routingNumber":999,"id":"42"}.
 func mockPartnerForwardServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost || r.URL.Path != "/otc/interbank/negotiations" {
+		if r.Method != http.MethodPost || r.URL.Path != "/negotiations" {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
@@ -47,32 +47,6 @@ func mockPartnerForwardServer(t *testing.T) *httptest.Server {
 			"routingNumber": 999,
 			"id":            "42",
 		})
-	}))
-}
-
-// mock2PCServer returns an HTTP server handling NEW_TX (vote YES) and COMMIT_TX (204).
-func mock2PCServer(t *testing.T, voteYes bool) *httptest.Server {
-	t.Helper()
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var env struct {
-			MessageType string `json:"messageType"`
-		}
-		_ = json.NewDecoder(r.Body).Decode(&env)
-		switch env.MessageType {
-		case "NEW_TX":
-			vote := "YES"
-			if !voteYes {
-				vote = "NO"
-			}
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]string{"vote": vote})
-		case "COMMIT_TX":
-			w.WriteHeader(http.StatusNoContent)
-		case "ROLLBACK_TX":
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			w.WriteHeader(http.StatusBadRequest)
-		}
 	}))
 }
 
@@ -124,7 +98,7 @@ func TestForwardNegotiationToPartner_Happy(t *testing.T) {
 		SellerType: "CLIENT",
 	}
 
-	partnerID, err := s.forwardNegotiationToPartner(bank, req)
+	partnerID, err := s.forwardNegotiationToPartner(bank, req, "")
 	require.NoError(t, err)
 	assert.Equal(t, int64(42), partnerID)
 }
@@ -143,7 +117,7 @@ func TestForwardNegotiationToPartner_BadStatus(t *testing.T) {
 		Ticker: "AAPL", Amount: 10, PricePerStock: 100.0,
 		SettlementDate: "2027-01-01", Currency: "RSD",
 		BuyerId: 20, BuyerType: "CLIENT",
-	})
+	}, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "500")
 }
@@ -162,7 +136,7 @@ func TestForwardNegotiationToPartner_BadJSON(t *testing.T) {
 	_, err := s.forwardNegotiationToPartner(bank, &pb.CreateNegotiationRequest{
 		Ticker: "AAPL", Amount: 10, PricePerStock: 100.0,
 		SettlementDate: "2027-01-01", Currency: "RSD",
-	})
+	}, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "decode")
 }
@@ -184,7 +158,7 @@ func TestForwardNegotiationToPartner_NonNumericID(t *testing.T) {
 	_, err := s.forwardNegotiationToPartner(bank, &pb.CreateNegotiationRequest{
 		Ticker: "AAPL", Amount: 10, PricePerStock: 100.0,
 		SettlementDate: "2027-01-01", Currency: "RSD",
-	})
+	}, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "parse")
 }
@@ -374,7 +348,7 @@ func acceptNegRowCrossBank(buyerID int64, buyerType, state string, premium float
 }
 
 func TestAcceptNegotiation_CrossBank_NoPremium_Happy(t *testing.T) {
-	// Partner accept server: accepts GET /otc/interbank/negotiations/888/20/accept
+	// Partner accept server: accepts any GET request (new URL: /negotiations/999/42/accept)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			w.WriteHeader(http.StatusNoContent)
@@ -392,20 +366,17 @@ func TestAcceptNegotiation_CrossBank_NoPremium_Happy(t *testing.T) {
 	mainMock.ExpectQuery("SELECT seller_id, seller_type, buyer_id, buyer_type, status").
 		WillReturnRows(acceptNegRowCrossBank(20, "CLIENT", "PENDING_BUYER", 0.0))
 
-	// --- acceptCrossBank: routing info query ---
+	// --- acceptCrossBank: routing info (2 cols now — no seller_external_id) ---
 	mainMock.ExpectQuery("SELECT COALESCE.*seller_routing_number").
-		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id", "seller_external_id"}).
-			AddRow(int32(999), int64(42), "ext-seller-1"))
+		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id"}).
+			AddRow(int32(999), int64(42)))
 
-	// no premium → skip buyer balance / debit / 2PC
-
-	// --- INSERT contract (on tx) ---
-	mainMock.ExpectQuery("INSERT INTO otc_contracts").
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(1)))
-	// --- UPDATE negotiation (on tx) ---
+	// --- Commit ACCEPTED status BEFORE calling partner ---
 	mainMock.ExpectExec("UPDATE otc_negotiations SET status='ACCEPTED'").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mainMock.ExpectCommit()
+
+	// --- HTTP GET /negotiations/999/42/accept → 204 (handled by server above) ---
 
 	// --- fetchNegotiationByID ---
 	addFetchNegotiationRowsCrossBank(mainMock, clientMock, 5, 20, "CLIENT")
@@ -419,56 +390,28 @@ func TestAcceptNegotiation_CrossBank_NoPremium_Happy(t *testing.T) {
 }
 
 func TestAcceptNegotiation_CrossBank_WithPremium_Happy(t *testing.T) {
-	// Full combo server: handles partner accept (GET) AND 2PC (POST /interbank)
+	// Premium is now paid via Banka 4's inbound 2PC (CommitOtcInterbank), not here.
+	// acceptCrossBank flow is identical to NoPremium: commit ACCEPTED, call partner accept.
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		// 2PC /interbank requests
-		var env struct {
-			MessageType string `json:"messageType"`
-		}
-		_ = json.NewDecoder(r.Body).Decode(&env)
-		switch env.MessageType {
-		case "NEW_TX":
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]string{"vote": "YES"})
-		case "COMMIT_TX":
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			w.WriteHeader(http.StatusNoContent)
-		}
+		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer srv.Close()
 	setupPartnerEnv(t, srv.URL)
 
-	s, mainMock, _, clientMock, accMock, _, _ := newTestServer(t)
+	s, mainMock, _, clientMock, _, _, _ := newTestServer(t)
 
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT seller_id, seller_type, buyer_id, buyer_type, status").
 		WillReturnRows(acceptNegRowCrossBank(20, "CLIENT", "PENDING_BUYER", 10.0)) // premium=10
 
-	// routing info
 	mainMock.ExpectQuery("SELECT COALESCE.*seller_routing_number").
-		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id", "seller_external_id"}).
-			AddRow(int32(999), int64(42), "ext-seller-1"))
+		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id"}).
+			AddRow(int32(999), int64(42)))
 
-	// buyer balance check (BuyerAccountId=5 → skip findAccount)
-	accMock.ExpectQuery("SELECT available_balance").
-		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(float64(100.0)))
-	// buyer account number lookup
-	accMock.ExpectQuery("SELECT account_number FROM accounts WHERE id").
-		WillReturnRows(sqlmock.NewRows([]string{"account_number"}).AddRow("ACC-020"))
-	// debit buyer premium
-	accMock.ExpectExec("UPDATE accounts SET balance = balance - .*available_balance = available_balance -").
-		WillReturnResult(sqlmock.NewResult(1, 1))
-
-	// 2PC: NEW_TX → YES, COMMIT_TX → 204 (handled by HTTP server above)
-
-	// INSERT contract
-	mainMock.ExpectQuery("INSERT INTO otc_contracts").
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(1)))
 	mainMock.ExpectExec("UPDATE otc_negotiations SET status='ACCEPTED'").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mainMock.ExpectCommit()
@@ -476,12 +419,11 @@ func TestAcceptNegotiation_CrossBank_WithPremium_Happy(t *testing.T) {
 	addFetchNegotiationRowsCrossBank(mainMock, clientMock, 5, 20, "CLIENT")
 
 	resp, err := s.AcceptNegotiation(context.Background(), &pb.AcceptNegotiationRequest{
-		NegotiationId: 5, CallerId: 20, CallerType: "CLIENT", BuyerAccountId: 5,
+		NegotiationId: 5, CallerId: 20, CallerType: "CLIENT",
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "ACCEPTED", resp.Status)
 	assert.NoError(t, mainMock.ExpectationsWereMet())
-	assert.NoError(t, accMock.ExpectationsWereMet())
 }
 
 func TestAcceptNegotiation_CrossBank_MissingRoutingInfo(t *testing.T) {
@@ -494,8 +436,8 @@ func TestAcceptNegotiation_CrossBank_MissingRoutingInfo(t *testing.T) {
 		WillReturnRows(acceptNegRowCrossBank(20, "CLIENT", "PENDING_BUYER", 0.0))
 	// routing info query: seller_routing_number = 0 → error path
 	mainMock.ExpectQuery("SELECT COALESCE.*seller_routing_number").
-		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id", "seller_external_id"}).
-			AddRow(int32(0), int64(0), ""))
+		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id"}).
+			AddRow(int32(0), int64(0)))
 	mainMock.ExpectRollback()
 
 	_, err := s.AcceptNegotiation(context.Background(), &pb.AcceptNegotiationRequest{
@@ -518,9 +460,14 @@ func TestAcceptNegotiation_CrossBank_PartnerAcceptFails(t *testing.T) {
 	mainMock.ExpectQuery("SELECT seller_id, seller_type, buyer_id, buyer_type, status").
 		WillReturnRows(acceptNegRowCrossBank(20, "CLIENT", "PENDING_BUYER", 0.0))
 	mainMock.ExpectQuery("SELECT COALESCE.*seller_routing_number").
-		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id", "seller_external_id"}).
-			AddRow(int32(999), int64(42), "ext-seller-1"))
-	mainMock.ExpectRollback()
+		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id"}).
+			AddRow(int32(999), int64(42)))
+	// New flow: commit ACCEPTED first, then call partner; on failure revert to PENDING_BUYER
+	mainMock.ExpectExec("UPDATE otc_negotiations SET status='ACCEPTED'").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mainMock.ExpectCommit()
+	mainMock.ExpectExec("UPDATE otc_negotiations SET status='PENDING_BUYER'").
+		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	_, err := s.AcceptNegotiation(context.Background(), &pb.AcceptNegotiationRequest{
 		NegotiationId: 5, CallerId: 20, CallerType: "CLIENT",
@@ -529,201 +476,7 @@ func TestAcceptNegotiation_CrossBank_PartnerAcceptFails(t *testing.T) {
 	assert.Contains(t, err.Error(), "partner accept returned 403")
 }
 
-func TestAcceptNegotiation_CrossBank_InsufficientFunds(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNoContent) // partner accept OK
-	}))
-	defer srv.Close()
-	setupPartnerEnv(t, srv.URL)
-
-	s, mainMock, _, _, accMock, _, _ := newTestServer(t)
-
-	mainMock.ExpectBegin()
-	mainMock.ExpectQuery("SELECT seller_id, seller_type, buyer_id, buyer_type, status").
-		WillReturnRows(acceptNegRowCrossBank(20, "CLIENT", "PENDING_BUYER", 50.0)) // premium=50
-	mainMock.ExpectQuery("SELECT COALESCE.*seller_routing_number").
-		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id", "seller_external_id"}).
-			AddRow(int32(999), int64(42), "ext-seller-1"))
-	// BuyerAccountId=5 → no findAccount query; balance check: 10 < 50 → insufficient
-	accMock.ExpectQuery("SELECT available_balance").
-		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(float64(10.0)))
-	mainMock.ExpectRollback()
-
-	_, err := s.AcceptNegotiation(context.Background(), &pb.AcceptNegotiationRequest{
-		NegotiationId: 5, CallerId: 20, CallerType: "CLIENT", BuyerAccountId: 5,
-	})
-	assert.Equal(t, codes.InvalidArgument, status.Code(err))
-	assert.Contains(t, err.Error(), "Insufficient funds")
-}
-
-func TestAcceptNegotiation_CrossBank_2PCVoteNo(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		var env struct {
-			MessageType string `json:"messageType"`
-		}
-		_ = json.NewDecoder(r.Body).Decode(&env)
-		if env.MessageType == "NEW_TX" {
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]string{"vote": "NO"})
-		} else {
-			w.WriteHeader(http.StatusNoContent)
-		}
-	}))
-	defer srv.Close()
-	setupPartnerEnv(t, srv.URL)
-
-	s, mainMock, _, _, accMock, _, _ := newTestServer(t)
-
-	mainMock.ExpectBegin()
-	mainMock.ExpectQuery("SELECT seller_id, seller_type, buyer_id, buyer_type, status").
-		WillReturnRows(acceptNegRowCrossBank(20, "CLIENT", "PENDING_BUYER", 10.0))
-	mainMock.ExpectQuery("SELECT COALESCE.*seller_routing_number").
-		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id", "seller_external_id"}).
-			AddRow(int32(999), int64(42), "ext-seller-1"))
-	// BuyerAccountId=5 → no findAccount query
-	accMock.ExpectQuery("SELECT available_balance").
-		WillReturnRows(sqlmock.NewRows([]string{"available_balance"}).AddRow(float64(100.0)))
-	accMock.ExpectQuery("SELECT account_number").
-		WillReturnRows(sqlmock.NewRows([]string{"account_number"}).AddRow("ACC-020"))
-	accMock.ExpectExec("UPDATE accounts SET balance = balance -").
-		WillReturnResult(sqlmock.NewResult(1, 1))
-	// 2PC returns NO → compensation: refund buyer
-	accMock.ExpectExec("UPDATE accounts SET balance = balance \\+").
-		WillReturnResult(sqlmock.NewResult(1, 1))
-	mainMock.ExpectRollback()
-
-	_, err := s.AcceptNegotiation(context.Background(), &pb.AcceptNegotiationRequest{
-		NegotiationId: 5, CallerId: 20, CallerType: "CLIENT", BuyerAccountId: 5,
-	})
-	assert.Equal(t, codes.FailedPrecondition, status.Code(err))
-	assert.Contains(t, err.Error(), "partner rejected accept 2PC")
-}
-
-// ─── executeOtcAccept2PC ───────────────────────────────────────────────────
-
-func TestExecuteOtcAccept2PC_Happy(t *testing.T) {
-	srv := mock2PCServer(t, true) // partner votes YES
-	defer srv.Close()
-	setupPartnerEnv(t, srv.URL)
-
-	bank, err := otcInterbank.ResolveBankByRoutingNumber("999")
-	require.NoError(t, err)
-
-	vote, err := executeOtcAccept2PC(context.Background(), bank, otcOutgoing2PCReq{
-		sellerExtID:          "ext-seller-1",
-		partnerNegotiationID: 42,
-		stockAmount:          100,
-		buyerAccountNum:      "ACC-020",
-		totalCost:            10.0,
-		currency:             "RSD",
-	})
-	require.NoError(t, err)
-	assert.Equal(t, "YES", vote)
-}
-
-func TestExecuteOtcAccept2PC_VoteNo(t *testing.T) {
-	srv := mock2PCServer(t, false) // partner votes NO
-	defer srv.Close()
-	setupPartnerEnv(t, srv.URL)
-
-	bank, _ := otcInterbank.ResolveBankByRoutingNumber("999")
-	vote, err := executeOtcAccept2PC(context.Background(), bank, otcOutgoing2PCReq{
-		sellerExtID:          "ext-seller-1",
-		partnerNegotiationID: 42,
-		stockAmount:          100,
-		buyerAccountNum:      "ACC-020",
-		totalCost:            10.0,
-		currency:             "RSD",
-	})
-	require.NoError(t, err)
-	assert.Equal(t, "NO", vote)
-}
-
-func TestExecuteOtcAccept2PC_CommitFailsThenRollback(t *testing.T) {
-	var newTxCalled bool
-	rollbackCalled := false
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var env struct {
-			MessageType string `json:"messageType"`
-		}
-		_ = json.NewDecoder(r.Body).Decode(&env)
-		switch env.MessageType {
-		case "NEW_TX":
-			newTxCalled = true
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]string{"vote": "YES"})
-		case "COMMIT_TX":
-			w.WriteHeader(http.StatusInternalServerError) // commit fails
-		case "ROLLBACK_TX":
-			rollbackCalled = true
-			w.WriteHeader(http.StatusNoContent)
-		}
-	}))
-	defer srv.Close()
-	setupPartnerEnv(t, srv.URL)
-
-	bank, _ := otcInterbank.ResolveBankByRoutingNumber("999")
-	vote, err := executeOtcAccept2PC(context.Background(), bank, otcOutgoing2PCReq{
-		sellerExtID: "ext-1", partnerNegotiationID: 1,
-		stockAmount: 10, buyerAccountNum: "ACC-1", totalCost: 5.0, currency: "RSD",
-	})
-	assert.Equal(t, "NO", vote)
-	assert.Error(t, err)
-	assert.True(t, newTxCalled, "NEW_TX should have been called")
-	assert.True(t, rollbackCalled, "ROLLBACK_TX should have been called on commit failure")
-}
-
 // ─── executeOtcOutgoing2PC: OPTION amount sign check ──────────────────────
-
-// Verify that accept 2PC sends OPTION with positive amount (reserve)
-// while exercise 2PC sends OPTION with negative amount (consume).
-func TestOtcAccept2PC_OptionAmountIsPositive(t *testing.T) {
-	var capturedPostings []map[string]interface{}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var env struct {
-			MessageType string `json:"messageType"`
-			Message     struct {
-				Postings []map[string]interface{} `json:"postings"`
-			} `json:"message"`
-		}
-		_ = json.NewDecoder(r.Body).Decode(&env)
-		if env.MessageType == "NEW_TX" {
-			capturedPostings = env.Message.Postings
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]string{"vote": "YES"})
-		} else {
-			w.WriteHeader(http.StatusNoContent)
-		}
-	}))
-	defer srv.Close()
-	setupPartnerEnv(t, srv.URL)
-
-	bank, _ := otcInterbank.ResolveBankByRoutingNumber("999")
-	_, _ = executeOtcAccept2PC(context.Background(), bank, otcOutgoing2PCReq{
-		sellerExtID:          "ext-1",
-		partnerNegotiationID: 42,
-		stockAmount:          100,
-		buyerAccountNum:      "ACC-1",
-		totalCost:            10.0,
-		currency:             "RSD",
-	})
-
-	require.NotEmpty(t, capturedPostings, "postings should have been sent")
-	var optionPosting map[string]interface{}
-	for _, p := range capturedPostings {
-		if p["accountType"] == "OPTION" {
-			optionPosting = p
-			break
-		}
-	}
-	require.NotNil(t, optionPosting, "OPTION posting should exist")
-	amount, _ := optionPosting["amount"].(float64)
-	assert.Greater(t, amount, float64(0), "OPTION amount must be POSITIVE for accept (reserve)")
-}
 
 func TestOtcExercise2PC_OptionAmountIsNegative(t *testing.T) {
 	var capturedPostings []map[string]interface{}
@@ -750,23 +503,33 @@ func TestOtcExercise2PC_OptionAmountIsNegative(t *testing.T) {
 	_, _ = executeOtcOutgoing2PC(context.Background(), bank, otcOutgoing2PCReq{
 		sellerExtID:          "ext-1",
 		partnerNegotiationID: 42,
+		partnerRoutingNum:    999,
 		stockAmount:          100,
 		buyerAccountNum:      "ACC-1",
+		buyerExternalID:      "20",
 		totalCost:            150.0,
 		currency:             "RSD",
+		ticker:               "AAPL",
 	})
 
 	require.NotEmpty(t, capturedPostings)
-	var optionPosting map[string]interface{}
+	// Nested format: find the OPTION posting that transfers STOCK (negative amount = consume).
+	var foundNegativeOption bool
 	for _, p := range capturedPostings {
-		if p["accountType"] == "OPTION" {
-			optionPosting = p
+		acct, _ := p["account"].(map[string]interface{})
+		if acct == nil {
+			continue
+		}
+		if acct["type"] != "OPTION" {
+			continue
+		}
+		amount, _ := p["amount"].(float64)
+		if amount < 0 {
+			foundNegativeOption = true
 			break
 		}
 	}
-	require.NotNil(t, optionPosting)
-	amount, _ := optionPosting["amount"].(float64)
-	assert.Less(t, amount, float64(0), "OPTION amount must be NEGATIVE for exercise (consume)")
+	assert.True(t, foundNegativeOption, "exercise 2PC must contain an OPTION posting with negative amount (shares consumed)")
 }
 
 // ─── api-gateway: CreateNegotiation cross-bank fields ─────────────────────

@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"time"
 
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/otc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -24,7 +26,7 @@ func retryExec(db *sql.DB, query string, args ...interface{}) {
 	}
 }
 
-func (s *OtcServer) insertOtcInterbankTx(ctx context.Context, req *pb.OtcInterbankPrepareRequest, vote string) {
+func (s *OtcServer) insertOtcInterbankTx(ctx context.Context, req *pb.OtcInterbankPrepareRequest, negID int64, vote string) {
 	txType := "EXERCISE"
 	if req.IsAccept {
 		txType = "ACCEPT"
@@ -36,7 +38,7 @@ func (s *OtcServer) insertOtcInterbankTx(ctx context.Context, req *pb.OtcInterba
 		VALUES ($1, $2, $3, $4, $5, $6, $7, 'PENDING', $8)
 		ON CONFLICT (idem_routing_number, idem_key) DO NOTHING`,
 		req.IdemRoutingNumber, req.IdemKey, req.TxRoutingNumber, req.TxId,
-		req.NegotiationId, txType, req.StockAmount, vote,
+		negID, txType, req.StockAmount, vote,
 	)
 }
 
@@ -54,6 +56,7 @@ type OtcServer struct {
 	AccountDB    *sql.DB // account_db
 	PortfolioDB  *sql.DB // portfolio_db
 	SecuritiesDB *sql.DB // securities_db
+	ExchangeDB   *sql.DB // exchange_db (daily_exchange_rates)
 }
 
 func getUserName(employeeDB, clientDB *sql.DB, userID int64, userType string) string {
@@ -104,8 +107,79 @@ func findAccount(accountDB *sql.DB, ownerID int64, currencyID int64) (int64, err
 	return id, err
 }
 
+// currencyCodeMap is the inverse of currencyIDMap.
+var currencyCodeMap = map[int64]string{
+	1: "RSD", 2: "EUR", 3: "CHF", 4: "USD",
+	5: "GBP", 6: "JPY", 7: "CAD", 8: "AUD",
+}
+
+// getAccountCurrencyID returns the currency_id of a given account.
+func getAccountCurrencyID(accountDB *sql.DB, accountID int64) (int64, error) {
+	var cid int64
+	err := accountDB.QueryRow(`SELECT currency_id FROM accounts WHERE id = $1`, accountID).Scan(&cid)
+	return cid, err
+}
+
+// convertAmount converts amount from fromCurrencyID to toCurrencyID using today's middle rates.
+// Returns amount unchanged when currencies are equal.
+func convertAmount(exchangeDB *sql.DB, amount float64, fromCurrencyID, toCurrencyID int64) (float64, error) {
+	if fromCurrencyID == toCurrencyID {
+		return amount, nil
+	}
+	fromCode, toCode := currencyCodeMap[fromCurrencyID], currencyCodeMap[toCurrencyID]
+
+	getRate := func(code string) (float64, error) {
+		if code == "RSD" {
+			return 1.0, nil
+		}
+		var r float64
+		err := exchangeDB.QueryRow(
+			`SELECT middle_rate FROM daily_exchange_rates WHERE currency_code = $1 AND date = CURRENT_DATE`,
+			code,
+		).Scan(&r)
+		if err != nil {
+			return 0, fmt.Errorf("no exchange rate for %s: %v", code, err)
+		}
+		return r, nil
+	}
+
+	fromRate, err := getRate(fromCode)
+	if err != nil {
+		return 0, err
+	}
+	toRate, err := getRate(toCode)
+	if err != nil {
+		return 0, err
+	}
+	// fromRate and toRate are both in RSD per 1 unit of currency
+	return amount * fromRate / toRate, nil
+}
+
 func (s *OtcServer) Ping(_ context.Context, _ *pb.PingRequest) (*pb.PingResponse, error) {
 	return &pb.PingResponse{Message: "otc-service ok"}, nil
+}
+
+func (s *OtcServer) recordOtcTax(userID int64, userType string, taxableAmount float64, currencyCode string, month, year int) {
+	if userType == "EMPLOYEE" {
+		return
+	}
+	fromID, ok := currencyIDMap[currencyCode]
+	if !ok {
+		return
+	}
+	amountRSD, err := convertAmount(s.ExchangeDB, taxableAmount, fromID, 1)
+	if err != nil {
+		return
+	}
+	taxRSD := amountRSD * 0.15
+	if taxRSD == 0 {
+		return
+	}
+	tctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, _ = s.PortfolioDB.ExecContext(tctx,
+		`INSERT INTO tax_record (user_id, user_type, amount_rsd, month, year) VALUES ($1, $2, $3, $4, $5)`,
+		userID, userType, taxRSD, month, year)
 }
 
 func (s *OtcServer) CreateNegotiation(ctx context.Context, req *pb.CreateNegotiationRequest) (*pb.NegotiationResponse, error) {
@@ -378,6 +452,14 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 			return nil, status.Errorf(codes.Internal, "failed to find buyer account: %v", err)
 		}
 	}
+	buyerCurrencyID, err := getAccountCurrencyID(s.AccountDB, buyerAccountID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to read buyer account currency: %v", err)
+	}
+	premiumToPay, err := convertAmount(s.ExchangeDB, premium, currencyID, buyerCurrencyID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "currency conversion failed: %v", err)
+	}
 	var buyerBalance float64
 	err = s.AccountDB.QueryRowContext(ctx,
 		`SELECT available_balance FROM accounts WHERE id = $1`, buyerAccountID,
@@ -385,7 +467,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check buyer balance: %v", err)
 	}
-	if buyerBalance < premium {
+	if buyerBalance < premiumToPay {
 		return nil, status.Error(codes.InvalidArgument, "Insufficient funds for premium")
 	}
 
@@ -398,7 +480,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	// --- Deduct buyer premium (with retry compensation on failure) ---
 	if _, err = s.AccountDB.ExecContext(ctx,
 		`UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`,
-		premium, buyerAccountID,
+		premiumToPay, buyerAccountID,
 	); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to deduct premium from buyer: %v", err)
 	}
@@ -410,7 +492,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	); err != nil {
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
-			premium, buyerAccountID)
+			premiumToPay, buyerAccountID)
 		return nil, status.Errorf(codes.Internal, "failed to credit premium to seller: %v", err)
 	}
 
@@ -427,7 +509,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	).Scan(&contractID); err != nil {
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
-			premium, buyerAccountID)
+			premiumToPay, buyerAccountID)
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`,
 			premium, sellerAccountID)
@@ -443,7 +525,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	); err != nil {
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
-			premium, buyerAccountID)
+			premiumToPay, buyerAccountID)
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`,
 			premium, sellerAccountID)
@@ -453,7 +535,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	if err = tx.Commit(); err != nil {
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
-			premium, buyerAccountID)
+			premiumToPay, buyerAccountID)
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`,
 			premium, sellerAccountID)
@@ -461,6 +543,9 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	}
 
 	_ = contractID
+	if sellerType != "INTERBANK" {
+		s.recordOtcTax(sellerID, sellerType, premium, currency, int(now.Month()), now.Year())
+	}
 	return s.fetchNegotiationByID(ctx, req.NegotiationId)
 }
 
@@ -588,14 +673,14 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	var sellerID, buyerID int64
 	var sellerType, buyerType, contractStatus, ticker, currency string
 	var amount int32
-	var strikePrice float64
+	var strikePrice, premium float64
 	var settlementDate time.Time
 	err = tx.QueryRowContext(ctx, `
 		SELECT seller_id, seller_type, buyer_id, buyer_type, status,
-		       ticker, amount, strike_price, currency, settlement_date
+		       ticker, amount, strike_price, premium, currency, settlement_date
 		FROM otc_contracts WHERE id = $1 FOR UPDATE`, req.ContractId,
 	).Scan(&sellerID, &sellerType, &buyerID, &buyerType, &contractStatus,
-		&ticker, &amount, &strikePrice, &currency, &settlementDate)
+		&ticker, &amount, &strikePrice, &premium, &currency, &settlementDate)
 	if err == sql.ErrNoRows {
 		return nil, status.Error(codes.NotFound, "contract not found")
 	} else if err != nil {
@@ -612,10 +697,27 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 		return nil, status.Error(codes.InvalidArgument, "Contract settlement date has passed")
 	}
 
+	listingID, err := listingIDForTicker(s.SecuritiesDB, ticker)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "ticker not found: %v", err)
+	}
+
 	// Cross-bank exercise: seller is on partner bank — delegate to 2PC flow.
 	if sellerType == "INTERBANK" {
-		return s.exerciseCrossBank(ctx, req, tx, sellerID, buyerID, buyerType,
+		resp, rerr := s.exerciseCrossBank(ctx, req, tx, sellerID, buyerID, buyerType,
 			amount, strikePrice, currency, ticker, settlementDate)
+		if rerr == nil && buyerType != "EMPLOYEE" {
+			var mktPrice float64
+			if qErr := s.SecuritiesDB.QueryRowContext(ctx,
+				`SELECT price FROM listing WHERE id = $1`, listingID).Scan(&mktPrice); qErr == nil {
+				profit := (mktPrice-strikePrice)*float64(amount) - premium
+				if profit > 0 {
+					t := time.Now()
+					s.recordOtcTax(buyerID, buyerType, profit, currency, int(t.Month()), t.Year())
+				}
+			}
+		}
+		return resp, rerr
 	}
 
 	totalCost := strikePrice * float64(amount)
@@ -624,17 +726,20 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported currency: %s", currency)
 	}
 
-	listingID, err := listingIDForTicker(s.SecuritiesDB, ticker)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "ticker not found: %v", err)
-	}
-
 	buyerAccountID := req.BuyerAccountId
 	if buyerAccountID == 0 {
 		buyerAccountID, err = findAccount(s.AccountDB, portfolioUserID(buyerID, buyerType), currencyID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to find buyer account: %v", err)
 		}
+	}
+	buyerCurrencyID, err := getAccountCurrencyID(s.AccountDB, buyerAccountID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to read buyer account currency: %v", err)
+	}
+	totalCostToPay, err := convertAmount(s.ExchangeDB, totalCost, currencyID, buyerCurrencyID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "currency conversion failed: %v", err)
 	}
 
 	// sagaLog writes a saga step record. It uses a fresh 5-second background context so
@@ -652,18 +757,18 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	sellerPortfolioID := portfolioUserID(sellerID, sellerType)
 
 	// Step 1: Reserve buyer funds (deduct available_balance).
-	// Also checks balance >= totalCost to ensure consistency between the two balance fields.
+	// Also checks balance >= totalCostToPay to ensure consistency between the two balance fields.
 	result, err := s.AccountDB.ExecContext(ctx,
 		`UPDATE accounts SET available_balance = available_balance - $1
 		 WHERE id = $2 AND available_balance >= $1 AND balance >= $1`,
-		totalCost, buyerAccountID,
+		totalCostToPay, buyerAccountID,
 	)
 	if err != nil {
 		sagaLog(1, "FAILED", err.Error())
 		return nil, status.Errorf(codes.Internal, "step 1 failed: %v", err)
 	}
 	if rows, _ := result.RowsAffected(); rows == 0 {
-		sagaLog(1, "FAILED", fmt.Sprintf("insufficient funds: need %.2f", totalCost))
+		sagaLog(1, "FAILED", fmt.Sprintf("insufficient funds: need %.2f", totalCostToPay))
 		return nil, status.Error(codes.InvalidArgument, "Insufficient funds")
 	}
 	sagaLog(1, "SUCCESS", "")
@@ -671,7 +776,7 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	comp1 := func() {
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET available_balance = available_balance + $1 WHERE id = $2`,
-			totalCost, buyerAccountID)
+			totalCostToPay, buyerAccountID)
 		sagaLog(1, "COMPENSATED", "")
 	}
 
@@ -714,7 +819,7 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	}
 	if _, err = s.AccountDB.ExecContext(ctx,
 		`UPDATE accounts SET balance = balance - $1 WHERE id = $2`,
-		totalCost, buyerAccountID,
+		totalCostToPay, buyerAccountID,
 	); err != nil {
 		sagaLog(3, "FAILED", err.Error())
 		comp2()
@@ -725,7 +830,7 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 		`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
 		totalCost, sellerAccountID,
 	); err != nil {
-		retryExec(s.AccountDB, `UPDATE accounts SET balance = balance + $1 WHERE id = $2`, totalCost, buyerAccountID)
+		retryExec(s.AccountDB, `UPDATE accounts SET balance = balance + $1 WHERE id = $2`, totalCostToPay, buyerAccountID)
 		sagaLog(3, "FAILED", err.Error())
 		comp2()
 		comp1()
@@ -734,7 +839,7 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	sagaLog(3, "SUCCESS", "")
 
 	comp3 := func() {
-		retryExec(s.AccountDB, `UPDATE accounts SET balance = balance + $1 WHERE id = $2`, totalCost, buyerAccountID)
+		retryExec(s.AccountDB, `UPDATE accounts SET balance = balance + $1 WHERE id = $2`, totalCostToPay, buyerAccountID)
 		retryExec(s.AccountDB, `UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`, totalCost, sellerAccountID)
 		sagaLog(3, "COMPENSATED", "")
 	}
@@ -831,6 +936,17 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 		return nil, status.Errorf(codes.Internal, "step 5 commit failed: %v", err)
 	}
 	sagaLog(5, "SUCCESS", "")
+
+	if buyerType != "EMPLOYEE" {
+		var mktPrice float64
+		if qErr := s.SecuritiesDB.QueryRowContext(ctx,
+			`SELECT price FROM listing WHERE id = $1`, listingID).Scan(&mktPrice); qErr == nil {
+			profit := (mktPrice-strikePrice)*float64(amount) - premium
+			if profit > 0 {
+				s.recordOtcTax(buyerID, buyerType, profit, currency, int(now.Month()), now.Year())
+			}
+		}
+	}
 
 	return &pb.ExerciseContractResponse{
 		Status:     "EXERCISED",
@@ -986,10 +1102,24 @@ func (s *OtcServer) fetchInterbankNegotiationByID(ctx context.Context, id int64)
 	return &r, nil
 }
 
-// lookupInterbankNegotiation returns the local id of a cross-bank negotiation by its creator key.
+// lookupInterbankNegotiation resolves a cross-bank negotiation by path params.
+// Protocol path: {sellerRn}/{sellerLocalId} — sellerRn is our routing, sellerLocalId is our DB id.
+// Falls back to creator-key lookup for backward compatibility.
 func (s *OtcServer) lookupInterbankNegotiation(ctx context.Context, routingNumber int32, externalID string) (int64, string, error) {
 	var localID int64
 	var currentStatus string
+
+	// Primary: {sellerRn}/{ourLocalId} — look up by local primary-key id.
+	if localIDInt, parseErr := strconv.ParseInt(externalID, 10, 64); parseErr == nil {
+		err := s.DB.QueryRowContext(ctx,
+			`SELECT id, status FROM otc_negotiations WHERE id = $1`, localIDInt,
+		).Scan(&localID, &currentStatus)
+		if err == nil {
+			return localID, currentStatus, nil
+		}
+	}
+
+	// Fallback: {creatorRn}/{creatorExtId} — backward compat for callers that pass buyer routing/id.
 	err := s.DB.QueryRowContext(ctx, `
 		SELECT id, status FROM otc_negotiations
 		WHERE creator_routing_number = $1 AND creator_external_id = $2`,
@@ -1025,6 +1155,14 @@ func (s *OtcServer) CreateInterbankNegotiation(ctx context.Context, req *pb.Crea
 		return nil, status.Errorf(codes.InvalidArgument, "seller_external_id must be a numeric local user ID")
 	}
 
+	// Read buyer account number from gRPC metadata (forwarded by api-gateway from Banka 4's request body).
+	var buyerAccountNum string
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		if v := md.Get("buyer-account-number"); len(v) > 0 {
+			buyerAccountNum = v[0]
+		}
+	}
+
 	// Idempotency: return existing row if this creator key already exists
 	if existingID, _, err := s.lookupInterbankNegotiation(ctx, req.CreatorRoutingNumber, req.CreatorExternalId); err == nil {
 		return s.fetchInterbankNegotiationByID(ctx, existingID)
@@ -1039,9 +1177,10 @@ func (s *OtcServer) CreateInterbankNegotiation(ctx context.Context, req *pb.Crea
 			 last_modified, modified_by_id, modified_by_type, status,
 			 buyer_routing_number, buyer_external_id,
 			 seller_routing_number, seller_external_id,
-			 creator_routing_number, creator_external_id)
+			 creator_routing_number, creator_external_id,
+			 buyer_account_number)
 		VALUES ($1, $2, $3, 0, 'INTERBANK', $4, $5, $6, $7, $8, $9, 0, 'INTERBANK', 'PENDING_SELLER',
-		        $10, $11, $12, $13, $14, $15)
+		        $10, $11, $12, $13, $14, $15, $16)
 		RETURNING id`,
 		req.Ticker, sellerID, sellerType,
 		req.Amount, req.PricePerUnit, req.SettlementDate, req.Premium, req.PriceCurrency,
@@ -1049,6 +1188,7 @@ func (s *OtcServer) CreateInterbankNegotiation(ctx context.Context, req *pb.Crea
 		req.BuyerRoutingNumber, req.BuyerExternalId,
 		req.SellerRoutingNumber, req.SellerExternalId,
 		req.CreatorRoutingNumber, req.CreatorExternalId,
+		buyerAccountNum,
 	).Scan(&id)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create interbank negotiation: %v", err)
@@ -1126,12 +1266,17 @@ func (s *OtcServer) InterbankAcceptNegotiation(ctx context.Context, req *pb.Inte
 	var premium, strikePrice float64
 	var sellerID int64
 	var sellerType string
+	// Protocol path: {sellerRn}/{sellerLocalId} — look up by local id first.
+	localIDInt, parseErr := strconv.ParseInt(req.ExternalId, 10, 64)
+	if parseErr != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid negotiation id")
+	}
 	err = tx.QueryRowContext(ctx, `
 		SELECT id, status, ticker, currency, settlement_date::text, amount, premium, price_per_stock,
 		       seller_id, seller_type
 		FROM otc_negotiations
-		WHERE creator_routing_number = $1 AND creator_external_id = $2 FOR UPDATE`,
-		req.RoutingNumber, req.ExternalId,
+		WHERE id = $1 FOR UPDATE`,
+		localIDInt,
 	).Scan(&localID, &currentStatus, &ticker, &currency, &settlementDate, &amount, &premium, &strikePrice,
 		&sellerID, &sellerType)
 	if err == sql.ErrNoRows {
@@ -1162,6 +1307,12 @@ func (s *OtcServer) InterbankAcceptNegotiation(ctx context.Context, req *pb.Inte
 
 	if err = tx.Commit(); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to commit: %v", err)
+	}
+
+	if twopcErr := s.executeInterbankAcceptOutgoing(ctx, localID); twopcErr != nil {
+		_, _ = s.DB.ExecContext(context.Background(),
+			`UPDATE otc_negotiations SET status='PENDING_BUYER' WHERE id = $1`, localID)
+		return nil, status.Errorf(codes.Unavailable, "accept 2PC failed: %v", twopcErr)
 	}
 	return &pb.OtcEmptyResponse{}, nil
 }
@@ -1220,7 +1371,49 @@ func (s *OtcServer) PrepareOtcInterbank(ctx context.Context, req *pb.OtcInterban
 		return nil, status.Errorf(codes.Internal, "idempotency check failed: %v", err)
 	}
 
-	// Load negotiation.
+	// BUYER-SIDE accept: Banka 4 is seller; req.NegotiationId is their local ID, not ours.
+	// Must be handled before the general negotiation load (which uses our local IDs).
+	if req.IsAccept {
+		partnerRouting := os.Getenv("PARTNER_ROUTING_NUMBER")
+		if req.IdemRoutingNumber == partnerRouting {
+			partnerRoutingInt, _ := strconv.ParseInt(partnerRouting, 10, 64)
+			var localNegID int64
+			if lookupErr := s.DB.QueryRowContext(ctx,
+				`SELECT id FROM otc_negotiations WHERE partner_negotiation_id = $1 AND seller_routing_number = $2`,
+				req.NegotiationId, partnerRoutingInt,
+			).Scan(&localNegID); lookupErr == sql.ErrNoRows {
+				s.insertOtcInterbankTx(ctx, req, req.NegotiationId, "NO")
+				return &pb.OtcInterbankVoteResponse{Vote: "NO", Reason: "OPTION_NEGOTIATION_NOT_FOUND"}, nil
+			} else if lookupErr != nil {
+				return nil, status.Errorf(codes.Internal, "lookup failed: %v", lookupErr)
+			}
+
+			var buyerAcctNum, buyerNegStatus string
+			var prem float64
+			if err = s.DB.QueryRowContext(ctx,
+				`SELECT buyer_account_number, premium, status FROM otc_negotiations WHERE id = $1`,
+				localNegID,
+			).Scan(&buyerAcctNum, &prem, &buyerNegStatus); err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to load negotiation: %v", err)
+			}
+			if buyerNegStatus != "ACCEPTED" {
+				s.insertOtcInterbankTx(ctx, req, localNegID, "NO")
+				return &pb.OtcInterbankVoteResponse{Vote: "NO", Reason: "OPTION_USED_OR_EXPIRED"}, nil
+			}
+			var availBal float64
+			_ = s.AccountDB.QueryRowContext(ctx,
+				`SELECT available_balance FROM accounts WHERE account_number = $1`, buyerAcctNum,
+			).Scan(&availBal)
+			if availBal < prem {
+				s.insertOtcInterbankTx(ctx, req, localNegID, "NO")
+				return &pb.OtcInterbankVoteResponse{Vote: "NO", Reason: "INSUFFICIENT_FUNDS"}, nil
+			}
+			s.insertOtcInterbankTx(ctx, req, localNegID, "YES")
+			return &pb.OtcInterbankVoteResponse{Vote: "YES"}, nil
+		}
+	}
+
+	// Load negotiation (by our local ID; applies to seller-side accept and all exercise requests).
 	var negStatus, ticker, sellerType string
 	var sellerID int64
 	var negAmount int32
@@ -1229,7 +1422,7 @@ func (s *OtcServer) PrepareOtcInterbank(ctx context.Context, req *pb.OtcInterban
 		 FROM otc_negotiations WHERE id = $1`, req.NegotiationId,
 	).Scan(&negStatus, &ticker, &sellerID, &sellerType, &negAmount)
 	if err == sql.ErrNoRows {
-		s.insertOtcInterbankTx(ctx, req, "NO")
+		s.insertOtcInterbankTx(ctx, req, req.NegotiationId, "NO")
 		return &pb.OtcInterbankVoteResponse{Vote: "NO", Reason: "OPTION_NEGOTIATION_NOT_FOUND"}, nil
 	}
 	if err != nil {
@@ -1237,8 +1430,9 @@ func (s *OtcServer) PrepareOtcInterbank(ctx context.Context, req *pb.OtcInterban
 	}
 
 	if req.IsAccept {
+		// SELLER-SIDE accept: partner bank is buyer, req.NegotiationId is our local ID.
 		if negStatus != "ACCEPTED" {
-			s.insertOtcInterbankTx(ctx, req, "NO")
+			s.insertOtcInterbankTx(ctx, req, req.NegotiationId, "NO")
 			return &pb.OtcInterbankVoteResponse{Vote: "NO", Reason: "OPTION_USED_OR_EXPIRED"}, nil
 		}
 		var contractExists bool
@@ -1247,11 +1441,11 @@ func (s *OtcServer) PrepareOtcInterbank(ctx context.Context, req *pb.OtcInterban
 			req.NegotiationId,
 		).Scan(&contractExists)
 		if contractExists {
-			s.insertOtcInterbankTx(ctx, req, "NO")
+			s.insertOtcInterbankTx(ctx, req, req.NegotiationId, "NO")
 			return &pb.OtcInterbankVoteResponse{Vote: "NO", Reason: "OPTION_USED_OR_EXPIRED"}, nil
 		}
 		if req.StockAmount != negAmount {
-			s.insertOtcInterbankTx(ctx, req, "NO")
+			s.insertOtcInterbankTx(ctx, req, req.NegotiationId, "NO")
 			return &pb.OtcInterbankVoteResponse{Vote: "NO", Reason: "OPTION_AMOUNT_INCORRECT"}, nil
 		}
 		listingID, err := listingIDForTicker(s.SecuritiesDB, ticker)
@@ -1265,7 +1459,7 @@ func (s *OtcServer) PrepareOtcInterbank(ctx context.Context, req *pb.OtcInterban
 			portfolioUserID(sellerID, sellerType), sellerType, listingID,
 		).Scan(&freeShares)
 		if freeShares < int64(req.StockAmount) {
-			s.insertOtcInterbankTx(ctx, req, "NO")
+			s.insertOtcInterbankTx(ctx, req, req.NegotiationId, "NO")
 			return &pb.OtcInterbankVoteResponse{Vote: "NO", Reason: "OPTION_AMOUNT_INCORRECT"}, nil
 		}
 	} else {
@@ -1279,24 +1473,24 @@ func (s *OtcServer) PrepareOtcInterbank(ctx context.Context, req *pb.OtcInterban
 			req.NegotiationId,
 		).Scan(&contractStatus, &contractAmount, &settlementDate)
 		if err == sql.ErrNoRows {
-			s.insertOtcInterbankTx(ctx, req, "NO")
+			s.insertOtcInterbankTx(ctx, req, req.NegotiationId, "NO")
 			return &pb.OtcInterbankVoteResponse{Vote: "NO", Reason: "OPTION_NEGOTIATION_NOT_FOUND"}, nil
 		}
 		if contractStatus != "ACTIVE" {
-			s.insertOtcInterbankTx(ctx, req, "NO")
+			s.insertOtcInterbankTx(ctx, req, req.NegotiationId, "NO")
 			return &pb.OtcInterbankVoteResponse{Vote: "NO", Reason: "OPTION_USED_OR_EXPIRED"}, nil
 		}
 		if time.Now().After(settlementDate.Add(24 * time.Hour)) {
-			s.insertOtcInterbankTx(ctx, req, "NO")
+			s.insertOtcInterbankTx(ctx, req, req.NegotiationId, "NO")
 			return &pb.OtcInterbankVoteResponse{Vote: "NO", Reason: "OPTION_USED_OR_EXPIRED"}, nil
 		}
 		if contractAmount != req.StockAmount {
-			s.insertOtcInterbankTx(ctx, req, "NO")
+			s.insertOtcInterbankTx(ctx, req, req.NegotiationId, "NO")
 			return &pb.OtcInterbankVoteResponse{Vote: "NO", Reason: "OPTION_AMOUNT_INCORRECT"}, nil
 		}
 	}
 
-	s.insertOtcInterbankTx(ctx, req, "YES")
+	s.insertOtcInterbankTx(ctx, req, req.NegotiationId, "YES")
 	return &pb.OtcInterbankVoteResponse{Vote: "YES"}, nil
 }
 
@@ -1338,6 +1532,36 @@ func (s *OtcServer) CommitOtcInterbank(ctx context.Context, req *pb.OtcInterbank
 			return nil, status.Errorf(codes.Internal, "failed to load negotiation: %v", err)
 		}
 
+		if sellerType == "INTERBANK" {
+			// BUYER-SIDE accept: we are the buyer, Banka 4 is seller.
+			var buyerAcctNum string
+			var buyerID int64
+			var buyerType string
+			if err = s.DB.QueryRowContext(ctx,
+				`SELECT buyer_account_number, buyer_id, buyer_type FROM otc_negotiations WHERE id = $1`,
+				negotiationID,
+			).Scan(&buyerAcctNum, &buyerID, &buyerType); err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to load buyer info: %v", err)
+			}
+			// Debit buyer's account for premium.
+			_, _ = s.AccountDB.ExecContext(ctx,
+				`UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1
+				 WHERE account_number = $2 AND available_balance >= $1`,
+				premium, buyerAcctNum)
+			// Create buyer-side contract (seller is INTERBANK).
+			_, _ = s.DB.ExecContext(ctx, `
+				INSERT INTO otc_contracts
+					(negotiation_id, seller_id, seller_type, buyer_id, buyer_type,
+					 ticker, amount, strike_price, premium, currency, settlement_date)
+				VALUES ($1, 0, 'INTERBANK', $2, $3, $4, $5, $6, $7, $8, $9)
+				ON CONFLICT (negotiation_id) DO NOTHING`,
+				negotiationID, buyerID, buyerType,
+				ticker, amount, strikePrice, premium, currency, settlementDate)
+			_, _ = s.DB.ExecContext(ctx, `UPDATE otc_interbank_tx SET status='COMMITTED' WHERE id = $1`, id)
+			return &pb.OtcEmptyResponse{}, nil
+		}
+
+		// SELLER-SIDE accept: we are the seller, partner bank is buyer.
 		listingID, err := listingIDForTicker(s.SecuritiesDB, ticker)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "ticker not found: %v", err)
@@ -1371,12 +1595,13 @@ func (s *OtcServer) CommitOtcInterbank(ctx context.Context, req *pb.OtcInterbank
 		}
 	} else { // EXERCISE
 		var sellerID int64
-		var sellerType, ticker string
+		var sellerType, ticker, currency string
 		var amount int32
+		var strikePrice float64
 		err = s.DB.QueryRowContext(ctx,
-			`SELECT seller_id, seller_type, ticker, amount FROM otc_contracts WHERE negotiation_id = $1`,
+			`SELECT seller_id, seller_type, ticker, amount, currency, strike_price FROM otc_contracts WHERE negotiation_id = $1`,
 			negotiationID,
-		).Scan(&sellerID, &sellerType, &ticker, &amount)
+		).Scan(&sellerID, &sellerType, &ticker, &amount, &currency, &strikePrice)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to load contract: %v", err)
 		}
@@ -1402,6 +1627,16 @@ func (s *OtcServer) CommitOtcInterbank(ctx context.Context, req *pb.OtcInterbank
 			portfolioUserID(sellerID, sellerType), sellerType, listingID,
 		)
 
+		// Credit seller's account with strike payment (buyer's bank sent us the exercise 2PC).
+		strikePayment := float64(stockAmount) * strikePrice
+		if currID, ok := currencyIDMap[currency]; ok && strikePayment > 0 {
+			if sellerAcctID, findErr := findAccount(s.AccountDB, portfolioUserID(sellerID, sellerType), currID); findErr == nil {
+				_, _ = s.AccountDB.ExecContext(ctx,
+					`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
+					strikePayment, sellerAcctID)
+			}
+		}
+
 		if _, err = s.DB.ExecContext(ctx,
 			`UPDATE otc_contracts SET status='EXERCISED' WHERE negotiation_id = $1`, negotiationID,
 		); err != nil {
@@ -1420,4 +1655,28 @@ func (s *OtcServer) RollbackOtcInterbank(ctx context.Context, req *pb.OtcInterba
 		req.TxRoutingNumber, req.TxId,
 	)
 	return &pb.OtcEmptyResponse{}, nil
+}
+
+// ExpireContracts atomically transitions ACTIVE contracts past their settlement window to EXPIRED,
+// then records a loss-credit tax entry for each buyer whose premium is now forfeit.
+func (s *OtcServer) ExpireContracts() {
+	rows, err := s.DB.Query(`
+		UPDATE otc_contracts SET status='EXPIRED'
+		WHERE status='ACTIVE' AND settlement_date + INTERVAL '1 day' < NOW()
+		RETURNING id, buyer_id, buyer_type, premium, currency`)
+	if err != nil {
+		log.Printf("contract expiration error: %v", err)
+		return
+	}
+	defer func() { _ = rows.Close() }()
+	now := time.Now()
+	for rows.Next() {
+		var id, buyerID int64
+		var buyerType, currency string
+		var prem float64
+		if err := rows.Scan(&id, &buyerID, &buyerType, &prem, &currency); err != nil {
+			continue
+		}
+		s.recordOtcTax(buyerID, buyerType, -prem, currency, int(now.Month()), now.Year())
+	}
 }

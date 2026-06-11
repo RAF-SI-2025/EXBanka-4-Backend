@@ -13,6 +13,7 @@ import (
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/otc"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -44,13 +45,15 @@ type otcNegotiationBody struct {
 	Stock struct {
 		Ticker string `json:"ticker"`
 	} `json:"stock"`
-	SettlementDate string         `json:"settlementDate"`
-	PricePerUnit   otcMoneyAmount `json:"pricePerUnit"`
-	Premium        otcMoneyAmount `json:"premium"`
-	BuyerID        otcPartyID     `json:"buyerId"`
-	SellerID       otcPartyID     `json:"sellerId"`
-	Amount         int32          `json:"amount"`
-	SellerType     string         `json:"sellerType"`
+	SettlementDate     string         `json:"settlementDate"`
+	PricePerUnit       otcMoneyAmount `json:"pricePerUnit"`
+	Premium            otcMoneyAmount `json:"premium"`
+	BuyerID            otcPartyID     `json:"buyerId"`
+	SellerID           otcPartyID     `json:"sellerId"`
+	Amount             int32          `json:"amount"`
+	SellerType         string         `json:"sellerType"`
+	BuyerAccountNumber string         `json:"buyerAccountNumber"` // required by Banka 4
+	LastModifiedBy     *otcPartyID    `json:"lastModifiedBy"`     // turn-tracking
 }
 
 type otcNegotiationResponse struct {
@@ -110,6 +113,10 @@ func IncomingCreateNegotiation(otcClient pb.OtcServiceClient) gin.HandlerFunc {
 
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 		defer cancel()
+
+		// Forward buyer account number to otc-service via gRPC metadata (no proto change needed).
+		md := metadata.Pairs("buyer-account-number", body.BuyerAccountNumber)
+		ctx = metadata.NewOutgoingContext(ctx, md)
 
 		resp, err := otcClient.CreateInterbankNegotiation(ctx, &pb.CreateInterbankNegotiationRequest{
 			Ticker:               body.Stock.Ticker,
@@ -337,7 +344,7 @@ func sendOtcRequest(method, url, apiKey string, body any) (*http.Response, error
 	return client.Do(req)
 }
 
-// ForwardNegotiationToPartner calls POST <PARTNER_BANK_URL>/otc/interbank/negotiations.
+// ForwardNegotiationToPartner calls POST <PARTNER_BANK_URL>/negotiations.
 // Returns the partner's (routingNumber, id) tuple, or an error.
 func ForwardNegotiationToPartner(body otcNegotiationBody, partnerRoutingNumber string) (int32, string, error) {
 	bank, err := gwinterbank.ResolveBankByRoutingNumber(partnerRoutingNumber)
@@ -345,7 +352,7 @@ func ForwardNegotiationToPartner(body otcNegotiationBody, partnerRoutingNumber s
 		return 0, "", fmt.Errorf("cannot resolve partner bank: %w", err)
 	}
 
-	resp, err := sendOtcRequest(http.MethodPost, bank.BankURL+"/otc/interbank/negotiations", bank.APIKey, body)
+	resp, err := sendOtcRequest(http.MethodPost, bank.BankURL+"/negotiations", bank.APIKey, body)
 	if err != nil {
 		return 0, "", fmt.Errorf("partner request failed: %w", err)
 	}
