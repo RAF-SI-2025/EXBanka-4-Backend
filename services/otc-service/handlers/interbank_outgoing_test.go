@@ -50,32 +50,6 @@ func mockPartnerForwardServer(t *testing.T) *httptest.Server {
 	}))
 }
 
-// mock2PCServer returns an HTTP server handling NEW_TX (vote YES) and COMMIT_TX (204).
-func mock2PCServer(t *testing.T, voteYes bool) *httptest.Server {
-	t.Helper()
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var env struct {
-			MessageType string `json:"messageType"`
-		}
-		_ = json.NewDecoder(r.Body).Decode(&env)
-		switch env.MessageType {
-		case "NEW_TX":
-			vote := "YES"
-			if !voteYes {
-				vote = "NO"
-			}
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]string{"vote": vote})
-		case "COMMIT_TX":
-			w.WriteHeader(http.StatusNoContent)
-		case "ROLLBACK_TX":
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			w.WriteHeader(http.StatusBadRequest)
-		}
-	}))
-}
-
 // addFetchNegotiationRowsCrossBank sets up mock rows for fetchNegotiationByID
 // where seller_type = "INTERBANK" and seller_id = 0 (no seller name lookup).
 func addFetchNegotiationRowsCrossBank(mainMock, clientMock sqlmock.Sqlmock, id, buyerID int64, buyerType string) {
