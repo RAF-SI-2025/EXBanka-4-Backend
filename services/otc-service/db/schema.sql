@@ -77,3 +77,4 @@ CREATE TABLE IF NOT EXISTS otc_interbank_tx (
     UNIQUE(idem_routing_number, idem_key)
 );
 ALTER TABLE otc_interbank_tx ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT NOW();
+ALTER TABLE otc_negotiations ADD COLUMN IF NOT EXISTS buyer_account_number VARCHAR(50);
