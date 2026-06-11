@@ -81,7 +81,7 @@ type otcIbVoteResponse struct {
 type otcOutgoing2PCReq struct {
 	sellerExtID          string
 	partnerNegotiationID int64
-	partnerRoutingNum    int    // seller's bank routing number
+	partnerRoutingNum    int // seller's bank routing number
 	stockAmount          int32
 	buyerAccountNum      string
 	buyerExternalID      string // buyer's local ID as string
