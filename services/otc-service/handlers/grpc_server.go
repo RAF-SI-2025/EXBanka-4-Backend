@@ -26,6 +26,57 @@ func retryExec(db *sql.DB, query string, args ...interface{}) {
 	}
 }
 
+// sagaFaultHook checks X-Saga-* gRPC metadata and injects failures or delays.
+// Only active when OTC_SAGA_TEST_HOOKS=true. Returns non-nil error if the phase should fail.
+// compensateFailCounts tracks how many times each compensator has failed (for -Times: N).
+func sagaFaultHook(ctx context.Context, phase string, compensateFailCounts map[string]int) error {
+	if os.Getenv("OTC_SAGA_TEST_HOOKS") != "true" {
+		return nil
+	}
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil
+	}
+
+	// X-Saga-Inject-Delay: Fi:Nms
+	if vals := md.Get("x-saga-inject-delay"); len(vals) > 0 {
+		// format: "F3:5000"
+		var delayPhase string
+		var delayMs int
+		if n, _ := fmt.Sscanf(vals[0], "%5s:%d", &delayPhase, &delayMs); n == 2 && delayPhase == phase {
+			time.Sleep(time.Duration(delayMs) * time.Millisecond)
+		}
+	}
+
+	// X-Saga-Force-Fail: Fi  (fail kind defaults to "before", meaning fail without side effects)
+	if vals := md.Get("x-saga-force-fail"); len(vals) > 0 && vals[0] == phase {
+		kind := "before"
+		if kv := md.Get("x-saga-force-fail-kind"); len(kv) > 0 {
+			kind = kv[0]
+		}
+		// "before" = caller checks this before executing the step → return error immediately
+		// "after"  = caller checks this after executing the step → side effects already applied
+		_ = kind
+		return fmt.Errorf("fault injected for phase %s", phase)
+	}
+
+	// X-Saga-Compensate-Fail: Ci  +  X-Saga-Compensate-Fail-Times: N
+	if vals := md.Get("x-saga-compensate-fail"); len(vals) > 0 && vals[0] == phase {
+		maxFails := 1
+		if tv := md.Get("x-saga-compensate-fail-times"); len(tv) > 0 {
+			if n, err := strconv.Atoi(tv[0]); err == nil {
+				maxFails = n
+			}
+		}
+		if compensateFailCounts[phase] < maxFails {
+			compensateFailCounts[phase]++
+			return fmt.Errorf("compensate fault injected for %s (attempt %d)", phase, compensateFailCounts[phase])
+		}
+	}
+
+	return nil
+}
+
 func (s *OtcServer) insertOtcInterbankTx(ctx context.Context, req *pb.OtcInterbankPrepareRequest, negID int64, vote string) {
 	txType := "EXERCISE"
 	if req.IsAccept {
@@ -650,16 +701,17 @@ func (s *OtcServer) calcContractProfit(ticker string, strikePrice float64, amoun
 }
 
 func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContractRequest) (*pb.ExerciseContractResponse, error) {
-	// Idempotency: if this contract was already successfully exercised, return immediately.
-	var lastStep int
-	var lastStepStatus string
+	// Idempotency: if saga for this contract already completed, return immediately.
+	var existingSagaID int64
+	var existingSagaStatus string
 	if idErr := s.DB.QueryRowContext(ctx,
-		`SELECT step, status FROM otc_saga_log WHERE contract_id=$1 ORDER BY step DESC, id DESC LIMIT 1`,
+		`SELECT id, status FROM otc_saga WHERE contract_id=$1`,
 		req.ContractId,
-	).Scan(&lastStep, &lastStepStatus); idErr == nil && lastStep == 5 && lastStepStatus == "SUCCESS" {
+	).Scan(&existingSagaID, &existingSagaStatus); idErr == nil && existingSagaStatus == "Completed" {
 		return &pb.ExerciseContractResponse{
 			Status:     "EXERCISED",
 			ExecutedAt: time.Now().Format(time.RFC3339),
+			SagaId:     existingSagaID,
 		}, nil
 	}
 
@@ -703,6 +755,7 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	}
 
 	// Cross-bank exercise: seller is on partner bank — delegate to 2PC flow.
+	// (otc_saga row is NOT created for cross-bank; 2PC has its own tracking)
 	if sellerType == "INTERBANK" {
 		resp, rerr := s.exerciseCrossBank(ctx, req, tx, sellerID, buyerID, buyerType,
 			amount, strikePrice, currency, ticker, settlementDate)
@@ -742,9 +795,16 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 		return nil, status.Errorf(codes.Internal, "currency conversion failed: %v", err)
 	}
 
-	// sagaLog writes a saga step record. It uses a fresh 5-second background context so
-	// it never blocks the calling goroutine (and therefore never prevents defer tx.Rollback()
-	// from running) even when the request context has already been cancelled.
+	// INSERT global saga tracker row (Running, step=0).
+	// sagaID stays 0 on failure (e.g. mock error in tests) — sagaStatus becomes a no-op.
+	var sagaID int64
+	_ = s.DB.QueryRowContext(ctx,
+		`INSERT INTO otc_saga (contract_id, status, current_step) VALUES ($1, 'Running', 0) RETURNING id`,
+		req.ContractId,
+	).Scan(&sagaID)
+
+	// sagaLog writes a per-step record. Uses a fresh background context so it survives
+	// a cancelled request context (e.g. during compensation after client disconnect).
 	sagaLog := func(step int, stepStatus, errMsg string) {
 		logCtx, logCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer logCancel()
@@ -754,10 +814,31 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 		)
 	}
 
+	// sagaStatus updates the global saga tracker. No-op if sagaID is 0 (e.g. in unit tests).
+	sagaStatus := func(newStatus string, step int) {
+		if sagaID == 0 {
+			return
+		}
+		logCtx, logCancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer logCancel()
+		_, _ = s.DB.ExecContext(logCtx,
+			`UPDATE otc_saga SET status=$1, current_step=$2, updated_at=NOW() WHERE id=$3`,
+			newStatus, step, sagaID,
+		)
+	}
+
+	// compensateFailCounts tracks X-Saga-Compensate-Fail-Times retries per compensator.
+	compensateFailCounts := make(map[string]int)
+
 	sellerPortfolioID := portfolioUserID(sellerID, sellerType)
 
-	// Step 1: Reserve buyer funds (deduct available_balance).
-	// Also checks balance >= totalCostToPay to ensure consistency between the two balance fields.
+	// ── Step 1: Reserve buyer funds ──────────────────────────────────────────────
+	if hookErr := sagaFaultHook(ctx, "F1", compensateFailCounts); hookErr != nil {
+		sagaLog(1, "FAILED", hookErr.Error())
+		sagaStatus("Compensating", 1)
+		sagaStatus("Compensated", 1)
+		return nil, status.Errorf(codes.Internal, "F1 fault injected: %v", hookErr)
+	}
 	result, err := s.AccountDB.ExecContext(ctx,
 		`UPDATE accounts SET available_balance = available_balance - $1
 		 WHERE id = $2 AND available_balance >= $1 AND balance >= $1`,
@@ -765,23 +846,42 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	)
 	if err != nil {
 		sagaLog(1, "FAILED", err.Error())
+		sagaStatus("Compensating", 1)
+		sagaStatus("Compensated", 1)
 		return nil, status.Errorf(codes.Internal, "step 1 failed: %v", err)
 	}
 	if rows, _ := result.RowsAffected(); rows == 0 {
 		sagaLog(1, "FAILED", fmt.Sprintf("insufficient funds: need %.2f", totalCostToPay))
+		sagaStatus("Compensating", 1)
+		sagaStatus("Compensated", 1)
 		return nil, status.Error(codes.InvalidArgument, "Insufficient funds")
 	}
 	sagaLog(1, "SUCCESS", "")
+	sagaStatus("Running", 1)
 
 	comp1 := func() {
-		retryExec(s.AccountDB,
-			`UPDATE accounts SET available_balance = available_balance + $1 WHERE id = $2`,
-			totalCostToPay, buyerAccountID)
-		sagaLog(1, "COMPENSATED", "")
+		for {
+			if hookErr := sagaFaultHook(ctx, "C1", compensateFailCounts); hookErr != nil {
+				sagaLog(1, "COMP_FAILED", hookErr.Error())
+				time.Sleep(200 * time.Millisecond)
+				continue
+			}
+			retryExec(s.AccountDB,
+				`UPDATE accounts SET available_balance = available_balance + $1 WHERE id = $2`,
+				totalCostToPay, buyerAccountID)
+			sagaLog(1, "COMPENSATED", "")
+			break
+		}
 	}
 
-	// Step 2: Reserve seller securities (actual write, not just read).
-	// Uses UPDATE with a conditional WHERE to atomically check-and-reserve free shares.
+	// ── Step 2: Reserve seller securities ────────────────────────────────────────
+	if hookErr := sagaFaultHook(ctx, "F2", compensateFailCounts); hookErr != nil {
+		sagaLog(2, "FAILED", hookErr.Error())
+		sagaStatus("Compensating", 2)
+		comp1()
+		sagaStatus("Compensated", 2)
+		return nil, status.Errorf(codes.Internal, "F2 fault injected: %v", hookErr)
+	}
 	result2, err := s.PortfolioDB.ExecContext(ctx, `
 		UPDATE portfolio_entry
 		SET reserved_amount = reserved_amount + $1
@@ -791,39 +891,64 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	)
 	if err != nil {
 		sagaLog(2, "FAILED", err.Error())
+		sagaStatus("Compensating", 2)
 		comp1()
+		sagaStatus("Compensated", 2)
 		return nil, status.Errorf(codes.Internal, "step 2 failed: %v", err)
 	}
 	if rows, _ := result2.RowsAffected(); rows == 0 {
 		sagaLog(2, "FAILED", "seller insufficient free holdings")
+		sagaStatus("Compensating", 2)
 		comp1()
+		sagaStatus("Compensated", 2)
 		return nil, status.Error(codes.InvalidArgument, "Seller does not have enough free shares")
 	}
 	sagaLog(2, "SUCCESS", "")
+	sagaStatus("Running", 2)
 
 	comp2 := func() {
-		retryExec(s.PortfolioDB,
-			`UPDATE portfolio_entry SET reserved_amount = GREATEST(0, reserved_amount - $1)
-			 WHERE user_id = $2 AND user_type = $3 AND listing_id = $4`,
-			amount, sellerPortfolioID, sellerType, listingID)
-		sagaLog(2, "COMPENSATED", "")
+		for {
+			if hookErr := sagaFaultHook(ctx, "C2", compensateFailCounts); hookErr != nil {
+				sagaLog(2, "COMP_FAILED", hookErr.Error())
+				time.Sleep(200 * time.Millisecond)
+				continue
+			}
+			retryExec(s.PortfolioDB,
+				`UPDATE portfolio_entry SET reserved_amount = GREATEST(0, reserved_amount - $1)
+				 WHERE user_id = $2 AND user_type = $3 AND listing_id = $4`,
+				amount, sellerPortfolioID, sellerType, listingID)
+			sagaLog(2, "COMPENSATED", "")
+			break
+		}
 	}
 
-	// Step 3: Transfer funds (debit buyer balance, credit seller balance).
+	// ── Step 3: Transfer funds ────────────────────────────────────────────────────
 	sellerAccountID, err := findAccount(s.AccountDB, portfolioUserID(sellerID, sellerType), currencyID)
 	if err != nil {
 		sagaLog(3, "FAILED", err.Error())
+		sagaStatus("Compensating", 3)
 		comp2()
 		comp1()
+		sagaStatus("Compensated", 3)
 		return nil, status.Errorf(codes.Internal, "step 3 failed finding seller account: %v", err)
+	}
+	if hookErr := sagaFaultHook(ctx, "F3", compensateFailCounts); hookErr != nil {
+		sagaLog(3, "FAILED", hookErr.Error())
+		sagaStatus("Compensating", 3)
+		comp2()
+		comp1()
+		sagaStatus("Compensated", 3)
+		return nil, status.Errorf(codes.Internal, "F3 fault injected: %v", hookErr)
 	}
 	if _, err = s.AccountDB.ExecContext(ctx,
 		`UPDATE accounts SET balance = balance - $1 WHERE id = $2`,
 		totalCostToPay, buyerAccountID,
 	); err != nil {
 		sagaLog(3, "FAILED", err.Error())
+		sagaStatus("Compensating", 3)
 		comp2()
 		comp1()
+		sagaStatus("Compensated", 3)
 		return nil, status.Errorf(codes.Internal, "step 3 failed debit buyer: %v", err)
 	}
 	if _, err = s.AccountDB.ExecContext(ctx,
@@ -832,20 +957,39 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	); err != nil {
 		retryExec(s.AccountDB, `UPDATE accounts SET balance = balance + $1 WHERE id = $2`, totalCostToPay, buyerAccountID)
 		sagaLog(3, "FAILED", err.Error())
+		sagaStatus("Compensating", 3)
 		comp2()
 		comp1()
+		sagaStatus("Compensated", 3)
 		return nil, status.Errorf(codes.Internal, "step 3 failed credit seller: %v", err)
 	}
 	sagaLog(3, "SUCCESS", "")
+	sagaStatus("Running", 3)
 
 	comp3 := func() {
-		retryExec(s.AccountDB, `UPDATE accounts SET balance = balance + $1 WHERE id = $2`, totalCostToPay, buyerAccountID)
-		retryExec(s.AccountDB, `UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`, totalCost, sellerAccountID)
-		sagaLog(3, "COMPENSATED", "")
+		for {
+			if hookErr := sagaFaultHook(ctx, "C3", compensateFailCounts); hookErr != nil {
+				sagaLog(3, "COMP_FAILED", hookErr.Error())
+				time.Sleep(200 * time.Millisecond)
+				continue
+			}
+			retryExec(s.AccountDB, `UPDATE accounts SET balance = balance + $1 WHERE id = $2`, totalCostToPay, buyerAccountID)
+			retryExec(s.AccountDB, `UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`, totalCost, sellerAccountID)
+			sagaLog(3, "COMPENSATED", "")
+			break
+		}
 	}
 
-	// Step 4: Transfer ownership.
-	// Clears reserved_amount alongside amount so the saga reservation is released as shares move.
+	// ── Step 4: Transfer ownership ────────────────────────────────────────────────
+	if hookErr := sagaFaultHook(ctx, "F4", compensateFailCounts); hookErr != nil {
+		sagaLog(4, "FAILED", hookErr.Error())
+		sagaStatus("Compensating", 4)
+		comp3()
+		comp2()
+		comp1()
+		sagaStatus("Compensated", 4)
+		return nil, status.Errorf(codes.Internal, "F4 fault injected: %v", hookErr)
+	}
 	if _, err = s.PortfolioDB.ExecContext(ctx, `
 		UPDATE portfolio_entry
 		SET amount          = amount - $1,
@@ -856,9 +1000,11 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 		amount, sellerPortfolioID, sellerType, listingID,
 	); err != nil {
 		sagaLog(4, "FAILED", err.Error())
+		sagaStatus("Compensating", 4)
 		comp3()
 		comp2()
 		comp1()
+		sagaStatus("Compensated", 4)
 		return nil, status.Errorf(codes.Internal, "step 4 failed deduct seller portfolio: %v", err)
 	}
 	_, _ = s.PortfolioDB.ExecContext(ctx, `
@@ -880,27 +1026,60 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 			 WHERE user_id = $2 AND user_type = $3 AND listing_id = $4`,
 			amount, sellerPortfolioID, sellerType, listingID,
 		)
-		sagaLog(4, "COMPENSATED", "")
+		sagaStatus("Compensating", 4)
 		comp3()
 		comp2()
 		comp1()
+		sagaStatus("Compensated", 4)
 		return nil, status.Errorf(codes.Internal, "step 4 failed upsert buyer portfolio: %v", err)
 	}
 	sagaLog(4, "SUCCESS", "")
+	sagaStatus("Running", 4)
 
 	comp4 := func() {
-		retryExec(s.PortfolioDB, `
-			UPDATE portfolio_entry SET amount = amount + $1, reserved_amount = reserved_amount + $1, public_amount = public_amount + $1, last_modified = NOW()
-			WHERE user_id=$2 AND user_type=$3 AND listing_id=$4`,
-			amount, sellerPortfolioID, sellerType, listingID)
-		retryExec(s.PortfolioDB, `
-			UPDATE portfolio_entry SET amount = amount - $1, last_modified = NOW()
-			WHERE user_id=$2 AND user_type=$3 AND listing_id=$4`,
-			amount, buyerPortfolioID, buyerType, listingID)
-		sagaLog(4, "COMPENSATED", "")
+		for {
+			if hookErr := sagaFaultHook(ctx, "C4", compensateFailCounts); hookErr != nil {
+				sagaLog(4, "COMP_FAILED", hookErr.Error())
+				time.Sleep(200 * time.Millisecond)
+				continue
+			}
+			// Restore seller portfolio. F4 may have deleted the row (amount hit 0),
+			// so UPSERT handles both the re-insert and the increment cases.
+			retryExec(s.PortfolioDB, `
+				INSERT INTO portfolio_entry
+					(user_id, user_type, listing_id, amount, buy_price, account_id, reserved_amount)
+				VALUES ($2, $3, $4, $1, 0, $5, $1)
+				ON CONFLICT (user_id, user_type, listing_id) DO UPDATE
+				SET amount          = portfolio_entry.amount + EXCLUDED.amount,
+				    reserved_amount = portfolio_entry.reserved_amount + EXCLUDED.reserved_amount,
+				    last_modified   = NOW()`,
+				amount, sellerPortfolioID, sellerType, listingID, sellerAccountID)
+			// Remove buyer shares acquired in F4, clean up row if empty.
+			retryExec(s.PortfolioDB, `
+				UPDATE portfolio_entry SET amount = amount - $1, last_modified = NOW()
+				WHERE user_id=$2 AND user_type=$3 AND listing_id=$4`,
+				amount, buyerPortfolioID, buyerType, listingID)
+			_, _ = s.PortfolioDB.Exec(`
+				DELETE FROM portfolio_entry
+				WHERE user_id=$1 AND user_type=$2 AND listing_id=$3 AND amount <= 0`,
+				buyerPortfolioID, buyerType, listingID)
+			sagaLog(4, "COMPENSATED", "")
+			break
+		}
 	}
 
-	// Step 5: Double-check final state, then atomically mark contract EXERCISED.
+	// ── Step 5: Verify and mark contract EXERCISED ────────────────────────────────
+	if hookErr := sagaFaultHook(ctx, "F5", compensateFailCounts); hookErr != nil {
+		sagaLog(5, "FAILED", hookErr.Error())
+		sagaStatus("Compensating", 5)
+		comp4()
+		comp3()
+		comp2()
+		comp1()
+		sagaStatus("Compensated", 5)
+		return nil, status.Errorf(codes.Internal, "F5 fault injected: %v", hookErr)
+	}
+
 	var buyerHolding int64
 	checkErr := s.PortfolioDB.QueryRowContext(ctx, `
 		SELECT COALESCE(amount, 0) FROM portfolio_entry
@@ -909,10 +1088,12 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	).Scan(&buyerHolding)
 	if checkErr != nil || buyerHolding < int64(amount) {
 		sagaLog(5, "FAILED", "double check failed: buyer portfolio inconsistent")
+		sagaStatus("Compensating", 5)
 		comp4()
 		comp3()
 		comp2()
 		comp1()
+		sagaStatus("Compensated", 5)
 		return nil, status.Error(codes.Internal, "step 5 double check failed, saga rolled back")
 	}
 
@@ -921,21 +1102,26 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 		`UPDATE otc_contracts SET status = 'EXERCISED' WHERE id = $1`, req.ContractId,
 	); err != nil {
 		sagaLog(5, "FAILED", err.Error())
+		sagaStatus("Compensating", 5)
 		comp4()
 		comp3()
 		comp2()
 		comp1()
+		sagaStatus("Compensated", 5)
 		return nil, status.Errorf(codes.Internal, "step 5 failed: %v", err)
 	}
 	if err = tx.Commit(); err != nil {
 		sagaLog(5, "FAILED", "commit failed: "+err.Error())
+		sagaStatus("Compensating", 5)
 		comp4()
 		comp3()
 		comp2()
 		comp1()
+		sagaStatus("Compensated", 5)
 		return nil, status.Errorf(codes.Internal, "step 5 commit failed: %v", err)
 	}
 	sagaLog(5, "SUCCESS", "")
+	sagaStatus("Completed", 5)
 
 	if buyerType != "EMPLOYEE" {
 		var mktPrice float64
@@ -951,6 +1137,7 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	return &pb.ExerciseContractResponse{
 		Status:     "EXERCISED",
 		ExecutedAt: now.Format(time.RFC3339),
+		SagaId:     sagaID,
 	}, nil
 }
 

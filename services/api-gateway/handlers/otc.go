@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/middleware"
@@ -12,6 +13,7 @@ import (
 	pb_portfolio "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/portfolio"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -392,6 +394,21 @@ func ExerciseContract(client pb.OtcServiceClient) gin.HandlerFunc {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
 		defer cancel()
 
+		// Forward X-Saga-* fault-injection headers as gRPC metadata (test builds only).
+		if os.Getenv("OTC_SAGA_TEST_HOOKS") == "true" {
+			md := metadata.New(nil)
+			for _, h := range []string{
+				"X-Saga-Force-Fail", "X-Saga-Force-Fail-Kind",
+				"X-Saga-Compensate-Fail", "X-Saga-Compensate-Fail-Times",
+				"X-Saga-Inject-Delay",
+			} {
+				if v := c.GetHeader(h); v != "" {
+					md.Set(strings.ToLower(h), v)
+				}
+			}
+			ctx = metadata.NewOutgoingContext(ctx, md)
+		}
+
 		resp, err := client.ExerciseContract(ctx, &pb.ExerciseContractRequest{
 			ContractId:     contractID,
 			CallerId:       callerID,
@@ -405,6 +422,7 @@ func ExerciseContract(client pb.OtcServiceClient) gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{
 			"status":     resp.Status,
 			"executedAt": resp.ExecutedAt,
+			"sagaId":     resp.SagaId,
 		})
 	}
 }

@@ -67,8 +67,8 @@ func simulatePrices(db *sql.DB) error {
 			continue
 		}
 
-		// Random factor in [-0.005, +0.015] (biased toward gains in test mode, avg +0.5%/min)
-		factor := 1 + (rand.Float64()*0.02 - 0.005)
+		// Random factor in [-0.01, +0.01] (symmetric ±1%)
+		factor := 1 + (rand.Float64()*0.02 - 0.01)
 		newPrice := l.price * factor
 
 		// Preserve ask/bid spread ratio; fall back to a fixed 0.1% spread if price was zero.

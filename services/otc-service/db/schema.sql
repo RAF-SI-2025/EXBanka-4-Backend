@@ -51,12 +51,25 @@ CREATE TABLE IF NOT EXISTS otc_contracts (
 
 CREATE TABLE IF NOT EXISTS otc_saga_log (
     id           BIGSERIAL PRIMARY KEY,
-    contract_id  BIGINT NOT NULL REFERENCES otc_contracts(id),
+    contract_id  BIGINT NOT NULL,
     step         INT NOT NULL,
     status       VARCHAR(20) NOT NULL,
     timestamp    TIMESTAMP NOT NULL DEFAULT NOW(),
     error_msg    TEXT
 );
+
+-- Globalni SAGA tracker: jedan red po toku, prati status (Running/Compensating/Completed/Compensated)
+CREATE TABLE IF NOT EXISTS otc_saga (
+    id           BIGSERIAL PRIMARY KEY,
+    contract_id  BIGINT NOT NULL UNIQUE,
+    status       VARCHAR(20) NOT NULL DEFAULT 'Running',
+    current_step INT NOT NULL DEFAULT 0,
+    created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMP NOT NULL DEFAULT NOW()
+);
+-- Migration za postojeće deploymente
+ALTER TABLE otc_saga ADD COLUMN IF NOT EXISTS current_step INT NOT NULL DEFAULT 0;
+ALTER TABLE otc_saga ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT NOW();
 
 -- Migration: partner_negotiation_id = lokalni ID pregovora na partner banci (za outgoing OPTION posting)
 ALTER TABLE otc_negotiations ADD COLUMN IF NOT EXISTS partner_negotiation_id BIGINT;

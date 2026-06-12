@@ -74,6 +74,9 @@ func main() {
 	}
 	pb.RegisterOtcServiceServer(srv, srvImpl)
 
+	// Recover any SAGA flows that were interrupted by a previous crash.
+	go srvImpl.RecoverInFlightSagas()
+
 	// Hourly contract expiration with tax loss recording.
 	// Runs immediately on startup so stale contracts are cleaned up at boot.
 	go func() {
