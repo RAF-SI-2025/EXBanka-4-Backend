@@ -77,8 +77,8 @@ func (s *PaymentServer) previewCrossBank(ctx context.Context, req *pb.PreviewPay
 		Message: ibNewTxMessage{
 			TransactionID: txID,
 			Postings: []ibPosting{
-				{AccountType: "ACCOUNT", AccountNum: req.FromAccount, Amount: -req.Amount, AssetType: "MONAS", Currency: fromCurrencyCode},
-				{AccountType: "ACCOUNT", AccountNum: req.RecipientAccount, Amount: req.Amount, AssetType: "MONAS", Currency: fromCurrencyCode},
+				{Account: ibPostingAccount{Type: "ACCOUNT", Num: req.FromAccount}, Amount: -req.Amount, Asset: ibPostingAsset{Type: "MONAS", Body: &ibPostingAssetBody{Currency: fromCurrencyCode}}},
+				{Account: ibPostingAccount{Type: "ACCOUNT", Num: req.RecipientAccount}, Amount: req.Amount, Asset: ibPostingAsset{Type: "MONAS", Body: &ibPostingAssetBody{Currency: fromCurrencyCode}}},
 			},
 		},
 	})

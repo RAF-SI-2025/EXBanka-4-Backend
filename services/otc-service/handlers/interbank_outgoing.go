@@ -47,7 +47,7 @@ type ibOutAssetInner struct {
 }
 type ibOutAsset struct {
 	Type  string           `json:"type"`
-	Asset *ibOutAssetInner `json:"asset,omitempty"`
+	Asset *ibOutAssetInner `json:"body,omitempty"`
 }
 type ibOutPosting struct {
 	Account ibOutAccount `json:"account"`
