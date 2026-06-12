@@ -23,7 +23,7 @@ func (s *OtcServer) RecoverInFlightSagas() {
 		log.Printf("RecoverInFlightSagas: query error: %v", err)
 		return
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var sagas []sagaRow
 	for rows.Next() {
@@ -32,7 +32,7 @@ func (s *OtcServer) RecoverInFlightSagas() {
 			sagas = append(sagas, r)
 		}
 	}
-	rows.Close()
+	_ = rows.Close()
 
 	for _, saga := range sagas {
 		log.Printf("RecoverInFlightSagas: recovering saga %d (contract %d, step %d, status %s)",
@@ -66,7 +66,7 @@ func (s *OtcServer) recoverSaga(sagaID, contractID int64) {
 			completedSteps = append(completedSteps, step)
 		}
 	}
-	successRows.Close()
+	_ = successRows.Close()
 
 	if len(completedSteps) == 0 {
 		// Nothing completed, just mark as Compensated.

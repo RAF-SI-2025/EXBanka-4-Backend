@@ -179,23 +179,6 @@ func seedSellerPortfolio(t *testing.T, s *handlers.OtcServer, accountID int64, q
 
 // ── Poll / assert helpers ──────────────────────────────────────────────────────
 
-func pollSagaStatus(t *testing.T, db *sql.DB, contractID int64, timeout time.Duration) string {
-	t.Helper()
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		var st string
-		err := db.QueryRow(`SELECT status FROM otc_saga WHERE contract_id=$1`, contractID).Scan(&st)
-		if err == nil && (st == "Completed" || st == "Compensated") {
-			return st
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-	var st string
-	_ = db.QueryRow(`SELECT status FROM otc_saga WHERE contract_id=$1`, contractID).Scan(&st)
-	t.Fatalf("saga for contract %d did not reach terminal status within %v (last: %q)", contractID, timeout, st)
-	return ""
-}
-
 type sagaRow struct {
 	Status      string
 	CurrentStep int
@@ -219,7 +202,7 @@ func getSagaLog(t *testing.T, db *sql.DB, contractID int64) []logEntry {
 	t.Helper()
 	rows, err := db.Query(`SELECT step, status FROM otc_saga_log WHERE contract_id=$1 ORDER BY id`, contractID)
 	require.NoError(t, err)
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var entries []logEntry
 	for rows.Next() {
 		var e logEntry
@@ -360,7 +343,7 @@ func TestSG02a_CallerNotBuyer(t *testing.T) {
 
 	// No saga row should be created.
 	var count int
-	s.DB.QueryRow(`SELECT COUNT(*) FROM otc_saga WHERE contract_id=$1`, contractID).Scan(&count)
+	_ = s.DB.QueryRow(`SELECT COUNT(*) FROM otc_saga WHERE contract_id=$1`, contractID).Scan(&count)
 	assert.Equal(t, 0, count, "no saga row should exist for pre-saga rejection")
 }
 
@@ -391,7 +374,7 @@ func TestSG02c_ContractAlreadyExercised(t *testing.T) {
 	require.Error(t, err)
 
 	var count int
-	s.DB.QueryRow(`SELECT COUNT(*) FROM otc_saga WHERE contract_id=$1`, contractID).Scan(&count)
+	_ = s.DB.QueryRow(`SELECT COUNT(*) FROM otc_saga WHERE contract_id=$1`, contractID).Scan(&count)
 	assert.Equal(t, 0, count, "no saga row for pre-validation failure")
 }
 
@@ -419,7 +402,7 @@ func TestSG03_InsufficientFunds(t *testing.T) {
 	listingID := ensureListing(t, s)
 
 	contractID := seedContract(t, s, 10, 300, 24*time.Hour) // needs 3000 USD
-	seedBuyerAccount(t, s, 500)                              // only 500 USD
+	seedBuyerAccount(t, s, 500)                             // only 500 USD
 	sellerAccID := seedSellerAccount(t, s)
 	seedSellerPortfolio(t, s, sellerAccID, 10)
 
