@@ -34,12 +34,24 @@ type ibIdempotenceKey struct {
 	LocallyGeneratedKey string `json:"locallyGeneratedKey"`
 }
 
+type ibPostingAccount struct {
+	Type string `json:"type"`
+	Num  string `json:"num,omitempty"`
+}
+
+type ibPostingAssetBody struct {
+	Currency string `json:"currency,omitempty"`
+}
+
+type ibPostingAsset struct {
+	Type string              `json:"type"`
+	Body *ibPostingAssetBody `json:"body,omitempty"`
+}
+
 type ibPosting struct {
-	AccountType string  `json:"accountType"`
-	AccountNum  string  `json:"accountNum"`
-	Amount      float64 `json:"amount"`
-	AssetType   string  `json:"assetType"`
-	Currency    string  `json:"currency"`
+	Account ibPostingAccount `json:"account"`
+	Amount  float64          `json:"amount"`
+	Asset   ibPostingAsset   `json:"asset"`
 }
 
 type ibNewTxMessage struct {
@@ -225,8 +237,8 @@ func executeOutgoing2PC(ctx context.Context, s *PaymentServer, req *pb.CreatePay
 		Message: ibNewTxMessage{
 			TransactionID: txID,
 			Postings: []ibPosting{
-				{AccountType: "ACCOUNT", AccountNum: req.FromAccount, Amount: -req.Amount, AssetType: "MONAS", Currency: currencyCode},
-				{AccountType: "ACCOUNT", AccountNum: req.RecipientAccount, Amount: req.Amount, AssetType: "MONAS", Currency: currencyCode},
+				{Account: ibPostingAccount{Type: "ACCOUNT", Num: req.FromAccount}, Amount: -req.Amount, Asset: ibPostingAsset{Type: "MONAS", Body: &ibPostingAssetBody{Currency: currencyCode}}},
+				{Account: ibPostingAccount{Type: "ACCOUNT", Num: req.RecipientAccount}, Amount: req.Amount, Asset: ibPostingAsset{Type: "MONAS", Body: &ibPostingAssetBody{Currency: currencyCode}}},
 			},
 			PaymentCode:    req.PaymentCode,
 			PaymentPurpose: req.Purpose,
