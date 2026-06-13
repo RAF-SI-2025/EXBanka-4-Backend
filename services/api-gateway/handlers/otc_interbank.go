@@ -114,21 +114,23 @@ func IncomingCreateNegotiation(otcClient pb.OtcServiceClient) gin.HandlerFunc {
 		// Accept both nested format (stock.ticker, pricePerUnit, premium as object) and
 		// the flat format some partner banks send (ticker, pricePerStock, premium as number).
 		var raw struct {
-			Stock          struct{ Ticker string `json:"ticker"` } `json:"stock"`
-			Ticker         string         `json:"ticker"`
-			SellerID       otcPartyID     `json:"sellerId"`
-			BuyerID        *otcPartyID    `json:"buyerId"`
-			Amount         int32          `json:"amount"`
-			PricePerUnit   otcMoneyAmount `json:"pricePerUnit"`
-			PricePerStock  float64        `json:"pricePerStock"`
-			PriceCurrency  string         `json:"priceCurrency"`
-			Premium        float64        `json:"premium"`
-			PremiumCurrency string        `json:"premiumCurrency"`
-			AccountNumber      string     `json:"accountNumber"`
-			BuyerAccountNumber string     `json:"buyerAccountNumber"`
-			SettlementDate string         `json:"settlementDate"`
-			SellerType     string         `json:"sellerType"`
-			LastModifiedBy *otcPartyID    `json:"lastModifiedBy"`
+			Stock struct {
+				Ticker string `json:"ticker"`
+			} `json:"stock"`
+			Ticker             string         `json:"ticker"`
+			SellerID           otcPartyID     `json:"sellerId"`
+			BuyerID            *otcPartyID    `json:"buyerId"`
+			Amount             int32          `json:"amount"`
+			PricePerUnit       otcMoneyAmount `json:"pricePerUnit"`
+			PricePerStock      float64        `json:"pricePerStock"`
+			PriceCurrency      string         `json:"priceCurrency"`
+			Premium            float64        `json:"premium"`
+			PremiumCurrency    string         `json:"premiumCurrency"`
+			AccountNumber      string         `json:"accountNumber"`
+			BuyerAccountNumber string         `json:"buyerAccountNumber"`
+			SettlementDate     string         `json:"settlementDate"`
+			SellerType         string         `json:"sellerType"`
+			LastModifiedBy     *otcPartyID    `json:"lastModifiedBy"`
 		}
 		if err := c.ShouldBindJSON(&raw); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
