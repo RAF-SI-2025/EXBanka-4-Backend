@@ -545,10 +545,22 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 		return nil, status.Error(codes.InvalidArgument, "Insufficient funds for premium")
 	}
 
-	// --- Find seller account ---
+	// --- Find seller account (prefer contract currency, fall back to any active account with conversion) ---
 	sellerAccountID, err := findAccount(ctx, s.AccountDB, portfolioUserID(sellerID, sellerType), currencyID)
+	sellerPremiumToCredit := premium
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find seller account: %v", err)
+		var sellerCurrencyID int64
+		fbErr := s.AccountDB.QueryRowContext(ctx,
+			`SELECT id, currency_id FROM accounts WHERE owner_id = $1 AND status = 'ACTIVE' LIMIT 1`,
+			portfolioUserID(sellerID, sellerType),
+		).Scan(&sellerAccountID, &sellerCurrencyID)
+		if fbErr != nil {
+			return nil, status.Errorf(codes.Internal, "failed to find seller account: %v", err)
+		}
+		sellerPremiumToCredit, err = convertAmount(ctx, s.ExchangeDB, premium, currencyID, sellerCurrencyID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert seller premium: %v", err)
+		}
 	}
 
 	// --- Deduct buyer premium (with retry compensation on failure) ---
@@ -562,7 +574,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	// --- Credit seller premium ---
 	if _, err = s.AccountDB.ExecContext(ctx,
 		`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
-		premium, sellerAccountID,
+		sellerPremiumToCredit, sellerAccountID,
 	); err != nil {
 		retryExec(s.AccountDB,
 			`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
