@@ -150,9 +150,9 @@ func IncomingCreateNegotiation(otcClient pb.OtcServiceClient) gin.HandlerFunc {
 		if priceCurrency == "" {
 			priceCurrency = raw.PriceCurrency
 		}
-		premiumCurrency := raw.PremiumCurrency
-		if premiumCurrency == "" {
-			premiumCurrency = priceCurrency
+		// Prefer the premium currency if explicitly set; proto uses one currency for both.
+		if raw.PremiumCurrency != "" {
+			priceCurrency = raw.PremiumCurrency
 		}
 		buyerAccountNum := raw.BuyerAccountNumber
 		if buyerAccountNum == "" {
