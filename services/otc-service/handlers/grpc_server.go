@@ -1790,7 +1790,7 @@ func (s *OtcServer) CommitOtcInterbank(ctx context.Context, req *pb.OtcInterbank
 				if qErr := s.AccountDB.QueryRowContext(ctx,
 					`SELECT currency_id FROM accounts WHERE account_number = $1`, buyerAcctNum,
 				).Scan(&buyerAcctCurrencyID); qErr == nil {
-					if converted, convErr := convertAmount(s.ExchangeDB, premium, ncurrencyID, buyerAcctCurrencyID); convErr == nil {
+					if converted, convErr := convertAmount(ctx, s.ExchangeDB, premium, ncurrencyID, buyerAcctCurrencyID); convErr == nil {
 						premiumToPay = converted
 					}
 				}

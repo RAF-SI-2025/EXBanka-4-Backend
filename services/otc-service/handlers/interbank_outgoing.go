@@ -449,7 +449,7 @@ func (s *OtcServer) createNegotiationCrossBank(ctx context.Context, req *pb.Crea
 	// CommitOtcInterbank uses convertAmount (exchange service) to handle currency differences.
 	currencyID := currencyIDMap[req.Currency]
 	var buyerAccountNum string
-	if acctID, acctErr := findAccount(s.AccountDB, req.BuyerId, currencyID); acctErr == nil {
+	if acctID, acctErr := findAccount(ctx, s.AccountDB, req.BuyerId, currencyID); acctErr == nil {
 		_ = s.AccountDB.QueryRowContext(ctx,
 			`SELECT account_number FROM accounts WHERE id = $1`, acctID,
 		).Scan(&buyerAccountNum)
