@@ -45,7 +45,7 @@ type ibPostingAssetBody struct {
 
 type ibPostingAsset struct {
 	Type string              `json:"type"`
-	Body *ibPostingAssetBody `json:"body,omitempty"`
+	Body *ibPostingAssetBody `json:"asset,omitempty"`
 }
 
 type ibPosting struct {
