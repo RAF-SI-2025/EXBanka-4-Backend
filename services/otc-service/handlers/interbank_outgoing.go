@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	otcInterbank "github.com/RAF-SI-2025/EXBanka-4-Backend/services/otc-service/interbank"
@@ -80,7 +79,7 @@ type otcIbVoteResponse struct {
 
 type otcOutgoing2PCReq struct {
 	sellerExtID          string
-	partnerNegotiationID int64
+	partnerNegotiationID string
 	partnerRoutingNum    int // seller's bank routing number
 	stockAmount          int32
 	buyerAccountNum      string
@@ -153,7 +152,7 @@ func executeOtcOutgoing2PC(ctx context.Context, bank otcInterbank.BankInfo, req 
 				{ // OPTION contract receives money (seller's bank credits seller via escrow)
 					Account: ibOutAccount{Type: "OPTION", ID: &ibOutPartyID{
 						RoutingNumber: req.partnerRoutingNum,
-						ID:            fmt.Sprintf("%d", req.partnerNegotiationID),
+						ID:            req.partnerNegotiationID,
 					}},
 					Amount: req.totalCost,
 					Asset:  ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: req.currency}},
@@ -161,7 +160,7 @@ func executeOtcOutgoing2PC(ctx context.Context, bank otcInterbank.BankInfo, req 
 				{ // OPTION contract gives shares
 					Account: ibOutAccount{Type: "OPTION", ID: &ibOutPartyID{
 						RoutingNumber: req.partnerRoutingNum,
-						ID:            fmt.Sprintf("%d", req.partnerNegotiationID),
+						ID:            req.partnerNegotiationID,
 					}},
 					Amount: -float64(req.stockAmount),
 					Asset:  ibOutAsset{Type: "STOCK", Asset: &ibOutAssetInner{Ticker: req.ticker}},
@@ -239,17 +238,17 @@ func (s *OtcServer) exerciseCrossBank(
 
 	// Lookup routing info from the negotiation linked to this contract.
 	var sellerRoutingNum int32
-	var partnerNegotiationID int64
+	var partnerNegotiationID string
 	var sellerExtID string
 	err := s.DB.QueryRowContext(ctx, `
 		SELECT COALESCE(n.seller_routing_number, 0),
-		       COALESCE(n.partner_negotiation_id, 0),
+		       COALESCE(n.partner_negotiation_id, ''),
 		       COALESCE(n.seller_external_id, '')
 		FROM otc_negotiations n
 		JOIN otc_contracts c ON c.negotiation_id = n.id
 		WHERE c.id = $1`, req.ContractId,
 	).Scan(&sellerRoutingNum, &partnerNegotiationID, &sellerExtID)
-	if err != nil || sellerRoutingNum == 0 || partnerNegotiationID == 0 {
+	if err != nil || sellerRoutingNum == 0 || partnerNegotiationID == "" {
 		return nil, status.Error(codes.Internal,
 			"cross-bank exercise requires seller_routing_number and partner_negotiation_id (populated by outgoing negotiation flow)")
 	}
@@ -371,7 +370,7 @@ func (s *OtcServer) forwardNegotiationToPartner(
 	bank otcInterbank.BankInfo,
 	req *pb.CreateNegotiationRequest,
 	buyerAccountNum string,
-) (int64, error) {
+) (string, error) {
 	type partyID struct {
 		RoutingNumber int    `json:"routingNumber"`
 		ID            string `json:"id"`
@@ -411,30 +410,26 @@ func (s *OtcServer) forwardNegotiationToPartner(
 	data, _ := json.Marshal(b)
 	httpReq, err := http.NewRequest(http.MethodPost, bank.BankURL+"/negotiations", bytes.NewReader(data))
 	if err != nil {
-		return 0, fmt.Errorf("create request: %w", err)
+		return "", fmt.Errorf("create request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("X-Api-Key", bank.APIKey)
 	resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(httpReq)
 	if err != nil {
-		return 0, fmt.Errorf("http call failed: %w", err)
+		return "", fmt.Errorf("http call failed: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("partner returned status %d", resp.StatusCode)
+		return "", fmt.Errorf("partner returned status %d", resp.StatusCode)
 	}
 	var result struct {
 		RoutingNumber int32  `json:"routingNumber"`
 		ID            string `json:"id"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return 0, fmt.Errorf("decode: %w", err)
+		return "", fmt.Errorf("decode: %w", err)
 	}
-	id, err := strconv.ParseInt(result.ID, 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("parse partner negotiation id: %w", err)
-	}
-	return id, nil
+	return result.ID, nil
 }
 
 // createNegotiationCrossBank handles CreateNegotiation when the seller is on a partner bank.
@@ -513,11 +508,11 @@ func (s *OtcServer) acceptCrossBank(
 	negotiationID int64,
 ) (*pb.NegotiationResponse, error) {
 	var sellerRoutingNum int32
-	var partnerNegotiationID int64
+	var partnerNegotiationID string
 	if err := s.DB.QueryRowContext(ctx,
-		`SELECT COALESCE(seller_routing_number, 0), COALESCE(partner_negotiation_id, 0)
+		`SELECT COALESCE(seller_routing_number, 0), COALESCE(partner_negotiation_id, '')
 		 FROM otc_negotiations WHERE id = $1`, negotiationID,
-	).Scan(&sellerRoutingNum, &partnerNegotiationID); err != nil || sellerRoutingNum == 0 {
+	).Scan(&sellerRoutingNum, &partnerNegotiationID); err != nil || sellerRoutingNum == 0 || partnerNegotiationID == "" {
 		return nil, status.Error(codes.Internal, "cross-bank accept: missing seller routing info")
 	}
 	bank, err := otcInterbank.ResolveBankByRoutingNumber(fmt.Sprintf("%d", sellerRoutingNum))
@@ -539,7 +534,7 @@ func (s *OtcServer) acceptCrossBank(
 
 	// Call Banka 4's accept endpoint. Banka 4 will synchronously send us a NEW_TX→COMMIT_TX
 	// via /interbank, which creates the contract and debits buyer in CommitOtcInterbank.
-	acceptURL := fmt.Sprintf("%s/negotiations/%d/%d/accept",
+	acceptURL := fmt.Sprintf("%s/negotiations/%d/%s/accept",
 		bank.BankURL, sellerRoutingNum, partnerNegotiationID)
 	acceptReq, _ := http.NewRequestWithContext(ctx, http.MethodGet, acceptURL, nil)
 	acceptReq.Header.Set("X-Api-Key", bank.APIKey)
