@@ -491,6 +491,29 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 		return nil, status.Error(codes.InvalidArgument, "Seller does not have enough free shares")
 	}
 
+	// Cross-bank: we are the seller, buyer is on a partner bank.
+	// Commit ACCEPTED then run 2PC (NEW_TX) with the buyer's bank.
+	if buyerType == "INTERBANK" && isSeller {
+		now := time.Now()
+		if _, err = tx.ExecContext(ctx,
+			`UPDATE otc_negotiations
+			 SET status = 'ACCEPTED', last_modified = $1, modified_by_id = $2, modified_by_type = $3
+			 WHERE id = $4`,
+			now, req.CallerId, req.CallerType, req.NegotiationId,
+		); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to accept negotiation: %v", err)
+		}
+		if err = tx.Commit(); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to commit: %v", err)
+		}
+		if twopcErr := s.executeInterbankAcceptOutgoing(ctx, req.NegotiationId); twopcErr != nil {
+			_, _ = s.DB.ExecContext(context.Background(),
+				`UPDATE otc_negotiations SET status='PENDING_SELLER' WHERE id = $1`, req.NegotiationId)
+			return nil, status.Errorf(codes.Unavailable, "accept 2PC failed: %v", twopcErr)
+		}
+		return s.fetchNegotiationByID(ctx, req.NegotiationId)
+	}
+
 	// --- Buyer balance check ---
 	currencyID, ok := currencyIDMap[currency]
 	if !ok {
