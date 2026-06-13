@@ -95,31 +95,31 @@ func (s *OtcServer) recoverSaga(sagaID, contractID int64) {
 		return
 	}
 
-	buyerAccountID, err := findAccount(s.AccountDB, portfolioUserID(buyerID, buyerType), currencyID)
+	buyerAccountID, err := findAccount(ctx, s.AccountDB, portfolioUserID(buyerID, buyerType), currencyID)
 	if err != nil {
 		log.Printf("recoverSaga %d: cannot find buyer account: %v", sagaID, err)
 		return
 	}
 
-	buyerCurrencyID, err := getAccountCurrencyID(s.AccountDB, buyerAccountID)
+	buyerCurrencyID, err := getAccountCurrencyID(ctx, s.AccountDB, buyerAccountID)
 	if err != nil {
 		log.Printf("recoverSaga %d: cannot get buyer currency: %v", sagaID, err)
 		return
 	}
 
-	totalCostToPay, err := convertAmount(s.ExchangeDB, strikePrice*float64(amount), currencyID, buyerCurrencyID)
+	totalCostToPay, err := convertAmount(ctx, s.ExchangeDB, strikePrice*float64(amount), currencyID, buyerCurrencyID)
 	if err != nil {
 		log.Printf("recoverSaga %d: currency conversion failed: %v", sagaID, err)
 		return
 	}
 
-	sellerAccountID, err := findAccount(s.AccountDB, portfolioUserID(sellerID, sellerType), currencyID)
+	sellerAccountID, err := findAccount(ctx, s.AccountDB, portfolioUserID(sellerID, sellerType), currencyID)
 	if err != nil {
 		log.Printf("recoverSaga %d: cannot find seller account: %v", sagaID, err)
 		return
 	}
 
-	listingID, err := listingIDForTicker(s.SecuritiesDB, ticker)
+	listingID, err := listingIDForTicker(ctx, s.SecuritiesDB, ticker)
 	if err != nil {
 		log.Printf("recoverSaga %d: cannot find listing for ticker %s: %v", sagaID, ticker, err)
 		return
