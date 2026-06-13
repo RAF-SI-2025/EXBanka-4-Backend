@@ -444,13 +444,22 @@ func (s *OtcServer) createNegotiationCrossBank(ctx context.Context, req *pb.Crea
 		return nil, status.Errorf(codes.Internal, "cannot resolve seller bank: %v", err)
 	}
 
-	// Resolve buyer's settlement account for this currency so CommitOtcInterbank can debit it.
+	// Resolve buyer's settlement account so CommitOtcInterbank can debit it.
+	// Prefer an account in the negotiation's currency; fall back to any active account.
+	// CommitOtcInterbank uses convertAmount (exchange service) to handle currency differences.
 	currencyID := currencyIDMap[req.Currency]
 	var buyerAccountNum string
-	_ = s.AccountDB.QueryRowContext(ctx,
-		`SELECT account_number FROM accounts WHERE owner_id = $1 AND currency_id = $2 AND status = 'ACTIVE' LIMIT 1`,
-		req.BuyerId, currencyID,
-	).Scan(&buyerAccountNum)
+	if acctID, acctErr := findAccount(ctx, s.AccountDB, req.BuyerId, currencyID); acctErr == nil {
+		_ = s.AccountDB.QueryRowContext(ctx,
+			`SELECT account_number FROM accounts WHERE id = $1`, acctID,
+		).Scan(&buyerAccountNum)
+	}
+	if buyerAccountNum == "" {
+		_ = s.AccountDB.QueryRowContext(ctx,
+			`SELECT account_number FROM accounts WHERE owner_id = $1 AND status = 'ACTIVE' LIMIT 1`,
+			req.BuyerId,
+		).Scan(&buyerAccountNum)
+	}
 
 	now := time.Now()
 	var id int64
