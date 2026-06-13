@@ -252,6 +252,9 @@ func (s *OtcServer) CreateNegotiation(ctx context.Context, req *pb.CreateNegotia
 
 	isCrossBank := req.SellerRoutingNumber != 0 &&
 		fmt.Sprintf("%d", req.SellerRoutingNumber) != os.Getenv("OWN_ROUTING_NUMBER")
+	if isCrossBank && req.Premium <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "premium must be positive for cross-bank negotiations")
+	}
 
 	if isCrossBank {
 		return s.createNegotiationCrossBank(ctx, req)
