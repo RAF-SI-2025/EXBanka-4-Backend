@@ -15,6 +15,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// settleDateOnly strips any time component from a date string so it is safe to
+// insert into a PostgreSQL DATE column (partner banks may send "2026-06-17T00:00:00Z").
+func settleDateOnly(s string) string {
+	if len(s) > 10 {
+		return s[:10]
+	}
+	return s
+}
+
 // retryExec retries a DB Exec up to 3 times with linear backoff.
 // Uses db.Exec (not ExecContext) so it survives a cancelled request context (e.g. during compensation).
 func retryExec(db *sql.DB, query string, args ...interface{}) {
@@ -1426,7 +1435,7 @@ func (s *OtcServer) CreateInterbankNegotiation(ctx context.Context, req *pb.Crea
 		        $10, $11, $12, $13, $14, $15, $16)
 		RETURNING id`,
 		req.Ticker, sellerID, sellerType,
-		req.Amount, req.PricePerUnit, req.SettlementDate, req.Premium, req.PriceCurrency,
+		req.Amount, req.PricePerUnit, settleDateOnly(req.SettlementDate), req.Premium, req.PriceCurrency,
 		now,
 		req.BuyerRoutingNumber, req.BuyerExternalId,
 		req.SellerRoutingNumber, req.SellerExternalId,
@@ -1459,7 +1468,7 @@ func (s *OtcServer) InterbankCounterOffer(ctx context.Context, req *pb.Interbank
 		SET amount = $1, price_per_stock = $2, settlement_date = $3, premium = $4,
 		    last_modified = $5, modified_by_id = 0, modified_by_type = 'INTERBANK', status = 'PENDING_SELLER'
 		WHERE id = $6`,
-		req.Amount, req.PricePerUnit, req.SettlementDate, req.Premium,
+		req.Amount, req.PricePerUnit, settleDateOnly(req.SettlementDate), req.Premium,
 		now, localID,
 	); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update negotiation: %v", err)
