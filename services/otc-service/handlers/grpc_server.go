@@ -959,13 +959,31 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 
 	// ── Step 3: Transfer funds ────────────────────────────────────────────────────
 	sellerAccountID, err := findAccount(ctx, s.AccountDB, portfolioUserID(sellerID, sellerType), currencyID)
+	sellerTotalCostToReceive := totalCost
 	if err != nil {
-		sagaLog(3, "FAILED", err.Error())
-		sagaStatus("Compensating", 3)
-		comp2()
-		comp1()
-		sagaStatus("Compensated", 3)
-		return nil, status.Errorf(codes.Internal, "step 3 failed finding seller account: %v", err)
+		// No account in contract currency — fall back to any active account with conversion.
+		var sellerCurrencyID int64
+		fbErr := s.AccountDB.QueryRowContext(ctx,
+			`SELECT id, currency_id FROM accounts WHERE owner_id = $1 AND status = 'ACTIVE' LIMIT 1`,
+			portfolioUserID(sellerID, sellerType),
+		).Scan(&sellerAccountID, &sellerCurrencyID)
+		if fbErr != nil {
+			sagaLog(3, "FAILED", err.Error())
+			sagaStatus("Compensating", 3)
+			comp2()
+			comp1()
+			sagaStatus("Compensated", 3)
+			return nil, status.Errorf(codes.Internal, "step 3 failed finding seller account: %v", err)
+		}
+		sellerTotalCostToReceive, err = convertAmount(ctx, s.ExchangeDB, totalCost, currencyID, sellerCurrencyID)
+		if err != nil {
+			sagaLog(3, "FAILED", err.Error())
+			sagaStatus("Compensating", 3)
+			comp2()
+			comp1()
+			sagaStatus("Compensated", 3)
+			return nil, status.Errorf(codes.Internal, "step 3 failed converting seller amount: %v", err)
+		}
 	}
 	if hookErr := sagaFaultHook(ctx, "F3", compensateFailCounts); hookErr != nil {
 		sagaLog(3, "FAILED", hookErr.Error())
@@ -988,7 +1006,7 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	}
 	if _, err = s.AccountDB.ExecContext(ctx,
 		`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
-		totalCost, sellerAccountID,
+		sellerTotalCostToReceive, sellerAccountID,
 	); err != nil {
 		retryExec(s.AccountDB, `UPDATE accounts SET balance = balance + $1 WHERE id = $2`, totalCostToPay, buyerAccountID)
 		sagaLog(3, "FAILED", err.Error())
@@ -1009,7 +1027,7 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 				continue
 			}
 			retryExec(s.AccountDB, `UPDATE accounts SET balance = balance + $1 WHERE id = $2`, totalCostToPay, buyerAccountID)
-			retryExec(s.AccountDB, `UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`, totalCost, sellerAccountID)
+			retryExec(s.AccountDB, `UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1 WHERE id = $2`, sellerTotalCostToReceive, sellerAccountID)
 			sagaLog(3, "COMPENSATED", "")
 			break
 		}
