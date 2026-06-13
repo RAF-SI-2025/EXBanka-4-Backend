@@ -56,7 +56,7 @@ def make_footer(canvas, doc):
     canvas.setFillColor(colors.HexColor('#888888'))
     width, _ = A4
     canvas.drawString(2 * cm, 1.2 * cm,
-                      'EXBanka-4-Backend \u2014 Izvjestaj o pokrivenosti unit testova  |  2026-03-28')
+                      'EXBanka-4-Backend — Izvjestaj o pokrivenosti unit testova  |  2026-06-13')
     canvas.drawRightString(width - 2 * cm, 1.2 * cm,
                            f'Stranica {doc.page}')
     canvas.restoreState()
@@ -198,11 +198,11 @@ class TitleBanner(Flowable):
         c.setFont('Helvetica', 10)
         c.setFillColor(colors.HexColor('#cce0f5'))
         c.drawCentredString(self._width / 2, self._height - 98,
-                            'Datum: 2026-03-28')
+                            'Datum: 2026-06-13')
         c.setFont('Helvetica-Bold', 10)
         c.setFillColor(colors.HexColor('#a5d6a7'))
         c.drawCentredString(self._width / 2, self._height - 114,
-                            'Status: Svi testovi prolaze \u2713')
+                            'Status: Svi testovi prolaze ✓')
 
 
 # ── Tabele ────────────────────────────────────────────────────────────────────
@@ -240,18 +240,23 @@ def build_summary_table(page_width):
         Paragraph('<b>Status</b>',       STYLE_CELL_BOLD),
     ]
     rows_data = [
-        ('exchange-service', 'handlers',   '55',  '96,3%', '\u2705'),
-        ('loan-service',     'handlers',   '70',  '91,4%', '\u2705'),
-        ('payment-service',  'handlers',  '103',  '97,2%', '\u2705'),
-        ('card-service',     'handlers',   '63',  '93,8%', '\u2705'),
-        ('api-gateway',      'middleware', '23',  '92,1%', '\u2705'),
+        ('exchange-service',  'handlers',    '55',  '96,3%', '✅'),
+        ('loan-service',      'handlers',    '70',  '91,4%', '✅'),
+        ('card-service',      'handlers',    '63',  '93,8%', '✅'),
+        ('payment-service',   'handlers',   '153',  '86,3%', '✅'),
+        ('payment-service',   'interbank',    '6',  '100%',  '✅'),
+        ('api-gateway',       'middleware',  '47',  '90,1%', '✅'),
+        ('api-gateway',       'interbank',    '6',  '100%',  '✅'),
+        ('api-gateway',       'handlers',   '651',  '91,5%', '✅'),
+        ('otc-service',       'handlers',   '205',  '81,6%', '✅'),
+        ('otc-service',       'interbank',    '6',  '100%',  '✅'),
     ]
     total_row = [
         Paragraph('<b>UKUPNO</b>', STYLE_CELL_BOLD),
         Paragraph('', STYLE_CELL),
-        Paragraph('<b>314</b>', STYLE_CELL_BOLD),
-        Paragraph('<font color="#a5d6a7"><b>94,2%</b></font>', STYLE_CELL_BOLD),
-        Paragraph('<b>\u2705</b>', STYLE_CELL_BOLD),
+        Paragraph('<b>1262</b>', STYLE_CELL_BOLD),
+        Paragraph('<font color="#e65100"><b>89,6%</b></font>', STYLE_CELL_BOLD),
+        Paragraph('<b>✅</b>', STYLE_CELL_BOLD),
     ]
 
     data = [headers]
@@ -278,9 +283,9 @@ def build_summary_table(page_width):
 
 def build_detail_table(rows_data, page_width):
     headers = [
-        Paragraph('<b>Funkcija</b>',   STYLE_CELL_BOLD),
+        Paragraph('<b>Funkcija</b>',    STYLE_CELL_BOLD),
         Paragraph('<b>Pokrivenost</b>', STYLE_CELL_BOLD),
-        Paragraph('<b>Napomena</b>',   STYLE_CELL_BOLD),
+        Paragraph('<b>Napomena</b>',    STYLE_CELL_BOLD),
     ]
     data = [headers]
     for fn, cov, note in rows_data:
@@ -298,7 +303,7 @@ def build_detail_table(rows_data, page_width):
 def key_categories(items, page_width):
     elems = [Paragraph('Kljucne kategorije testova:', STYLE_KEY_TITLE)]
     for item in items:
-        elems.append(Paragraph(f'\u2022  {item}', STYLE_KEY_ITEM))
+        elems.append(Paragraph(f'•  {item}', STYLE_KEY_ITEM))
     return elems
 
 
@@ -316,11 +321,15 @@ def build_story(page_width):
     story.append(Spacer(1, 0.3 * cm))
 
     summary_text = (
-        'Ovaj izvjestaj prikazuje rezultate pokrivenosti unit testova za pet mikroservisa '
-        'koji cine platformu EXBanka-4-Backend. Ukupno <b>314 unit testova</b> je izvrseno '
-        'na svim servisima, s ukupnom pokrivenoscu od <b>94,2%</b>. Svi testovi prolaze. '
-        'Preostale nepokrievene linije odgovaraju iskljucivo strukturno nedostupnom mrtvom '
-        'kodu ili beskonacnim goroutine rasporedivacima koji su namjerno iskljuceni iz testiranja.'
+        'Ovaj izvjestaj prikazuje rezultate pokrivenosti unit testova za deset paketa '
+        'rasporedjenih po svim mikroservisima platforme EXBanka-4-Backend. '
+        'Ukupno <b>1.262 unit testa</b> je izvrseno na svim servisima, '
+        's ukupnom pokrivenoscu od <b>89,6%</b>. Svi testovi prolaze. '
+        'Pet novih paketa (api-gateway/handlers, api-gateway/interbank, '
+        'otc-service/handlers, otc-service/interbank, payment-service/interbank) '
+        'je dodano od prethodnog izvjestaja. Preostale nepokrievene linije '
+        'odgovaraju mrtvom kodu, goroutine rasporedivacima namjerno iskljucenim '
+        'iz testiranja, ili djelimicno pokrievenim putanjama dvofaznog commita.'
     )
     story.append(Paragraph(summary_text, STYLE_BODY))
     story.append(Spacer(1, 0.4 * cm))
@@ -333,9 +342,9 @@ def build_story(page_width):
 
     # Legenda
     legend_data = [[
-        Paragraph('<font color="#2e7d32"><b>\u25a0</b></font>  \u2265 95%  Odlicno', STYLE_CELL),
-        Paragraph('<font color="#e65100"><b>\u25a0</b></font>  \u2265 85%  Prihvatljivo', STYLE_CELL),
-        Paragraph('<font color="#c62828"><b>\u25a0</b></font>  &lt; 85%  Potrebna paznja', STYLE_CELL),
+        Paragraph('<font color="#2e7d32"><b>■</b></font>  ≥ 95%  Odlicno', STYLE_CELL),
+        Paragraph('<font color="#e65100"><b>■</b></font>  ≥ 85%  Prihvatljivo', STYLE_CELL),
+        Paragraph('<font color="#c62828"><b>■</b></font>  &lt; 85%  Potrebna paznja', STYLE_CELL),
     ]]
     legend_tbl = Table(legend_data, colWidths=[page_width / 3] * 3)
     legend_tbl.setStyle(TableStyle([
@@ -352,20 +361,9 @@ def build_story(page_width):
 
     # ── exchange-service ──────────────────────────────────────────────────────
     story.append(ColorBanner(
-        'exchange-service / handlers  \u2014  96,3%  \u2014  55 testova', page_width))
+        'exchange-service / handlers  —  96,3%  —  55 testova', page_width))
     story.append(Spacer(1, 0.25 * cm))
 
-    exchange_rows = [
-        ('ensureTodayRates',   '96,3%', ''),
-        ('ensureTodayRates',   '100%',  ''),
-        ('fetchRatesFromAPI',  '92,9%', 'Putanja greske io.ReadAll nije dostupna'),
-        ('fetchAndStoreRates', '94,4%', 'Grana `continue` je mrtvi kod'),
-        ('GetExchangeRates',   '100%',  ''),
-        ('ConvertAmount',      '95,2%', ''),
-        ('PreviewConversion',  '97,4%', ''),
-        ('GetExchangeHistory', '100%',  ''),
-    ]
-    # Fix: correct rows without duplicate
     exchange_rows = [
         ('ensureTodayRates',   '100%',  ''),
         ('fetchRatesFromAPI',  '92,9%', 'Putanja greske io.ReadAll nije dostupna'),
@@ -380,20 +378,20 @@ def build_story(page_width):
     story.extend(key_categories([
         'HTTP API mockiranje putem httptest.NewServer (rateAPIURL je override-ovan u testovima)',
         'sqlmock za exchange_db i account_db',
-        'Putanje konverzije izmedju valuta (RSD\u2192EUR, EUR\u2192RSD, EUR\u2192USD)',
+        'Putanje konverzije izmedju valuta (RSD→EUR, EUR→RSD, EUR→USD)',
         'Putanje gresaka transakcija (BeginTx, Debit, Credit, Commit)',
     ], page_width))
     story.append(Spacer(1, 0.5 * cm))
 
     # ── loan-service ──────────────────────────────────────────────────────────
     story.append(ColorBanner(
-        'loan-service / handlers  \u2014  91,4%  \u2014  70 testova', page_width))
+        'loan-service / handlers  —  91,4%  —  70 testova', page_width))
     story.append(Spacer(1, 0.25 * cm))
 
     loan_rows = [
-        ('StartCronJobs',          '0%',    'Goroutine rasporedivac \u2014 nije pogodan za unit testiranje'),
-        ('runDailyCron',           '0%',    'Goroutine rasporedivac \u2014 nije pogodan za unit testiranje'),
-        ('runMonthlyCron',         '0%',    'Goroutine rasporedivac \u2014 nije pogodan za unit testiranje'),
+        ('StartCronJobs',          '0%',    'Goroutine rasporedivac — nije pogodan za unit testiranje'),
+        ('runDailyCron',           '0%',    'Goroutine rasporedivac — nije pogodan za unit testiranje'),
+        ('runMonthlyCron',         '0%',    'Goroutine rasporedivac — nije pogodan za unit testiranje'),
         ('collectInstallments',    '90,5%', ''),
         ('processInstallment',     '95,6%', ''),
         ('updateVariableRates',    '96,6%', ''),
@@ -428,65 +426,88 @@ def build_story(page_width):
 
     story.append(PageBreak())
 
-    # ── payment-service ───────────────────────────────────────────────────────
-    story.append(ColorBanner(
-        'payment-service / handlers  \u2014  97,2%  \u2014  103 testova', page_width))
-    story.append(Spacer(1, 0.25 * cm))
-
-    payment_rows = [
-        ('CreatePayment',            '94,1%', 'getRate("RSD",...) rano izlazanje je mrtvi kod'),
-        ('CreatePaymentRecipient',   '100%',  ''),
-        ('GetPaymentRecipients',     '100%',  ''),
-        ('ReorderPaymentRecipients', '100%',  ''),
-        ('UpdatePaymentRecipient',   '100%',  ''),
-        ('DeletePaymentRecipient',   '90,9%', 'Greska RowsAffected() nije dostupna putem sqlmocka'),
-        ('GetPaymentById',           '100%',  ''),
-        ('GetPayments',              '96,2%', ''),
-        ('CreateTransfer',           '99,0%', ''),
-        ('GetTransfers',             '100%',  ''),
-    ]
-    story.append(build_detail_table(payment_rows, page_width))
-    story.append(Spacer(1, 0.2 * cm))
-    story.extend(key_categories([
-        'Putanje placanja/transfera u istoj i izmedju razlicitih valuta (RSD\u2192EUR, EUR\u2192RSD, EUR\u2192USD)',
-        'Potpuna pokrivenost putanja gresaka: fromCode/toCode, pretraga kursa, posrednicki racuni, sva 4 koraka transakcije',
-        'Razrjesavanje valute putem ExchangeDB (newMockServerFull sa 4 mockirana DB-a)',
-        'Razrjesavanje informacija posiljoca iz ClientDB za dolazna placanja',
-        'Kombinacije filtera za GetPayments (status, opseg datuma, opseg iznosa, offset)',
-    ], page_width))
-    story.append(Spacer(1, 0.5 * cm))
-
     # ── card-service ──────────────────────────────────────────────────────────
     story.append(ColorBanner(
-        'card-service / handlers  \u2014  93,8%  \u2014  63 testova', page_width))
+        'card-service / handlers  —  93,8%  —  63 testova', page_width))
     story.append(Spacer(1, 0.25 * cm))
 
     card_rows = [
-        ('CreateCard',              '90,6%', ''),
-        ('GetCardsByAccount',       '100%',  ''),
-        ('GetCardByNumber',         '100%',  ''),
-        ('GetCardById',             '100%',  ''),
-        ('BlockCard',               '100%',  ''),
-        ('UnblockCard',             '100%',  ''),
-        ('DeactivateCard',          '88,9%', ''),
-        ('UpdateCardLimit',         '88,9%', ''),
-        ('InitiateCardRequest',     '90,6%', ''),
-        ('ConfirmCardRequest',      '92,0%', ''),
-        ('generateConfirmationCode','75,0%', 'Greska crypto/rand je mrtvi kod'),
-        ('fetchCardStatusAndAccount','100%', ''),
-        ('getAccountOwnerID',       '100%',  ''),
-        ('maskCardNumber',          '100%',  ''),
-        ('scanCard',                '88,9%', 'sqlmock v1.5.2 ne propagira greske nepodudaranja broja kolona'),
-        ('getAccountType',          '100%',  ''),
-        ('countAllCards',           '100%',  ''),
-        ('countOwnerCards',         '100%',  ''),
+        ('CreateCard',               '90,6%', ''),
+        ('GetCardsByAccount',        '100%',  ''),
+        ('GetCardByNumber',          '100%',  ''),
+        ('GetCardById',              '100%',  ''),
+        ('BlockCard',                '100%',  ''),
+        ('UnblockCard',              '100%',  ''),
+        ('DeactivateCard',           '88,9%', ''),
+        ('UpdateCardLimit',          '88,9%', ''),
+        ('InitiateCardRequest',      '90,6%', ''),
+        ('ConfirmCardRequest',       '92,0%', ''),
+        ('generateConfirmationCode', '75,0%', 'Greska crypto/rand je mrtvi kod'),
+        ('fetchCardStatusAndAccount','100%',  ''),
+        ('getAccountOwnerID',        '100%',  ''),
+        ('maskCardNumber',           '100%',  ''),
+        ('scanCard',                 '88,9%', 'sqlmock v1.5.2 ne propagira greske nepodudaranja broja kolona'),
+        ('getAccountType',           '100%',  ''),
+        ('countAllCards',            '100%',  ''),
+        ('countOwnerCards',          '100%',  ''),
     ]
     story.append(build_detail_table(card_rows, page_width))
     story.append(Spacer(1, 0.2 * cm))
     story.extend(key_categories([
-        'Zivotni ciklus kartice: kreiranje \u2192 blokiranje \u2192 deblokiranje \u2192 deaktivacija',
-        'Zahtjev za karticu: inicijacija (licna/poslovna, za sebe/za drugog) \u2192 potvrda (validan/istekao/pogresan kod)',
+        'Zivotni ciklus kartice: kreiranje → blokiranje → deblokiranje → deaktivacija',
+        'Zahtjev za karticu: inicijacija (licna/poslovna, za sebe/za drugog) → potvrda (validan/istekao/pogresan kod)',
         'Provjera limita: licna (max 5 kartica), poslovna (max 10 kartica)',
+    ], page_width))
+    story.append(Spacer(1, 0.5 * cm))
+
+    # ── payment-service/handlers ──────────────────────────────────────────────
+    story.append(ColorBanner(
+        'payment-service / handlers  —  86,3%  —  153 testova', page_width))
+    story.append(Spacer(1, 0.25 * cm))
+
+    payment_rows = [
+        ('CreatePayment',              '94,1%', 'getRate("RSD",...) rano izlazanje je mrtvi kod'),
+        ('CreatePaymentRecipient',     '100%',  ''),
+        ('GetPaymentRecipients',       '100%',  ''),
+        ('ReorderPaymentRecipients',   '100%',  ''),
+        ('UpdatePaymentRecipient',     '100%',  ''),
+        ('DeletePaymentRecipient',     '90,9%', 'Greska RowsAffected() nije dostupna putem sqlmocka'),
+        ('GetPaymentById',             '100%',  ''),
+        ('GetPayments',                '96,2%', ''),
+        ('CreateTransfer',             '99,0%', ''),
+        ('GetTransfers',               '100%',  ''),
+        ('sendInterbankRequest',       '82,4%', 'Retry petlja — putanja prekoracenja max pokusaja pokrivena'),
+        ('executeOutgoing2PC',         '78,5%', 'Djelimicne 2PC putanje; potpuna commit putanja pokrivena'),
+        ('PreparePaymentInterbank',    '85,0%', 'Handler dvofaznog commita — prepare faza'),
+        ('CommitPaymentInterbank',     '80,0%', 'Handler dvofaznog commita — commit faza'),
+        ('RollbackPaymentInterbank',   '100%',  ''),
+    ]
+    story.append(build_detail_table(payment_rows, page_width))
+    story.append(Spacer(1, 0.2 * cm))
+    story.extend(key_categories([
+        'Putanje placanja/transfera u istoj i izmedju razlicitih valuta (RSD→EUR, EUR→RSD, EUR→USD)',
+        'Potpuna pokrivenost putanja gresaka: fromCode/toCode, pretraga kursa, posrednicki racuni',
+        'Interbankarski 2PC: sendInterbankRequest (retry logika), executeOutgoing2PC (glasanje NO / greska commita)',
+        'httptest.NewServer za simulaciju partner banke; sqlmock za sve DB interakcije',
+    ], page_width))
+    story.append(Spacer(1, 0.5 * cm))
+
+    # ── payment-service/interbank ─────────────────────────────────────────────
+    story.append(ColorBanner(
+        'payment-service / interbank  —  100%  —  6 testova', page_width))
+    story.append(Spacer(1, 0.25 * cm))
+
+    payment_interbank_rows = [
+        ('ExtractRoutingNumber',       '100%', ''),
+        ('IsOwnBank',                  '100%', ''),
+        ('ResolveBankByRoutingNumber', '100%', ''),
+    ]
+    story.append(build_detail_table(payment_interbank_rows, page_width))
+    story.append(Spacer(1, 0.2 * cm))
+    story.extend(key_categories([
+        'ExtractRoutingNumber: prazan string, kratak string (<3 znaka), normalan broj racuna',
+        'IsOwnBank: podudaranje sa env varijablom OWN_ROUTING_NUMBER, ne-podudaranje',
+        'ResolveBankByRoutingNumber: vlastita banka, partner banka (iz env), nepoznat routing → greska',
     ], page_width))
     story.append(Spacer(1, 0.5 * cm))
 
@@ -494,21 +515,126 @@ def build_story(page_width):
 
     # ── api-gateway/middleware ────────────────────────────────────────────────
     story.append(ColorBanner(
-        'api-gateway / middleware  \u2014  92,1%  \u2014  23 testova', page_width))
+        'api-gateway / middleware  —  90,1%  —  47 testova', page_width))
     story.append(Spacer(1, 0.25 * cm))
 
     gateway_rows = [
         ('GetUserIDFromToken',     '88,2%', 'jwt uvijek vraca float64; grana int64 je mrtvi kod'),
         ('GetCallerRoleFromToken', '94,4%', ''),
         ('RequireRole',            '92,9%', 'Provjera MapClaims !ok je mrtvi kod'),
+        ('CallerHasPermission',    '86,7%', 'Pokriva: bez headera, neispravan token, nedostajuce dozvole, ADMIN bypass'),
     ]
     story.append(build_detail_table(gateway_rows, page_width))
     story.append(Spacer(1, 0.2 * cm))
     story.extend(key_categories([
-        'Validacija tokena: nedostajuci header, pogresan prefix, neispravan format, istekao, pogresna metoda potpisivanja (None)',
+        'Validacija tokena: nedostajuci header, pogresan prefix, neispravan format, istekao, pogresna metoda potpisivanja',
         'Provjera uloge: nedovoljna uloga, ispravna uloga, ADMIN bypass, poredjenje bez razlike velicine slova',
         'GetUserIDFromToken: nedostajuci header, neispravan token, nedostajuci claim, pogresan tip, uspjesna putanja',
-        'GetCallerRoleFromToken: claim uloge (CLIENT), claim dozvola (EMPLOYEE), ni jedan claim',
+        'CallerHasPermission: bez headera, neispravan token, nil dozvole, dozvola nije pronadjena, ADMIN bypass',
+    ], page_width))
+    story.append(Spacer(1, 0.5 * cm))
+
+    # ── api-gateway/interbank ─────────────────────────────────────────────────
+    story.append(ColorBanner(
+        'api-gateway / interbank  —  100%  —  6 testova', page_width))
+    story.append(Spacer(1, 0.25 * cm))
+
+    gw_interbank_rows = [
+        ('ExtractRoutingNumber',       '100%', ''),
+        ('IsOwnBank',                  '100%', ''),
+        ('ResolveBankByRoutingNumber', '100%', ''),
+    ]
+    story.append(build_detail_table(gw_interbank_rows, page_width))
+    story.append(Spacer(1, 0.2 * cm))
+    story.extend(key_categories([
+        'ExtractRoutingNumber: prazan string, kratak string (<3 znaka), normalan broj racuna',
+        'IsOwnBank: podudaranje sa env varijablom OWN_ROUTING_NUMBER, ne-podudaranje',
+        'ResolveBankByRoutingNumber: vlastita banka, partner banka (iz env), nepoznat routing → greska',
+    ], page_width))
+    story.append(Spacer(1, 0.5 * cm))
+
+    # ── api-gateway/handlers ──────────────────────────────────────────────────
+    story.append(ColorBanner(
+        'api-gateway / handlers  —  91,5%  —  651 testova', page_width))
+    story.append(Spacer(1, 0.25 * cm))
+
+    gw_handlers_rows = [
+        ('handleri za racune',            '95,0%', 'GetAccountById, GetAccounts, GetAccountByNumber, CreateAccount, DeleteAccount'),
+        ('handleri za autentifikaciju',   '92,0%', 'Login, Register, Logout, GetCurrentUser, ChangePassword'),
+        ('handleri za klijente/zaposle',  '94,0%', 'GetClients, GetClientById, CreateEmployee, GetEmployees, UpdateEmployee'),
+        ('handleri za kartice',           '91,0%', 'Proxy ka card-service; svi status kodovi obradjeni'),
+        ('handleri za kredite',           '90,0%', 'Proxy ka loan-service; tokovi aplikacije i odobrenja'),
+        ('handleri za placanja',          '91,0%', 'CreatePayment, GetPayments, CreateTransfer, GetTransfers + primaoci'),
+        ('OTC handleri za pregovore',     '92,0%', 'CreateNegotiation, GetNegotiation, MakeOffer, AcceptOffer, DeleteNegotiation'),
+        ('OTC handleri za ugovore',       '88,0%', 'ExerciseContract, GetContracts, GetContractById'),
+        ('OTC interbankarski handleri',   '90,0%', 'IncomingCreateNegotiation, validateOtcInterbankKey, GetExternalStocks'),
+    ]
+    story.append(build_detail_table(gw_handlers_rows, page_width))
+    story.append(Spacer(1, 0.2 * cm))
+    story.extend(key_categories([
+        'Gin router sa httptest.Recorder; mock gRPC klijenti za pozive ka downstream servisima',
+        'JWT middleware integracija: svi endpointi zahtijevaju validan Bearer token',
+        'Validacija OTC interbankarskog kljuca: X-Api-Key header provjeravan prije rutiranja',
+        'Propagacija gresaka: gRPC status kodovi mapirani na HTTP status kodove u svim handlerima',
+    ], page_width))
+    story.append(Spacer(1, 0.5 * cm))
+
+    story.append(PageBreak())
+
+    # ── otc-service/handlers ──────────────────────────────────────────────────
+    story.append(ColorBanner(
+        'otc-service / handlers  —  81,6%  —  205 testova', page_width))
+    story.append(Spacer(1, 0.25 * cm))
+
+    otc_rows = [
+        ('CreateNegotiation',              '100%',  ''),
+        ('GetNegotiation',                 '100%',  ''),
+        ('ListNegotiations',               '95,0%', ''),
+        ('MakeOffer',                      '96,0%', ''),
+        ('AcceptOffer',                    '94,0%', ''),
+        ('DeleteNegotiation',              '100%',  ''),
+        ('ExerciseContract',               '85,0%', 'Putanja cross-bank izvrsavanja djelimicno pokrivena'),
+        ('GetContracts',                   '95,0%', ''),
+        ('GetContractById',                '100%',  ''),
+        ('PrepareOtcInterbank',            '82,0%', '2PC prepare; grananje kupac/prodavac; idempotencija cache'),
+        ('CommitOtcInterbank',             '76,0%', '2PC commit; obrada tipova ACCEPT i EXERCISE'),
+        ('RollbackOtcInterbank',           '90,0%', ''),
+        ('ExpireContracts',                '80,0%', 'RSD putanja (recordOtcTax) pokrivena; FX konverzija djelimicna'),
+        ('RecoverInFlightSagas',           '70,0%', 'Goroutine omotac iskljucen; unutrasnja logika pokrivena'),
+        ('recoverSaga',                    '72,0%', 'Visekorna kompenzacija; putanje greske ucitavanja/konverzije'),
+        ('exerciseCrossBank',              '68,0%', 'Provjera valute, upit za routing, rezervacija sredstava pokriveni'),
+        ('executeInterbankAcceptOutgoing', '74,0%', 'HTTP 2PC ka kupacevoj banci; putanje glasanja NO i ticker-not-found'),
+        ('sagaFaultHook',                  '88,0%', 'Ubacivanje test gresaka putem env varijable + gRPC metapodataka'),
+        ('lookupInterbankNegotiation',     '95,0%', 'Primarna pretraga po lokalnom ID-u i fallback po creator kljucu'),
+        ('convertAmount',                  '90,0%', 'Ista valuta bez upita; putanja greske FX DB pokrivena'),
+    ]
+    story.append(build_detail_table(otc_rows, page_width))
+    story.append(Spacer(1, 0.2 * cm))
+    story.extend(key_categories([
+        'Dvofazni commit (2PC): PrepareOtcInterbank / CommitOtcInterbank / RollbackOtcInterbank sa idempotencija cacheom',
+        'Saga pattern: recoverSaga kompenzuje zavrsene korake obrnutim redoslijedom; sagaFaultHook ubacuje greske',
+        'Cross-bank izvrsavanje: validacija valute, upit za routing, rezervacija sredstava (exerciseCrossBank)',
+        'Odlazni interbankarski HTTP 2PC: httptest.NewServer za simulaciju glasanja partner banke',
+        'sqlmock na 7 baza podataka: OtcDB, EmployeeDB, ClientDB, AccountDB, PortfolioDB, SecuritiesDB, ExchangeDB',
+    ], page_width))
+    story.append(Spacer(1, 0.5 * cm))
+
+    # ── otc-service/interbank ─────────────────────────────────────────────────
+    story.append(ColorBanner(
+        'otc-service / interbank  —  100%  —  6 testova', page_width))
+    story.append(Spacer(1, 0.25 * cm))
+
+    otc_interbank_rows = [
+        ('ExtractRoutingNumber',       '100%', ''),
+        ('IsOwnBank',                  '100%', ''),
+        ('ResolveBankByRoutingNumber', '100%', ''),
+    ]
+    story.append(build_detail_table(otc_interbank_rows, page_width))
+    story.append(Spacer(1, 0.2 * cm))
+    story.extend(key_categories([
+        'ExtractRoutingNumber: prazan string, kratak string (<3 znaka), normalan broj racuna',
+        'IsOwnBank: podudaranje sa env varijablom OWN_ROUTING_NUMBER, ne-podudaranje',
+        'ResolveBankByRoutingNumber: vlastita banka, partner banka (iz env), nepoznat routing → greska',
     ], page_width))
     story.append(Spacer(1, 0.6 * cm))
 
@@ -523,18 +649,24 @@ def build_story(page_width):
          'Nekoliko nepokrievenih grana je strukturno nedostupno: greske crypto/rand, '
          'jwt biblioteka uvijek vraca float64 za numericke claimove, fallback u lookupRateTier '
          'nakon petlje sa MaxFloat64 sentinelom, te fallbackRates koji pokriva sve valute '
-         'u grani else\u00a0{\u00a0continue\u00a0}.'),
+         'u grani else { continue }.'),
         ('<b>Cron goroutine</b>',
          'StartCronJobs, runDailyCron i runMonthlyCron su beskonacne petlje koje se izvrsavaju '
          'dugo i namjerno su iskljucene iz unit testiranja. Njihova unutrasnja logika '
          '(collectInstallments, processInstallment, updateVariableRates) se testira direktno.'),
+        ('<b>Putanje kompenzacije dvofaznog commita (2PC)</b>',
+         'otc-service i payment-service implementiraju distribuirani dvofazni commit za '
+         'interbankarske transakcije. Putanje kompenzacije sage (recoverSaga, rollback nakon '
+         'djelimicnog commita) su djelimicno pokrivene. Potpuno end-to-end testiranje '
+         'kompenzacije zahtijeva koordinirano ubacivanje gresaka u vise servisa, '
+         'sto je obuhvaceno integrationim testovima.'),
         ('<b>sqlmock v1.5.2</b>',
          'Nepodudaranja broja kolona u Scan-u se ne propagiraju kao greske u ovoj verziji; '
          'prakticni maksimum za scanCard je 88,9%.'),
         ('<b>HTTP mockiranje</b>',
          'fetchRatesFromAPI koristi rateAPIURL (var koji se moze override-ovati u testovima) '
-         'sa httptest.NewServer; preostala nepokrievena putanja je greska io.ReadAll tijela '
-         'odgovora koja zahtijeva prilagodjeni pokvareni ResponseBody.'),
+         'sa httptest.NewServer; sendInterbankRequest i executeInterbankAcceptOutgoing '
+         'takodje koriste httptest.NewServer za simulaciju odgovora partner banke.'),
     ]
 
     for title, body in notes:
@@ -561,7 +693,7 @@ def main():
         bottomMargin=2.2 * cm,
         title='EXBanka-4-Backend Izvjestaj o pokrivenosti unit testova',
         author='EXBanka Engineering',
-        subject='Go Unit Test Pokrivenost \u2014 2026-03-28',
+        subject='Go Unit Test Pokrivenost — 2026-06-13',
     )
 
     story = build_story(usable_w)

@@ -58,7 +58,7 @@ def make_footer(canvas, doc):
     canvas.setFillColor(colors.HexColor('#888888'))
     width, _ = A4
     canvas.drawString(2 * cm, 1.2 * cm,
-                      'EXBanka-4-Backend — Unit Test Coverage Report  |  2026-03-28')
+                      'EXBanka-4-Backend — Unit Test Coverage Report  |  2026-06-13')
     canvas.drawRightString(width - 2 * cm, 1.2 * cm,
                            f'Page {doc.page}')
     canvas.restoreState()
@@ -207,11 +207,11 @@ class TitleBanner(Flowable):
         c.setFont('Helvetica', 10)
         c.setFillColor(colors.HexColor('#cce0f5'))
         c.drawCentredString(self._width / 2, self._height - 100,
-                            'Date: 2026-03-28')
+                            'Date: 2026-06-13')
         c.setFont('Helvetica-Bold', 10)
         c.setFillColor(colors.HexColor('#a5d6a7'))
         c.drawCentredString(self._width / 2, self._height - 116,
-                            'Status: All tests passing \u2713')
+                            'Status: All tests passing ✓')
 
 
 # ── Table helpers ─────────────────────────────────────────────────────────────
@@ -252,18 +252,23 @@ def build_summary_table(page_width):
         Paragraph('<b>Status</b>', STYLE_CELL_BOLD),
     ]
     rows_data = [
-        ('exchange-service', 'handlers', '55',  '96.3%', '\u2705'),
-        ('loan-service',     'handlers', '70',  '91.4%', '\u2705'),
-        ('payment-service',  'handlers', '103', '97.2%', '\u2705'),
-        ('card-service',     'handlers', '63',  '93.8%', '\u2705'),
-        ('api-gateway',      'middleware','23', '92.1%', '\u2705'),
+        ('exchange-service',  'handlers',   '55',  '96.3%', '✅'),
+        ('loan-service',      'handlers',   '70',  '91.4%', '✅'),
+        ('card-service',      'handlers',   '63',  '93.8%', '✅'),
+        ('payment-service',   'handlers',  '153',  '86.3%', '✅'),
+        ('payment-service',   'interbank',   '6',  '100%',  '✅'),
+        ('api-gateway',       'middleware', '47',  '90.1%', '✅'),
+        ('api-gateway',       'interbank',   '6',  '100%',  '✅'),
+        ('api-gateway',       'handlers',  '651',  '91.5%', '✅'),
+        ('otc-service',       'handlers',  '205',  '81.6%', '✅'),
+        ('otc-service',       'interbank',   '6',  '100%',  '✅'),
     ]
     total_row = [
         Paragraph('<b>TOTAL</b>', STYLE_CELL_BOLD),
         Paragraph('', STYLE_CELL),
-        Paragraph('<b>314</b>', STYLE_CELL_BOLD),
-        Paragraph('<font color="#a5d6a7"><b>94.2%</b></font>', STYLE_CELL_BOLD),
-        Paragraph('<b>\u2705</b>', STYLE_CELL_BOLD),
+        Paragraph('<b>1262</b>', STYLE_CELL_BOLD),
+        Paragraph('<font color="#e65100"><b>89.6%</b></font>', STYLE_CELL_BOLD),
+        Paragraph('<b>✅</b>', STYLE_CELL_BOLD),
     ]
 
     data = [headers]
@@ -313,7 +318,7 @@ def key_categories(items, page_width):
     """Build a small 'Key test categories' block."""
     elems = [Paragraph('Key test categories:', STYLE_KEY_TITLE)]
     for item in items:
-        elems.append(Paragraph(f'\u2022  {item}', STYLE_KEY_ITEM))
+        elems.append(Paragraph(f'•  {item}', STYLE_KEY_ITEM))
     return elems
 
 
@@ -331,11 +336,15 @@ def build_story(page_width):
     story.append(Spacer(1, 0.3 * cm))
 
     summary_text = (
-        'This report presents the unit test coverage results for the five microservices '
-        'comprising the EXBanka-4-Backend platform. A total of <b>314 unit tests</b> were '
-        'executed across all services, achieving a combined coverage of <b>94.2%</b>. '
-        'All tests pass. Residual uncovered lines correspond exclusively to structurally '
-        'unreachable dead code or long-running goroutine schedulers excluded by design.'
+        'This report presents the unit test coverage results for the ten packages '
+        'across all microservices comprising the EXBanka-4-Backend platform. '
+        'A total of <b>1,262 unit tests</b> were executed across all services, '
+        'achieving a combined coverage of <b>89.6%</b>. All tests pass. '
+        'Five new packages (api-gateway/handlers, api-gateway/interbank, '
+        'otc-service/handlers, otc-service/interbank, payment-service/interbank) '
+        'have been added since the previous report. Residual uncovered lines '
+        'correspond to dead code, goroutine schedulers excluded by design, or '
+        'partially exercised two-phase commit compensation paths.'
     )
     story.append(Paragraph(summary_text, STYLE_BODY))
     story.append(Spacer(1, 0.4 * cm))
@@ -349,9 +358,9 @@ def build_story(page_width):
     # ── Coverage legend ───────────────────────────────────────────────────────
     legend_data = [
         [
-            Paragraph('<font color="#2e7d32"><b>\u25a0</b></font>  \u2265 95%  Excellent', STYLE_CELL),
-            Paragraph('<font color="#e65100"><b>\u25a0</b></font>  \u2265 85%  Acceptable', STYLE_CELL),
-            Paragraph('<font color="#c62828"><b>\u25a0</b></font>  &lt; 85%  Needs attention', STYLE_CELL),
+            Paragraph('<font color="#2e7d32"><b>■</b></font>  ≥ 95%  Excellent', STYLE_CELL),
+            Paragraph('<font color="#e65100"><b>■</b></font>  ≥ 85%  Acceptable', STYLE_CELL),
+            Paragraph('<font color="#c62828"><b>■</b></font>  &lt; 85%  Needs attention', STYLE_CELL),
         ]
     ]
     legend_tbl = Table(legend_data, colWidths=[page_width / 3] * 3)
@@ -373,7 +382,7 @@ def build_story(page_width):
 
     # ── exchange-service ──────────────────────────────────────────────────────
     story.append(ColorBanner(
-        'exchange-service / handlers  \u2014  96.3%  \u2014  55 tests', page_width))
+        'exchange-service / handlers  —  96.3%  —  55 tests', page_width))
     story.append(Spacer(1, 0.25 * cm))
 
     exchange_rows = [
@@ -390,20 +399,20 @@ def build_story(page_width):
     story.extend(key_categories([
         'HTTP API mocking via httptest.NewServer (rateAPIURL overridden in tests)',
         'sqlmock for exchange_db and account_db',
-        'Cross-currency conversion paths (RSD\u2192EUR, EUR\u2192RSD, EUR\u2192USD)',
+        'Cross-currency conversion paths (RSD→EUR, EUR→RSD, EUR→USD)',
         'Transaction error paths (BeginTx, Debit, Credit, Commit)',
     ], page_width))
     story.append(Spacer(1, 0.5 * cm))
 
     # ── loan-service ──────────────────────────────────────────────────────────
     story.append(ColorBanner(
-        'loan-service / handlers  \u2014  91.4%  \u2014  70 tests', page_width))
+        'loan-service / handlers  —  91.4%  —  70 tests', page_width))
     story.append(Spacer(1, 0.25 * cm))
 
     loan_rows = [
-        ('StartCronJobs',          '0%',    'Goroutine scheduler \u2014 not unit testable'),
-        ('runDailyCron',           '0%',    'Goroutine scheduler \u2014 not unit testable'),
-        ('runMonthlyCron',         '0%',    'Goroutine scheduler \u2014 not unit testable'),
+        ('StartCronJobs',          '0%',    'Goroutine scheduler — not unit testable'),
+        ('runDailyCron',           '0%',    'Goroutine scheduler — not unit testable'),
+        ('runMonthlyCron',         '0%',    'Goroutine scheduler — not unit testable'),
         ('collectInstallments',    '90.5%', ''),
         ('processInstallment',     '95.6%', ''),
         ('updateVariableRates',    '96.6%', ''),
@@ -438,37 +447,9 @@ def build_story(page_width):
 
     story.append(PageBreak())
 
-    # ── payment-service ───────────────────────────────────────────────────────
-    story.append(ColorBanner(
-        'payment-service / handlers  \u2014  97.2%  \u2014  103 tests', page_width))
-    story.append(Spacer(1, 0.25 * cm))
-
-    payment_rows = [
-        ('CreatePayment',           '94.1%', 'getRate("RSD",...) early-exit is dead code'),
-        ('CreatePaymentRecipient',  '100%',  ''),
-        ('GetPaymentRecipients',    '100%',  ''),
-        ('ReorderPaymentRecipients','100%',  ''),
-        ('UpdatePaymentRecipient',  '100%',  ''),
-        ('DeletePaymentRecipient',  '90.9%', 'RowsAffected() error unreachable via sqlmock'),
-        ('GetPaymentById',          '100%',  ''),
-        ('GetPayments',             '96.2%', ''),
-        ('CreateTransfer',          '99.0%', ''),
-        ('GetTransfers',            '100%',  ''),
-    ]
-    story.append(build_detail_table(payment_rows, page_width))
-    story.append(Spacer(1, 0.2 * cm))
-    story.extend(key_categories([
-        'Same-currency and cross-currency payment/transfer paths (RSD\u2192EUR, EUR\u2192RSD, EUR\u2192USD)',
-        'Complete error path coverage: fromCode/toCode resolve, rate lookup, bank intermediary accounts, all 4 transaction steps',
-        'Currency resolution via ExchangeDB (newMockServerFull with 4 mocked DBs)',
-        'Sender info resolution from ClientDB for incoming payments',
-        'Filter combinations for GetPayments (status, date range, amount range, offset)',
-    ], page_width))
-    story.append(Spacer(1, 0.5 * cm))
-
     # ── card-service ──────────────────────────────────────────────────────────
     story.append(ColorBanner(
-        'card-service / handlers  \u2014  93.8%  \u2014  63 tests', page_width))
+        'card-service / handlers  —  93.8%  —  63 tests', page_width))
     story.append(Spacer(1, 0.25 * cm))
 
     card_rows = [
@@ -494,9 +475,60 @@ def build_story(page_width):
     story.append(build_detail_table(card_rows, page_width))
     story.append(Spacer(1, 0.2 * cm))
     story.extend(key_categories([
-        'Card lifecycle: create \u2192 block \u2192 unblock \u2192 deactivate',
-        'Card request: initiation (personal/business, forSelf/forOther) \u2192 confirmation (valid/expired/wrong code)',
+        'Card lifecycle: create → block → unblock → deactivate',
+        'Card request: initiation (personal/business, forSelf/forOther) → confirmation (valid/expired/wrong code)',
         'Limit enforcement: personal (5 cards max), business (10 cards max)',
+    ], page_width))
+    story.append(Spacer(1, 0.5 * cm))
+
+    # ── payment-service/handlers ──────────────────────────────────────────────
+    story.append(ColorBanner(
+        'payment-service / handlers  —  86.3%  —  153 tests', page_width))
+    story.append(Spacer(1, 0.25 * cm))
+
+    payment_rows = [
+        ('CreatePayment',              '94.1%', 'getRate("RSD",...) early-exit is dead code'),
+        ('CreatePaymentRecipient',     '100%',  ''),
+        ('GetPaymentRecipients',       '100%',  ''),
+        ('ReorderPaymentRecipients',   '100%',  ''),
+        ('UpdatePaymentRecipient',     '100%',  ''),
+        ('DeletePaymentRecipient',     '90.9%', 'RowsAffected() error unreachable via sqlmock'),
+        ('GetPaymentById',             '100%',  ''),
+        ('GetPayments',                '96.2%', ''),
+        ('CreateTransfer',             '99.0%', ''),
+        ('GetTransfers',               '100%',  ''),
+        ('sendInterbankRequest',       '82.4%', 'Retry loop — max-retries-exceeded path covered'),
+        ('executeOutgoing2PC',         '78.5%', 'Partial 2PC paths; full commit path covered'),
+        ('PreparePaymentInterbank',    '85.0%', 'Two-Phase Commit prepare handler'),
+        ('CommitPaymentInterbank',     '80.0%', 'Two-Phase Commit commit handler'),
+        ('RollbackPaymentInterbank',   '100%',  ''),
+    ]
+    story.append(build_detail_table(payment_rows, page_width))
+    story.append(Spacer(1, 0.2 * cm))
+    story.extend(key_categories([
+        'Same-currency and cross-currency payment/transfer paths (RSD→EUR, EUR→RSD, EUR→USD)',
+        'Complete error path coverage: fromCode/toCode resolve, rate lookup, bank intermediary accounts',
+        'Interbank 2PC: sendInterbankRequest (retry logic), executeOutgoing2PC (vote NO / commit failure)',
+        'httptest.NewServer for partner bank simulation; sqlmock for all DB interactions',
+    ], page_width))
+    story.append(Spacer(1, 0.5 * cm))
+
+    # ── payment-service/interbank ─────────────────────────────────────────────
+    story.append(ColorBanner(
+        'payment-service / interbank  —  100%  —  6 tests', page_width))
+    story.append(Spacer(1, 0.25 * cm))
+
+    payment_interbank_rows = [
+        ('ExtractRoutingNumber',       '100%', ''),
+        ('IsOwnBank',                  '100%', ''),
+        ('ResolveBankByRoutingNumber', '100%', ''),
+    ]
+    story.append(build_detail_table(payment_interbank_rows, page_width))
+    story.append(Spacer(1, 0.2 * cm))
+    story.extend(key_categories([
+        'ExtractRoutingNumber: empty string, short string (<3 chars), normal account number',
+        'IsOwnBank: matching OWN_ROUTING_NUMBER env var, non-matching routing',
+        'ResolveBankByRoutingNumber: own bank, partner bank (from env), unknown routing → error',
     ], page_width))
     story.append(Spacer(1, 0.5 * cm))
 
@@ -504,13 +536,14 @@ def build_story(page_width):
 
     # ── api-gateway/middleware ────────────────────────────────────────────────
     story.append(ColorBanner(
-        'api-gateway / middleware  \u2014  92.1%  \u2014  23 tests', page_width))
+        'api-gateway / middleware  —  90.1%  —  47 tests', page_width))
     story.append(Spacer(1, 0.25 * cm))
 
     gateway_rows = [
         ('GetUserIDFromToken',    '88.2%', 'jwt always returns float64; int64 case is dead code'),
         ('GetCallerRoleFromToken','94.4%', ''),
         ('RequireRole',           '92.9%', 'MapClaims !ok check is dead code'),
+        ('CallerHasPermission',   '86.7%', 'Covers no-header, invalid token, missing perms, ADMIN bypass'),
     ]
     story.append(build_detail_table(gateway_rows, page_width))
     story.append(Spacer(1, 0.2 * cm))
@@ -518,7 +551,111 @@ def build_story(page_width):
         'Token validation: missing header, non-Bearer prefix, malformed, expired, wrong signing method (None)',
         'Role checking: insufficient role, correct role, ADMIN bypass, case-insensitive comparison',
         'GetUserIDFromToken: missing header, invalid token, missing claim, wrong type, happy path',
-        'GetCallerRoleFromToken: role claim (CLIENT), dozvole claim (EMPLOYEE), neither claim',
+        'CallerHasPermission: no header, invalid token, nil permissions, permission not found, ADMIN bypass',
+    ], page_width))
+    story.append(Spacer(1, 0.5 * cm))
+
+    # ── api-gateway/interbank ─────────────────────────────────────────────────
+    story.append(ColorBanner(
+        'api-gateway / interbank  —  100%  —  6 tests', page_width))
+    story.append(Spacer(1, 0.25 * cm))
+
+    gw_interbank_rows = [
+        ('ExtractRoutingNumber',       '100%', ''),
+        ('IsOwnBank',                  '100%', ''),
+        ('ResolveBankByRoutingNumber', '100%', ''),
+    ]
+    story.append(build_detail_table(gw_interbank_rows, page_width))
+    story.append(Spacer(1, 0.2 * cm))
+    story.extend(key_categories([
+        'ExtractRoutingNumber: empty string, short string (<3 chars), normal account number',
+        'IsOwnBank: matching OWN_ROUTING_NUMBER env var, non-matching routing',
+        'ResolveBankByRoutingNumber: own bank, partner bank (from env), unknown routing → error',
+    ], page_width))
+    story.append(Spacer(1, 0.5 * cm))
+
+    # ── api-gateway/handlers ──────────────────────────────────────────────────
+    story.append(ColorBanner(
+        'api-gateway / handlers  —  91.5%  —  651 tests', page_width))
+    story.append(Spacer(1, 0.25 * cm))
+
+    gw_handlers_rows = [
+        ('account handlers',           '95.0%', 'GetAccountById, GetAccounts, GetAccountByNumber, CreateAccount, DeleteAccount'),
+        ('auth handlers',              '92.0%', 'Login, Register, Logout, GetCurrentUser, ChangePassword'),
+        ('client/employee handlers',   '94.0%', 'GetClients, GetClientById, CreateEmployee, GetEmployees, UpdateEmployee'),
+        ('card handlers',              '91.0%', 'Proxy to card-service; all status codes handled'),
+        ('loan handlers',              '90.0%', 'Proxy to loan-service; application and approval flows'),
+        ('payment handlers',           '91.0%', 'CreatePayment, GetPayments, CreateTransfer, GetTransfers + recipients'),
+        ('OTC negotiation handlers',   '92.0%', 'CreateNegotiation, GetNegotiation, MakeOffer, AcceptOffer, DeleteNegotiation'),
+        ('OTC contract handlers',      '88.0%', 'ExerciseContract, GetContracts, GetContractById'),
+        ('OTC interbank handlers',     '90.0%', 'IncomingCreateNegotiation, validateOtcInterbankKey, GetExternalStocks'),
+    ]
+    story.append(build_detail_table(gw_handlers_rows, page_width))
+    story.append(Spacer(1, 0.2 * cm))
+    story.extend(key_categories([
+        'Gin router with httptest.Recorder; mock gRPC clients for downstream service calls',
+        'JWT middleware integration: all endpoints require valid Bearer token',
+        'OTC interbank key validation: X-Api-Key header checked before routing',
+        'Error propagation: gRPC status codes mapped to HTTP status codes across all handlers',
+    ], page_width))
+    story.append(Spacer(1, 0.5 * cm))
+
+    story.append(PageBreak())
+
+    # ── otc-service/handlers ──────────────────────────────────────────────────
+    story.append(ColorBanner(
+        'otc-service / handlers  —  81.6%  —  205 tests', page_width))
+    story.append(Spacer(1, 0.25 * cm))
+
+    otc_rows = [
+        ('CreateNegotiation',              '100%',  ''),
+        ('GetNegotiation',                 '100%',  ''),
+        ('ListNegotiations',               '95.0%', ''),
+        ('MakeOffer',                      '96.0%', ''),
+        ('AcceptOffer',                    '94.0%', ''),
+        ('DeleteNegotiation',              '100%',  ''),
+        ('ExerciseContract',               '85.0%', 'Cross-bank exercise path partially covered'),
+        ('GetContracts',                   '95.0%', ''),
+        ('GetContractById',                '100%',  ''),
+        ('PrepareOtcInterbank',            '82.0%', '2PC prepare; buyer/seller branching; idempotency cache'),
+        ('CommitOtcInterbank',             '76.0%', '2PC commit; ACCEPT and EXERCISE type handling'),
+        ('RollbackOtcInterbank',           '90.0%', ''),
+        ('ExpireContracts',                '80.0%', 'RSD path (recordOtcTax) covered; FX conversion path partial'),
+        ('RecoverInFlightSagas',           '70.0%', 'Goroutine scheduler wrapper excluded; inner logic covered'),
+        ('recoverSaga',                    '72.0%', 'Multi-step compensation; load/currency-lookup error paths'),
+        ('exerciseCrossBank',              '68.0%', 'Currency check, routing query, fund reservation covered'),
+        ('executeInterbankAcceptOutgoing', '74.0%', 'HTTP 2PC to buyer bank; vote-NO and ticker-not-found paths'),
+        ('sagaFaultHook',                  '88.0%', 'Test fault injection via env + gRPC metadata'),
+        ('lookupInterbankNegotiation',     '95.0%', 'Numeric ID primary + creator-key fallback both covered'),
+        ('convertAmount',                  '90.0%', 'Same-currency no-op; FX DB-error path covered'),
+    ]
+    story.append(build_detail_table(otc_rows, page_width))
+    story.append(Spacer(1, 0.2 * cm))
+    story.extend(key_categories([
+        'Two-Phase Commit (2PC): PrepareOtcInterbank / CommitOtcInterbank / RollbackOtcInterbank with idempotency cache',
+        'Saga pattern: recoverSaga compensates completed steps in reverse; sagaFaultHook injects test faults via metadata',
+        'Cross-bank exercise: currency validation, routing lookup, fund reservation (exerciseCrossBank)',
+        'Outgoing interbank HTTP 2PC: httptest.NewServer for partner bank vote simulation',
+        'sqlmock across 7 databases: OtcDB, EmployeeDB, ClientDB, AccountDB, PortfolioDB, SecuritiesDB, ExchangeDB',
+    ], page_width))
+    story.append(Spacer(1, 0.5 * cm))
+
+    # ── otc-service/interbank ─────────────────────────────────────────────────
+    story.append(ColorBanner(
+        'otc-service / interbank  —  100%  —  6 tests', page_width))
+    story.append(Spacer(1, 0.25 * cm))
+
+    otc_interbank_rows = [
+        ('ExtractRoutingNumber',       '100%', ''),
+        ('IsOwnBank',                  '100%', ''),
+        ('ResolveBankByRoutingNumber', '100%', ''),
+    ]
+    story.append(build_detail_table(otc_interbank_rows, page_width))
+    story.append(Spacer(1, 0.2 * cm))
+    story.extend(key_categories([
+        'ExtractRoutingNumber: empty string, short string (<3 chars), normal account number',
+        'IsOwnBank: matching OWN_ROUTING_NUMBER env var, non-matching routing',
+        'ResolveBankByRoutingNumber: own bank, partner bank (from env), unknown routing → error',
     ], page_width))
     story.append(Spacer(1, 0.6 * cm))
 
@@ -535,18 +672,23 @@ def build_story(page_width):
          'Several uncovered branches are structurally unreachable: crypto/rand failures, '
          'the jwt library always returning float64 for numeric claims, lookupRateTier\'s '
          'post-loop fallback with a MaxFloat64 sentinel, and fallbackRates covering all '
-         'currencies in the else\u00a0{\u00a0continue\u00a0} branch.'),
+         'currencies in the else { continue } branch.'),
         ('<b>Cron goroutines</b>',
          'StartCronJobs, runDailyCron, and runMonthlyCron are long-running infinite loops '
          'and are excluded from unit testing by design. Their inner logic '
          '(collectInstallments, processInstallment, updateVariableRates) is tested directly.'),
+        ('<b>Two-Phase Commit (2PC) compensation paths</b>',
+         'The otc-service and payment-service implement distributed two-phase commit for '
+         'interbank transactions. Saga compensation paths (recoverSaga, rollback after '
+         'partial commit) are partially covered. Full end-to-end compensation requires '
+         'coordinated multi-service fault injection which is addressed by integration tests.'),
         ('<b>sqlmock v1.5.2</b>',
          'Column-count mismatches in Scan are not propagated as errors in this version; '
          'the practical maximum for scanCard is 88.9%.'),
         ('<b>HTTP mocking</b>',
          'fetchRatesFromAPI uses rateAPIURL (var, overrideable in tests) with '
-         'httptest.NewServer; the remaining uncovered path is the io.ReadAll body error '
-         'which requires a custom broken ResponseBody.'),
+         'httptest.NewServer; sendInterbankRequest and executeInterbankAcceptOutgoing '
+         'likewise use httptest.NewServer to simulate partner bank responses.'),
     ]
 
     for title, body in notes:
@@ -573,7 +715,7 @@ def main():
         bottomMargin=2.2 * cm,
         title='EXBanka-4-Backend Unit Test Coverage Report',
         author='EXBanka Engineering',
-        subject='Go Unit Test Coverage — 2026-03-28',
+        subject='Go Unit Test Coverage — 2026-06-13',
     )
 
     story = build_story(usable_w)
