@@ -257,16 +257,16 @@ func (s *OtcServer) exerciseCrossBank(
 	// Resolve buyer account number.
 	buyerAccountID := req.BuyerAccountId
 	if buyerAccountID == 0 {
-		buyerAccountID, err = findAccount(s.AccountDB, portfolioUserID(buyerID, buyerType), currencyID)
+		buyerAccountID, err = findAccount(ctx, s.AccountDB, portfolioUserID(buyerID, buyerType), currencyID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to find buyer account: %v", err)
 		}
 	}
-	buyerCurrencyID, err := getAccountCurrencyID(s.AccountDB, buyerAccountID)
+	buyerCurrencyID, err := getAccountCurrencyID(ctx, s.AccountDB, buyerAccountID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to read buyer account currency: %v", err)
 	}
-	totalCostToPay, err := convertAmount(s.ExchangeDB, totalCost, currencyID, buyerCurrencyID)
+	totalCostToPay, err := convertAmount(ctx, s.ExchangeDB, totalCost, currencyID, buyerCurrencyID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "currency conversion failed: %v", err)
 	}
@@ -344,7 +344,7 @@ func (s *OtcServer) exerciseCrossBank(
 		totalCostToPay, buyerAccountID)
 
 	// Step 4: Add shares to buyer's portfolio.
-	listingID, _ := listingIDForTicker(s.SecuritiesDB, ticker)
+	listingID, _ := listingIDForTicker(ctx, s.SecuritiesDB, ticker)
 	_, _ = s.PortfolioDB.ExecContext(ctx, `
 		INSERT INTO portfolio_entry (user_id, user_type, listing_id, amount, buy_price, account_id)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -629,7 +629,7 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 	}
 
 	// YES: reserve seller shares and create seller-side contract.
-	listingID, err := listingIDForTicker(s.SecuritiesDB, ticker)
+	listingID, err := listingIDForTicker(ctx, s.SecuritiesDB, ticker)
 	if err != nil {
 		_, _ = otcSendInterbankRequest(ctx, bankURL, bank.APIKey, otcIbEnvelope{
 			IdempotenceKey: otcIbIdempotenceKey{RoutingNumber: ownRouting, LocallyGeneratedKey: otcGenerateUUID()},
@@ -686,7 +686,7 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 	// Credit seller's account locally — the 2PC posting notifies Banka 4 but does not
 	// touch our account DB. We credit after COMMIT so the buyer's debit is already settled.
 	if currID, ok := currencyIDMap[currency]; ok && premium > 0 {
-		if sellerAcctID, findErr := findAccount(s.AccountDB, portfolioUserID(sellerID, sellerType), currID); findErr == nil {
+		if sellerAcctID, findErr := findAccount(ctx, s.AccountDB, portfolioUserID(sellerID, sellerType), currID); findErr == nil {
 			_, _ = s.AccountDB.ExecContext(ctx,
 				`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
 				premium, sellerAcctID)

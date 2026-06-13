@@ -136,9 +136,9 @@ func portfolioUserID(userID int64, userType string) int64 {
 }
 
 // listingIDForTicker resolves ticker → listing.id in securities_db.
-func listingIDForTicker(securitiesDB *sql.DB, ticker string) (int64, error) {
+func listingIDForTicker(ctx context.Context, securitiesDB *sql.DB, ticker string) (int64, error) {
 	var id int64
-	err := securitiesDB.QueryRow(`SELECT id FROM listing WHERE ticker = $1`, ticker).Scan(&id)
+	err := securitiesDB.QueryRowContext(ctx, `SELECT id FROM listing WHERE ticker = $1`, ticker).Scan(&id)
 	if err == sql.ErrNoRows {
 		return 0, fmt.Errorf("listing not found for ticker %s", ticker)
 	}
@@ -146,9 +146,9 @@ func listingIDForTicker(securitiesDB *sql.DB, ticker string) (int64, error) {
 }
 
 // findAccount returns the first account_id for owner with matching currency.
-func findAccount(accountDB *sql.DB, ownerID int64, currencyID int64) (int64, error) {
+func findAccount(ctx context.Context, accountDB *sql.DB, ownerID int64, currencyID int64) (int64, error) {
 	var id int64
-	err := accountDB.QueryRow(
+	err := accountDB.QueryRowContext(ctx,
 		`SELECT id FROM accounts WHERE owner_id = $1 AND currency_id = $2 AND status = 'ACTIVE' LIMIT 1`,
 		ownerID, currencyID,
 	).Scan(&id)
@@ -165,15 +165,15 @@ var currencyCodeMap = map[int64]string{
 }
 
 // getAccountCurrencyID returns the currency_id of a given account.
-func getAccountCurrencyID(accountDB *sql.DB, accountID int64) (int64, error) {
+func getAccountCurrencyID(ctx context.Context, accountDB *sql.DB, accountID int64) (int64, error) {
 	var cid int64
-	err := accountDB.QueryRow(`SELECT currency_id FROM accounts WHERE id = $1`, accountID).Scan(&cid)
+	err := accountDB.QueryRowContext(ctx, `SELECT currency_id FROM accounts WHERE id = $1`, accountID).Scan(&cid)
 	return cid, err
 }
 
 // convertAmount converts amount from fromCurrencyID to toCurrencyID using today's middle rates.
 // Returns amount unchanged when currencies are equal.
-func convertAmount(exchangeDB *sql.DB, amount float64, fromCurrencyID, toCurrencyID int64) (float64, error) {
+func convertAmount(ctx context.Context, exchangeDB *sql.DB, amount float64, fromCurrencyID, toCurrencyID int64) (float64, error) {
 	if fromCurrencyID == toCurrencyID {
 		return amount, nil
 	}
@@ -184,7 +184,7 @@ func convertAmount(exchangeDB *sql.DB, amount float64, fromCurrencyID, toCurrenc
 			return 1.0, nil
 		}
 		var r float64
-		err := exchangeDB.QueryRow(
+		err := exchangeDB.QueryRowContext(ctx,
 			`SELECT middle_rate FROM daily_exchange_rates WHERE currency_code = $1 AND date = CURRENT_DATE`,
 			code,
 		).Scan(&r)
@@ -218,7 +218,7 @@ func (s *OtcServer) recordOtcTax(userID int64, userType string, taxableAmount fl
 	if !ok {
 		return
 	}
-	amountRSD, err := convertAmount(s.ExchangeDB, taxableAmount, fromID, 1)
+	amountRSD, err := convertAmount(context.Background(), s.ExchangeDB, taxableAmount, fromID, 1)
 	if err != nil {
 		return
 	}
@@ -258,7 +258,7 @@ func (s *OtcServer) CreateNegotiation(ctx context.Context, req *pb.CreateNegotia
 	}
 
 	// Check seller has enough free shares before creating the negotiation.
-	listingID, err := listingIDForTicker(s.SecuritiesDB, req.Ticker)
+	listingID, err := listingIDForTicker(ctx, s.SecuritiesDB, req.Ticker)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "unknown ticker: %s", req.Ticker)
 	}
@@ -466,7 +466,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	}
 
 	// --- Seller capacity check ---
-	listingID, err := listingIDForTicker(s.SecuritiesDB, ticker)
+	listingID, err := listingIDForTicker(ctx, s.SecuritiesDB, ticker)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to resolve ticker: %v", err)
 	}
@@ -498,16 +498,16 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	}
 	buyerAccountID := req.BuyerAccountId
 	if buyerAccountID == 0 {
-		buyerAccountID, err = findAccount(s.AccountDB, portfolioUserID(buyerID, buyerType), currencyID)
+		buyerAccountID, err = findAccount(ctx, s.AccountDB, portfolioUserID(buyerID, buyerType), currencyID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to find buyer account: %v", err)
 		}
 	}
-	buyerCurrencyID, err := getAccountCurrencyID(s.AccountDB, buyerAccountID)
+	buyerCurrencyID, err := getAccountCurrencyID(ctx, s.AccountDB, buyerAccountID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to read buyer account currency: %v", err)
 	}
-	premiumToPay, err := convertAmount(s.ExchangeDB, premium, currencyID, buyerCurrencyID)
+	premiumToPay, err := convertAmount(ctx, s.ExchangeDB, premium, currencyID, buyerCurrencyID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "currency conversion failed: %v", err)
 	}
@@ -523,7 +523,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	}
 
 	// --- Find seller account ---
-	sellerAccountID, err := findAccount(s.AccountDB, portfolioUserID(sellerID, sellerType), currencyID)
+	sellerAccountID, err := findAccount(ctx, s.AccountDB, portfolioUserID(sellerID, sellerType), currencyID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find seller account: %v", err)
 	}
@@ -749,7 +749,7 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 		return nil, status.Error(codes.InvalidArgument, "Contract settlement date has passed")
 	}
 
-	listingID, err := listingIDForTicker(s.SecuritiesDB, ticker)
+	listingID, err := listingIDForTicker(ctx, s.SecuritiesDB, ticker)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "ticker not found: %v", err)
 	}
@@ -781,16 +781,16 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 
 	buyerAccountID := req.BuyerAccountId
 	if buyerAccountID == 0 {
-		buyerAccountID, err = findAccount(s.AccountDB, portfolioUserID(buyerID, buyerType), currencyID)
+		buyerAccountID, err = findAccount(ctx, s.AccountDB, portfolioUserID(buyerID, buyerType), currencyID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to find buyer account: %v", err)
 		}
 	}
-	buyerCurrencyID, err := getAccountCurrencyID(s.AccountDB, buyerAccountID)
+	buyerCurrencyID, err := getAccountCurrencyID(ctx, s.AccountDB, buyerAccountID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to read buyer account currency: %v", err)
 	}
-	totalCostToPay, err := convertAmount(s.ExchangeDB, totalCost, currencyID, buyerCurrencyID)
+	totalCostToPay, err := convertAmount(ctx, s.ExchangeDB, totalCost, currencyID, buyerCurrencyID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "currency conversion failed: %v", err)
 	}
@@ -923,7 +923,7 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 	}
 
 	// ── Step 3: Transfer funds ────────────────────────────────────────────────────
-	sellerAccountID, err := findAccount(s.AccountDB, portfolioUserID(sellerID, sellerType), currencyID)
+	sellerAccountID, err := findAccount(ctx, s.AccountDB, portfolioUserID(sellerID, sellerType), currencyID)
 	if err != nil {
 		sagaLog(3, "FAILED", err.Error())
 		sagaStatus("Compensating", 3)
@@ -1635,7 +1635,7 @@ func (s *OtcServer) PrepareOtcInterbank(ctx context.Context, req *pb.OtcInterban
 			s.insertOtcInterbankTx(ctx, req, req.NegotiationId, "NO")
 			return &pb.OtcInterbankVoteResponse{Vote: "NO", Reason: "OPTION_AMOUNT_INCORRECT"}, nil
 		}
-		listingID, err := listingIDForTicker(s.SecuritiesDB, ticker)
+		listingID, err := listingIDForTicker(ctx, s.SecuritiesDB, ticker)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "ticker not found: %v", err)
 		}
@@ -1749,7 +1749,7 @@ func (s *OtcServer) CommitOtcInterbank(ctx context.Context, req *pb.OtcInterbank
 		}
 
 		// SELLER-SIDE accept: we are the seller, partner bank is buyer.
-		listingID, err := listingIDForTicker(s.SecuritiesDB, ticker)
+		listingID, err := listingIDForTicker(ctx, s.SecuritiesDB, ticker)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "ticker not found: %v", err)
 		}
@@ -1793,7 +1793,7 @@ func (s *OtcServer) CommitOtcInterbank(ctx context.Context, req *pb.OtcInterbank
 			return nil, status.Errorf(codes.Internal, "failed to load contract: %v", err)
 		}
 
-		listingID, err := listingIDForTicker(s.SecuritiesDB, ticker)
+		listingID, err := listingIDForTicker(ctx, s.SecuritiesDB, ticker)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "ticker not found: %v", err)
 		}
@@ -1817,7 +1817,7 @@ func (s *OtcServer) CommitOtcInterbank(ctx context.Context, req *pb.OtcInterbank
 		// Credit seller's account with strike payment (buyer's bank sent us the exercise 2PC).
 		strikePayment := float64(stockAmount) * strikePrice
 		if currID, ok := currencyIDMap[currency]; ok && strikePayment > 0 {
-			if sellerAcctID, findErr := findAccount(s.AccountDB, portfolioUserID(sellerID, sellerType), currID); findErr == nil {
+			if sellerAcctID, findErr := findAccount(ctx, s.AccountDB, portfolioUserID(sellerID, sellerType), currID); findErr == nil {
 				_, _ = s.AccountDB.ExecContext(ctx,
 					`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
 					strikePayment, sellerAcctID)
