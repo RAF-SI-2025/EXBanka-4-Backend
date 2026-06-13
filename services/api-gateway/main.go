@@ -128,7 +128,7 @@ func main() {
 
 	// OTC interbank endpoints (partner bank calls, no JWT).
 	// Registered at both /otc/interbank/negotiations/... (legacy) and /negotiations/... (protocol standard).
-	for _, prefix := range []string{"/otc/interbank/negotiations", "/negotiations"} {
+	for _, prefix := range []string{"/otc/interbank/negotiations", "/negotiations", "/api/negotiations"} {
 		r.POST(prefix, handlers.IncomingCreateNegotiation(otcClient))
 		r.PUT(prefix+"/:routingNumber/:id", handlers.IncomingCounterOffer(otcClient))
 		r.GET(prefix+"/:routingNumber/:id", handlers.IncomingGetNegotiation(otcClient))
