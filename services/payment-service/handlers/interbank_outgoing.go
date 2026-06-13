@@ -299,13 +299,15 @@ func executeOutgoing2PC(ctx context.Context, s *PaymentServer, req *pb.CreatePay
 
 	// DB tx #2: apply debit now that partner committed.
 	// Use a detached context — partner has already credited the recipient so this MUST complete.
+	// Only balance is reduced here; available_balance was already reduced during reservation.
 	commitCtx, commitCancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer commitCancel()
-	_, _ = s.AccountDB.ExecContext(commitCtx, `
+	if _, err := s.AccountDB.ExecContext(commitCtx, `
 		UPDATE accounts SET
-			balance           = balance - $1,
-			available_balance = available_balance + $1
-		WHERE id = $2`, req.Amount, fromID)
+			balance = balance - $1
+		WHERE id = $2`, req.Amount, fromID); err != nil {
+		return nil, status.Errorf(codes.Internal, "apply local debit after partner commit: %v", err)
+	}
 
 	// Persist payment record.
 	orderNumber := fmt.Sprintf("ORD-%d-%s", time.Now().UnixMilli(), generateUUID()[:8])
