@@ -23,6 +23,12 @@ func gatewayOwnRoutingInt() int32 {
 	return n
 }
 
+func gatewayPartnerRoutingInt() int32 {
+	var n int32
+	_, _ = fmt.Sscanf(os.Getenv("PARTNER_ROUTING_NUMBER"), "%d", &n)
+	return n
+}
+
 // validateOtcInterbankKey rejects requests whose X-Api-Key does not match OWN_INTERBANK_API_KEY.
 func validateOtcInterbankKey(c *gin.Context) bool {
 	key := os.Getenv("OWN_INTERBANK_API_KEY")
@@ -105,40 +111,89 @@ func IncomingCreateNegotiation(otcClient pb.OtcServiceClient) gin.HandlerFunc {
 			return
 		}
 
-		var body otcNegotiationBody
-		if err := c.ShouldBindJSON(&body); err != nil {
+		// Accept both nested format (stock.ticker, pricePerUnit, premium as object) and
+		// the flat format some partner banks send (ticker, pricePerStock, premium as number).
+		var raw struct {
+			Stock          struct{ Ticker string `json:"ticker"` } `json:"stock"`
+			Ticker         string         `json:"ticker"`
+			SellerID       otcPartyID     `json:"sellerId"`
+			BuyerID        *otcPartyID    `json:"buyerId"`
+			Amount         int32          `json:"amount"`
+			PricePerUnit   otcMoneyAmount `json:"pricePerUnit"`
+			PricePerStock  float64        `json:"pricePerStock"`
+			PriceCurrency  string         `json:"priceCurrency"`
+			Premium        float64        `json:"premium"`
+			PremiumCurrency string        `json:"premiumCurrency"`
+			AccountNumber      string     `json:"accountNumber"`
+			BuyerAccountNumber string     `json:"buyerAccountNumber"`
+			SettlementDate string         `json:"settlementDate"`
+			SellerType     string         `json:"sellerType"`
+			LastModifiedBy *otcPartyID    `json:"lastModifiedBy"`
+		}
+		if err := c.ShouldBindJSON(&raw); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body: " + err.Error()})
 			return
+		}
+
+		// Reconcile flat vs nested fields.
+		ticker := raw.Stock.Ticker
+		if ticker == "" {
+			ticker = raw.Ticker
+		}
+		pricePerUnit := raw.PricePerUnit.Amount
+		if pricePerUnit == 0 {
+			pricePerUnit = raw.PricePerStock
+		}
+		priceCurrency := raw.PricePerUnit.Currency
+		if priceCurrency == "" {
+			priceCurrency = raw.PriceCurrency
+		}
+		premiumCurrency := raw.PremiumCurrency
+		if premiumCurrency == "" {
+			premiumCurrency = priceCurrency
+		}
+		buyerAccountNum := raw.BuyerAccountNumber
+		if buyerAccountNum == "" {
+			buyerAccountNum = raw.AccountNumber
+		}
+
+		// If the partner did not send a buyerId, they ARE the buyer — derive from env.
+		var buyerRouting int32
+		var buyerExtID string
+		if raw.BuyerID != nil {
+			buyerRouting = raw.BuyerID.RoutingNumber
+			buyerExtID = raw.BuyerID.ID
+		} else {
+			buyerRouting = gatewayPartnerRoutingInt()
+			buyerExtID = raw.SellerID.ID // partner's local seller id doubles as creator key
 		}
 
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 		defer cancel()
 
-		// Forward buyer account number to otc-service via gRPC metadata (no proto change needed).
-		md := metadata.Pairs("buyer-account-number", body.BuyerAccountNumber)
+		md := metadata.Pairs("buyer-account-number", buyerAccountNum)
 		ctx = metadata.NewOutgoingContext(ctx, md)
 
 		resp, err := otcClient.CreateInterbankNegotiation(ctx, &pb.CreateInterbankNegotiationRequest{
-			Ticker:               body.Stock.Ticker,
-			SettlementDate:       body.SettlementDate,
-			PricePerUnit:         body.PricePerUnit.Amount,
-			PriceCurrency:        body.PricePerUnit.Currency,
-			Premium:              body.Premium.Amount,
-			BuyerRoutingNumber:   body.BuyerID.RoutingNumber,
-			BuyerExternalId:      body.BuyerID.ID,
-			SellerRoutingNumber:  body.SellerID.RoutingNumber,
-			SellerExternalId:     body.SellerID.ID,
-			CreatorRoutingNumber: body.BuyerID.RoutingNumber,
-			CreatorExternalId:    body.BuyerID.ID,
-			Amount:               body.Amount,
-			SellerType:           body.SellerType,
+			Ticker:               ticker,
+			SettlementDate:       raw.SettlementDate,
+			PricePerUnit:         pricePerUnit,
+			PriceCurrency:        priceCurrency,
+			Premium:              raw.Premium,
+			BuyerRoutingNumber:   buyerRouting,
+			BuyerExternalId:      buyerExtID,
+			SellerRoutingNumber:  raw.SellerID.RoutingNumber,
+			SellerExternalId:     raw.SellerID.ID,
+			CreatorRoutingNumber: buyerRouting,
+			CreatorExternalId:    buyerExtID,
+			Amount:               raw.Amount,
+			SellerType:           raw.SellerType,
 		})
 		if err != nil {
 			mapOtcInterbankError(c, err)
 			return
 		}
 
-		// Return the globally-unique negotiation ID (our routing + our local id)
 		ownRouting := gatewayOwnRoutingInt()
 		c.JSON(http.StatusCreated, gin.H{
 			"routingNumber": ownRouting,
