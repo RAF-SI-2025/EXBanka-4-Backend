@@ -84,7 +84,7 @@ func (s *PaymentServer) previewCrossBank(ctx context.Context, req *pb.PreviewPay
 	})
 
 	// Always roll back — we must not leave a dangling PENDING on the partner side
-	sendRollback(ctx, bankURL, bank.APIKey, txID)
+	sendRollback(bankURL, bank.APIKey, txID)
 
 	if probeErr != nil || probeResp.StatusCode != http.StatusOK {
 		return fallback, nil
