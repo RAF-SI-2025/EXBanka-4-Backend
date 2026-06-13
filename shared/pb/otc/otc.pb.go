@@ -1121,6 +1121,7 @@ type ExerciseContractResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	ExecutedAt    string                 `protobuf:"bytes,2,opt,name=executed_at,json=executedAt,proto3" json:"executed_at,omitempty"`
+	SagaId        int64                  `protobuf:"varint,3,opt,name=saga_id,json=sagaId,proto3" json:"saga_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1167,6 +1168,13 @@ func (x *ExerciseContractResponse) GetExecutedAt() string {
 		return x.ExecutedAt
 	}
 	return ""
+}
+
+func (x *ExerciseContractResponse) GetSagaId() int64 {
+	if x != nil {
+		return x.SagaId
+	}
+	return 0
 }
 
 type GetMarketRequest struct {
@@ -2150,11 +2158,12 @@ const file_otc_proto_rawDesc = "" +
 	"\tcaller_id\x18\x02 \x01(\x03R\bcallerId\x12\x1f\n" +
 	"\vcaller_type\x18\x03 \x01(\tR\n" +
 	"callerType\x12(\n" +
-	"\x10buyer_account_id\x18\x04 \x01(\x03R\x0ebuyerAccountId\"S\n" +
+	"\x10buyer_account_id\x18\x04 \x01(\x03R\x0ebuyerAccountId\"l\n" +
 	"\x18ExerciseContractResponse\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x1f\n" +
 	"\vexecuted_at\x18\x02 \x01(\tR\n" +
-	"executedAt\"P\n" +
+	"executedAt\x12\x17\n" +
+	"\asaga_id\x18\x03 \x01(\x03R\x06sagaId\"P\n" +
 	"\x10GetMarketRequest\x12\x1b\n" +
 	"\tcaller_id\x18\x01 \x01(\x03R\bcallerId\x12\x1f\n" +
 	"\vcaller_type\x18\x02 \x01(\tR\n" +

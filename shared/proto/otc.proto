@@ -138,6 +138,7 @@ message ExerciseContractRequest {
 message ExerciseContractResponse {
   string status      = 1;
   string executed_at = 2;
+  int64  saga_id     = 3;
 }
 
 message GetMarketRequest {

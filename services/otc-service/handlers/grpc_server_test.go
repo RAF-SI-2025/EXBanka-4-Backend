@@ -647,8 +647,8 @@ func TestListContracts_WithStatusFilter(t *testing.T) {
 
 func TestExerciseContract_NotFound(t *testing.T) {
 	s, mainMock, _, _, _, _, _ := newTestServer(t)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnError(sql.ErrNoRows)
@@ -662,8 +662,8 @@ func TestExerciseContract_NotFound(t *testing.T) {
 func TestExerciseContract_NotBuyer(t *testing.T) {
 	s, mainMock, _, _, _, _, _ := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -677,8 +677,8 @@ func TestExerciseContract_NotBuyer(t *testing.T) {
 func TestExerciseContract_NotActive(t *testing.T) {
 	s, mainMock, _, _, _, _, _ := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{
@@ -696,8 +696,8 @@ func TestExerciseContract_NotActive(t *testing.T) {
 func TestExerciseContract_InsufficientFunds(t *testing.T) {
 	s, mainMock, _, _, mAcc, _, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -706,6 +706,7 @@ func TestExerciseContract_InsufficientFunds(t *testing.T) {
 	// Step 1: atomic UPDATE returns 0 rows (insufficient funds)
 	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
+	mainMock.ExpectQuery("INSERT INTO otc_saga").WillReturnError(fmt.Errorf("mock"))
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 0))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log"). // step 1 FAILED
@@ -722,8 +723,8 @@ func TestExerciseContract_InsufficientFunds(t *testing.T) {
 func TestExerciseContract_SellerNoShares(t *testing.T) {
 	s, mainMock, _, _, mAcc, mPort, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -732,6 +733,7 @@ func TestExerciseContract_SellerNoShares(t *testing.T) {
 	// Step 1: atomic UPDATE returns 1 row (success)
 	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
+	mainMock.ExpectQuery("INSERT INTO otc_saga").WillReturnError(fmt.Errorf("mock"))
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log"). // step 1 SUCCESS
@@ -761,8 +763,8 @@ func TestExerciseContract_SellerNoShares(t *testing.T) {
 func TestExerciseContract_HappyPath(t *testing.T) {
 	s, mainMock, _, _, mAcc, mPort, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -772,6 +774,7 @@ func TestExerciseContract_HappyPath(t *testing.T) {
 	// Step 1: atomic UPDATE returns 1 row (success)
 	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
+	mainMock.ExpectQuery("INSERT INTO otc_saga").WillReturnError(fmt.Errorf("mock"))
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log").
@@ -827,8 +830,8 @@ func TestExerciseContract_PublicAmountDecrement(t *testing.T) {
 	// Verifies that Step 4 seller UPDATE includes public_amount correction.
 	s, mainMock, _, _, mAcc, mPort, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -838,6 +841,7 @@ func TestExerciseContract_PublicAmountDecrement(t *testing.T) {
 	// Step 1: atomic UPDATE
 	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
+	mainMock.ExpectQuery("INSERT INTO otc_saga").WillReturnError(fmt.Errorf("mock"))
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log").WillReturnResult(sqlmock.NewResult(1, 1))
@@ -882,8 +886,8 @@ func TestExerciseContract_CompensationRetry(t *testing.T) {
 	// Verifies that comp1 retries when the first DB exec fails.
 	s, mainMock, _, _, mAcc, mPort, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -893,6 +897,7 @@ func TestExerciseContract_CompensationRetry(t *testing.T) {
 	// Step 1: atomic UPDATE succeeds (1 row)
 	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
+	mainMock.ExpectQuery("INSERT INTO otc_saga").WillReturnError(fmt.Errorf("mock"))
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log").WillReturnResult(sqlmock.NewResult(1, 1)) // step 1 SUCCESS
@@ -1402,8 +1407,8 @@ func TestAcceptNegotiation_UpdateNegotiationFails(t *testing.T) {
 
 func TestExerciseContract_InternalError(t *testing.T) {
 	s, mainMock, _, _, _, _, _ := newTestServer(t)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnError(fmt.Errorf("connection reset"))
@@ -1418,8 +1423,8 @@ func TestExerciseContract_SettlementDatePassed(t *testing.T) {
 	s, mainMock, _, _, _, _, _ := newTestServer(t)
 	// settlement date is 2 days in the past (beyond 24h grace)
 	past := time.Now().Add(-48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, past))
@@ -1434,8 +1439,8 @@ func TestExerciseContract_SettlementDatePassed(t *testing.T) {
 func TestExerciseContract_UnsupportedCurrency(t *testing.T) {
 	s, mainMock, _, _, _, _, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{
@@ -1456,8 +1461,8 @@ func TestExerciseContract_UnsupportedCurrency(t *testing.T) {
 func TestExerciseContract_ListingIDNotFound(t *testing.T) {
 	s, mainMock, _, _, _, _, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -1475,8 +1480,8 @@ func TestExerciseContract_ListingIDNotFound(t *testing.T) {
 func TestExerciseContract_FindBuyerAccountFails(t *testing.T) {
 	s, mainMock, _, _, mAcc, _, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -1496,8 +1501,8 @@ func TestExerciseContract_FindBuyerAccountFails(t *testing.T) {
 func TestExerciseContract_Step1UpdateFails(t *testing.T) {
 	s, mainMock, _, _, mAcc, _, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -1506,6 +1511,7 @@ func TestExerciseContract_Step1UpdateFails(t *testing.T) {
 	// Step 1: atomic UPDATE returns error
 	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
+	mainMock.ExpectQuery("INSERT INTO otc_saga").WillReturnError(fmt.Errorf("mock"))
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnError(fmt.Errorf("db error"))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log"). // step 1 FAILED
@@ -1521,8 +1527,8 @@ func TestExerciseContract_Step1UpdateFails(t *testing.T) {
 func TestExerciseContract_Step2InternalError(t *testing.T) {
 	s, mainMock, _, _, mAcc, mPort, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -1531,6 +1537,7 @@ func TestExerciseContract_Step2InternalError(t *testing.T) {
 	// Step 1: atomic UPDATE succeeds (1 row)
 	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
+	mainMock.ExpectQuery("INSERT INTO otc_saga").WillReturnError(fmt.Errorf("mock"))
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log").WillReturnResult(sqlmock.NewResult(1, 1))
@@ -1553,8 +1560,8 @@ func TestExerciseContract_Step2InternalError(t *testing.T) {
 func TestExerciseContract_Step3SellerAccountNotFound(t *testing.T) {
 	s, mainMock, _, _, mAcc, mPort, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -1563,6 +1570,7 @@ func TestExerciseContract_Step3SellerAccountNotFound(t *testing.T) {
 	// Step 1: atomic UPDATE succeeds
 	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
+	mainMock.ExpectQuery("INSERT INTO otc_saga").WillReturnError(fmt.Errorf("mock"))
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log").WillReturnResult(sqlmock.NewResult(1, 1))
@@ -1593,8 +1601,8 @@ func TestExerciseContract_Step3SellerAccountNotFound(t *testing.T) {
 func TestExerciseContract_Step3DebitBuyerFails(t *testing.T) {
 	s, mainMock, _, _, mAcc, mPort, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -1603,6 +1611,7 @@ func TestExerciseContract_Step3DebitBuyerFails(t *testing.T) {
 	// Step 1: atomic UPDATE succeeds
 	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
+	mainMock.ExpectQuery("INSERT INTO otc_saga").WillReturnError(fmt.Errorf("mock"))
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log").WillReturnResult(sqlmock.NewResult(1, 1))
@@ -1634,8 +1643,8 @@ func TestExerciseContract_Step3DebitBuyerFails(t *testing.T) {
 func TestExerciseContract_Step3CreditSellerFails(t *testing.T) {
 	s, mainMock, _, _, mAcc, mPort, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -1644,6 +1653,7 @@ func TestExerciseContract_Step3CreditSellerFails(t *testing.T) {
 	// Step 1: atomic UPDATE succeeds
 	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
+	mainMock.ExpectQuery("INSERT INTO otc_saga").WillReturnError(fmt.Errorf("mock"))
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log").WillReturnResult(sqlmock.NewResult(1, 1))
@@ -1680,8 +1690,8 @@ func TestExerciseContract_Step3CreditSellerFails(t *testing.T) {
 func TestExerciseContract_Step4SellerUpdateFails(t *testing.T) {
 	s, mainMock, _, _, mAcc, mPort, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -1690,6 +1700,7 @@ func TestExerciseContract_Step4SellerUpdateFails(t *testing.T) {
 	// Step 1: atomic UPDATE succeeds
 	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
+	mainMock.ExpectQuery("INSERT INTO otc_saga").WillReturnError(fmt.Errorf("mock"))
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log").WillReturnResult(sqlmock.NewResult(1, 1))
@@ -1729,8 +1740,8 @@ func TestExerciseContract_Step4SellerUpdateFails(t *testing.T) {
 func TestExerciseContract_Step4BuyerUpsertFails(t *testing.T) {
 	s, mainMock, _, _, mAcc, mPort, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -1739,6 +1750,7 @@ func TestExerciseContract_Step4BuyerUpsertFails(t *testing.T) {
 	// Step 1: atomic UPDATE succeeds
 	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
+	mainMock.ExpectQuery("INSERT INTO otc_saga").WillReturnError(fmt.Errorf("mock"))
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log").WillReturnResult(sqlmock.NewResult(1, 1))
@@ -1782,8 +1794,8 @@ func TestExerciseContract_Step4BuyerUpsertFails(t *testing.T) {
 func TestExerciseContract_Step5UpdateContractFails(t *testing.T) {
 	s, mainMock, _, _, mAcc, mPort, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(contractRow(10, 20, future))
@@ -1792,6 +1804,7 @@ func TestExerciseContract_Step5UpdateContractFails(t *testing.T) {
 	// Step 1: atomic UPDATE succeeds
 	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
+	mainMock.ExpectQuery("INSERT INTO otc_saga").WillReturnError(fmt.Errorf("mock"))
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log").WillReturnResult(sqlmock.NewResult(1, 1))
@@ -1844,8 +1857,8 @@ func TestExerciseContract_EmployeeSeller(t *testing.T) {
 	// EMPLOYEE seller → portfolioUserID returns 0 (bank shared portfolio)
 	s, mainMock, _, _, mAcc, mPort, mSec := newTestServer(t)
 	future := time.Now().Add(48 * time.Hour)
-	mainMock.ExpectQuery("SELECT step, status FROM otc_saga_log").
-		WillReturnRows(sqlmock.NewRows([]string{"step", "status"}))
+	mainMock.ExpectQuery("SELECT id, status FROM otc_saga").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT .* FROM otc_contracts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{
@@ -1858,6 +1871,7 @@ func TestExerciseContract_EmployeeSeller(t *testing.T) {
 	// Step 1: atomic UPDATE succeeds
 	mAcc.ExpectQuery("SELECT currency_id FROM accounts WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id"}).AddRow(int64(4)))
+	mainMock.ExpectQuery("INSERT INTO otc_saga").WillReturnError(fmt.Errorf("mock"))
 	mAcc.ExpectExec("UPDATE accounts SET available_balance = available_balance - ").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectExec("INSERT INTO otc_saga_log").WillReturnResult(sqlmock.NewResult(1, 1))
