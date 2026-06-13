@@ -1783,11 +1783,22 @@ func (s *OtcServer) CommitOtcInterbank(ctx context.Context, req *pb.OtcInterbank
 			).Scan(&buyerAcctNum, &buyerID, &buyerType); err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to load buyer info: %v", err)
 			}
-			// Debit buyer's account for premium.
+			// Debit buyer's account for premium, converting via exchange service if currencies differ.
+			premiumToPay := premium
+			if ncurrencyID, ok := currencyIDMap[currency]; ok {
+				var buyerAcctCurrencyID int64
+				if qErr := s.AccountDB.QueryRowContext(ctx,
+					`SELECT currency_id FROM accounts WHERE account_number = $1`, buyerAcctNum,
+				).Scan(&buyerAcctCurrencyID); qErr == nil {
+					if converted, convErr := convertAmount(ctx, s.ExchangeDB, premium, ncurrencyID, buyerAcctCurrencyID); convErr == nil {
+						premiumToPay = converted
+					}
+				}
+			}
 			_, _ = s.AccountDB.ExecContext(ctx,
 				`UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1
 				 WHERE account_number = $2 AND available_balance >= $1`,
-				premium, buyerAcctNum)
+				premiumToPay, buyerAcctNum)
 			// Create buyer-side contract (seller is INTERBANK).
 			_, _ = s.DB.ExecContext(ctx, `
 				INSERT INTO otc_contracts
