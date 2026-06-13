@@ -407,15 +407,18 @@ func doPathRequest(t *testing.T, method, route, path string, handler gin.Handler
 	return w
 }
 
-func validNegotiationBody() otcNegotiationBody {
-	return otcNegotiationBody{
-		Stock:          struct{ Ticker string `json:"ticker"` }{Ticker: "AAPL"},
-		SettlementDate: "2026-12-31",
-		PricePerUnit:   otcMoneyAmount{Currency: "RSD", Amount: 100.0},
-		Premium:        otcMoneyAmount{Currency: "RSD", Amount: 5.0},
-		BuyerID:        otcPartyID{RoutingNumber: 444, ID: "42"},
-		SellerID:       otcPartyID{RoutingNumber: 888, ID: "7"},
-		Amount:         10,
-		SellerType:     "CLIENT",
+// validNegotiationBody returns a flat-format body matching the raw struct
+// the handler now parses (premium is float64, not otcMoneyAmount).
+func validNegotiationBody() map[string]any {
+	return map[string]any{
+		"stock":          map[string]any{"ticker": "AAPL"},
+		"settlementDate": "2026-12-31",
+		"pricePerUnit":   map[string]any{"currency": "RSD", "amount": 100.0},
+		"premium":        5.0,
+		"premiumCurrency": "RSD",
+		"buyerId":        map[string]any{"routingNumber": 444, "id": "42"},
+		"sellerId":       map[string]any{"routingNumber": 888, "id": "7"},
+		"amount":         10,
+		"sellerType":     "CLIENT",
 	}
 }
