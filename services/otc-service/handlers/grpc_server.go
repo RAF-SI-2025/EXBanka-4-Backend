@@ -1506,6 +1506,11 @@ func (s *OtcServer) InterbankDeleteNegotiation(ctx context.Context, req *pb.Inte
 }
 
 func (s *OtcServer) InterbankAcceptNegotiation(ctx context.Context, req *pb.InterbankNegotiationIdRequest) (*pb.OtcEmptyResponse, error) {
+	resolvedID, _, lookupErr := s.lookupInterbankNegotiation(ctx, req.RoutingNumber, req.ExternalId)
+	if lookupErr != nil {
+		return nil, lookupErr
+	}
+
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to begin tx: %v", err)
@@ -1518,17 +1523,12 @@ func (s *OtcServer) InterbankAcceptNegotiation(ctx context.Context, req *pb.Inte
 	var premium, strikePrice float64
 	var sellerID int64
 	var sellerType string
-	// Protocol path: {sellerRn}/{sellerLocalId} — look up by local id first.
-	localIDInt, parseErr := strconv.ParseInt(req.ExternalId, 10, 64)
-	if parseErr != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid negotiation id")
-	}
 	err = tx.QueryRowContext(ctx, `
 		SELECT id, status, ticker, currency, settlement_date::text, amount, premium, price_per_stock,
 		       seller_id, seller_type
 		FROM otc_negotiations
 		WHERE id = $1 FOR UPDATE`,
-		localIDInt,
+		resolvedID,
 	).Scan(&localID, &currentStatus, &ticker, &currency, &settlementDate, &amount, &premium, &strikePrice,
 		&sellerID, &sellerType)
 	if err == sql.ErrNoRows {
