@@ -100,7 +100,7 @@ func TestForwardNegotiationToPartner_Happy(t *testing.T) {
 
 	partnerID, err := s.forwardNegotiationToPartner(bank, req, "")
 	require.NoError(t, err)
-	assert.Equal(t, int64(42), partnerID)
+	assert.Equal(t, "42", partnerID)
 }
 
 func TestForwardNegotiationToPartner_BadStatus(t *testing.T) {
@@ -155,12 +155,12 @@ func TestForwardNegotiationToPartner_NonNumericID(t *testing.T) {
 	s, _, _, _, _, _, _ := newTestServer(t)
 	bank, _ := otcInterbank.ResolveBankByRoutingNumber("999")
 
-	_, err := s.forwardNegotiationToPartner(bank, &pb.CreateNegotiationRequest{
+	id, err := s.forwardNegotiationToPartner(bank, &pb.CreateNegotiationRequest{
 		Ticker: "AAPL", Amount: 10, PricePerStock: 100.0,
 		SettlementDate: "2027-01-01", Currency: "RSD",
 	}, "")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "parse")
+	assert.NoError(t, err)
+	assert.Equal(t, "not-a-number", id)
 }
 
 // ─── createNegotiationCrossBank ────────────────────────────────────────────
@@ -295,7 +295,7 @@ func TestCreateNegotiation_CrossBankBranch(t *testing.T) {
 
 	resp, err := s.CreateNegotiation(context.Background(), &pb.CreateNegotiationRequest{
 		Ticker: "AAPL", Amount: 10, PricePerStock: 100.0,
-		SettlementDate: "2027-01-01", Premium: 0.0, Currency: "RSD",
+		SettlementDate: "2027-01-01", Premium: 5.0, Currency: "RSD",
 		BuyerId: 20, BuyerType: "CLIENT",
 		SellerRoutingNumber: 999, // triggers cross-bank branch
 		SellerExternalId:    "ext-seller-1",
@@ -369,7 +369,7 @@ func TestAcceptNegotiation_CrossBank_NoPremium_Happy(t *testing.T) {
 	// --- acceptCrossBank: routing info (2 cols now — no seller_external_id) ---
 	mainMock.ExpectQuery("SELECT COALESCE.*seller_routing_number").
 		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id"}).
-			AddRow(int32(999), int64(42)))
+			AddRow(int32(999), "42"))
 
 	// --- Commit ACCEPTED status BEFORE calling partner ---
 	mainMock.ExpectExec("UPDATE otc_negotiations SET status='ACCEPTED'").
@@ -410,7 +410,7 @@ func TestAcceptNegotiation_CrossBank_WithPremium_Happy(t *testing.T) {
 
 	mainMock.ExpectQuery("SELECT COALESCE.*seller_routing_number").
 		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id"}).
-			AddRow(int32(999), int64(42)))
+			AddRow(int32(999), "42"))
 
 	mainMock.ExpectExec("UPDATE otc_negotiations SET status='ACCEPTED'").
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -437,7 +437,7 @@ func TestAcceptNegotiation_CrossBank_MissingRoutingInfo(t *testing.T) {
 	// routing info query: seller_routing_number = 0 → error path
 	mainMock.ExpectQuery("SELECT COALESCE.*seller_routing_number").
 		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id"}).
-			AddRow(int32(0), int64(0)))
+			AddRow(int32(0), ""))
 	mainMock.ExpectRollback()
 
 	_, err := s.AcceptNegotiation(context.Background(), &pb.AcceptNegotiationRequest{
@@ -461,7 +461,7 @@ func TestAcceptNegotiation_CrossBank_PartnerAcceptFails(t *testing.T) {
 		WillReturnRows(acceptNegRowCrossBank(20, "CLIENT", "PENDING_BUYER", 0.0))
 	mainMock.ExpectQuery("SELECT COALESCE.*seller_routing_number").
 		WillReturnRows(sqlmock.NewRows([]string{"seller_routing_number", "partner_negotiation_id"}).
-			AddRow(int32(999), int64(42)))
+			AddRow(int32(999), "42"))
 	// New flow: commit ACCEPTED first, then call partner; on failure revert to PENDING_BUYER
 	mainMock.ExpectExec("UPDATE otc_negotiations SET status='ACCEPTED'").
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -502,7 +502,7 @@ func TestOtcExercise2PC_OptionAmountIsNegative(t *testing.T) {
 	bank, _ := otcInterbank.ResolveBankByRoutingNumber("999")
 	_, _ = executeOtcOutgoing2PC(context.Background(), bank, otcOutgoing2PCReq{
 		sellerExtID:          "ext-1",
-		partnerNegotiationID: 42,
+		partnerNegotiationID: "42",
 		partnerRoutingNum:    999,
 		stockAmount:          100,
 		buyerAccountNum:      "ACC-1",

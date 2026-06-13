@@ -73,6 +73,8 @@ ALTER TABLE otc_saga ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFA
 
 -- Migration: partner_negotiation_id = lokalni ID pregovora na partner banci (za outgoing OPTION posting)
 ALTER TABLE otc_negotiations ADD COLUMN IF NOT EXISTS partner_negotiation_id BIGINT;
+-- Migration: partner banks (e.g. Banka 4) return UUID strings, not integers
+ALTER TABLE otc_negotiations ALTER COLUMN partner_negotiation_id TYPE TEXT USING partner_negotiation_id::TEXT;
 
 -- Tabela za tracking incoming cross-bank 2PC transakcija koje uključuju OPTION postinge
 CREATE TABLE IF NOT EXISTS otc_interbank_tx (
