@@ -131,7 +131,10 @@ func sendInterbankRequest(ctx context.Context, url, apiKey string, body any) (*h
 	return nil, fmt.Errorf("partner bank returned 202 for all %d attempts", interbankMaxRetries)
 }
 
-func sendRollback(ctx context.Context, bankURL, apiKey string, txID ibTransactionID) {
+func sendRollback(bankURL, apiKey string, txID ibTransactionID) {
+	// Use a detached context so rollback fires even if the request ctx is cancelled.
+	ctx, cancel := context.WithTimeout(context.Background(), interbankTimeout)
+	defer cancel()
 	ownRouting := ownRoutingInt()
 	envelope := ibEnvelope{
 		IdempotenceKey: ibIdempotenceKey{RoutingNumber: ownRouting, LocallyGeneratedKey: generateUUID()},
@@ -217,7 +220,10 @@ func executeOutgoing2PC(ctx context.Context, s *PaymentServer, req *pb.CreatePay
 	}
 
 	releaseReservation := func() {
-		_, _ = s.AccountDB.ExecContext(ctx, `
+		// Detached context so release fires even if the request ctx is cancelled.
+		rCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_, _ = s.AccountDB.ExecContext(rCtx, `
 			UPDATE accounts SET
 				available_balance = available_balance + $1,
 				daily_spent       = daily_spent - $1,
@@ -250,14 +256,15 @@ func executeOutgoing2PC(ctx context.Context, s *PaymentServer, req *pb.CreatePay
 	}
 	defer func() { _ = newTxResp.Body.Close() }()
 
-	if newTxResp.StatusCode != http.StatusOK {
+	// Accept any 2xx response — some partner banks return 201 instead of 200.
+	if newTxResp.StatusCode < 200 || newTxResp.StatusCode >= 300 {
 		releaseReservation()
 		return nil, status.Errorf(codes.Unavailable, "partner bank NEW_TX returned status %d", newTxResp.StatusCode)
 	}
 
 	var vote ibVoteResponse
 	if err := json.NewDecoder(newTxResp.Body).Decode(&vote); err != nil {
-		sendRollback(ctx, bankURL, bank.APIKey, txID)
+		sendRollback(bankURL, bank.APIKey, txID)
 		releaseReservation()
 		return nil, status.Errorf(codes.Internal, "decode vote response: %v", err)
 	}
@@ -277,21 +284,24 @@ func executeOutgoing2PC(ctx context.Context, s *PaymentServer, req *pb.CreatePay
 		Message:        ibCommitRollbackMessage{TransactionID: txID},
 	})
 	if err != nil {
-		sendRollback(ctx, bankURL, bank.APIKey, txID)
+		sendRollback(bankURL, bank.APIKey, txID)
 		releaseReservation()
 		return nil, status.Errorf(codes.Unavailable, "COMMIT_TX request failed: %v", err)
 	}
 	defer func() { _ = commitResp.Body.Close() }()
 
-	if commitResp.StatusCode != http.StatusNoContent {
-		sendRollback(ctx, bankURL, bank.APIKey, txID)
+	// Accept 200 or 204 — partner banks may return either on success.
+	if commitResp.StatusCode != http.StatusOK && commitResp.StatusCode != http.StatusNoContent {
+		sendRollback(bankURL, bank.APIKey, txID)
 		releaseReservation()
 		return nil, status.Errorf(codes.Unavailable, "partner bank COMMIT_TX returned status %d", commitResp.StatusCode)
 	}
 
 	// DB tx #2: apply debit now that partner committed.
-	// Decreases balance and restores available_balance (cancels reservation).
-	_, _ = s.AccountDB.ExecContext(ctx, `
+	// Use a detached context — partner has already credited the recipient so this MUST complete.
+	commitCtx, commitCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer commitCancel()
+	_, _ = s.AccountDB.ExecContext(commitCtx, `
 		UPDATE accounts SET
 			balance           = balance - $1,
 			available_balance = available_balance + $1
@@ -302,7 +312,7 @@ func executeOutgoing2PC(ctx context.Context, s *PaymentServer, req *pb.CreatePay
 	now := time.Now()
 
 	var paymentID int64
-	err = s.DB.QueryRowContext(ctx, `
+	err = s.DB.QueryRowContext(commitCtx, `
 		INSERT INTO payments
 			(order_number, from_account, to_account, initial_amount, final_amount,
 			 fee, recipient_id, payment_code, reference_number, purpose, timestamp, status)
