@@ -1415,11 +1415,6 @@ func (s *OtcServer) CreateInterbankNegotiation(ctx context.Context, req *pb.Crea
 		}
 	}
 
-	// Idempotency: return existing row if this creator key already exists
-	if existingID, _, err := s.lookupInterbankNegotiation(ctx, req.CreatorRoutingNumber, req.CreatorExternalId); err == nil {
-		return s.fetchInterbankNegotiationByID(ctx, existingID)
-	}
-
 	now := time.Now()
 	var id int64
 	err := s.DB.QueryRowContext(ctx, `
