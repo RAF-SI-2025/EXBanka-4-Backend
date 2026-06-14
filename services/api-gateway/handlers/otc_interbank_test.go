@@ -407,15 +407,12 @@ func doPathRequest(t *testing.T, method, route, path string, handler gin.Handler
 	return w
 }
 
-// validNegotiationBody returns a flat-format body matching the raw struct
-// the handler now parses (premium is float64, not otcMoneyAmount).
 func validNegotiationBody() map[string]any {
 	return map[string]any{
 		"stock":          map[string]any{"ticker": "AAPL"},
 		"settlementDate": "2026-12-31",
 		"pricePerUnit":   map[string]any{"currency": "RSD", "amount": 100.0},
-		"premium":        5.0,
-		"premiumCurrency": "RSD",
+		"premium":        map[string]any{"currency": "RSD", "amount": 5.0},
 		"buyerId":        map[string]any{"routingNumber": 444, "id": "42"},
 		"sellerId":       map[string]any{"routingNumber": 888, "id": "7"},
 		"amount":         10,

@@ -148,6 +148,7 @@ func TestCommitOtcInterbank_Accept_SellerSide_HappyPath(t *testing.T) {
 func TestInterbankAcceptNegotiation_AlreadyAccepted(t *testing.T) {
 	s, mOTC, _, _, _, _, _ := newTestServer(t)
 
+	addLookupByLocalID(mOTC, 42, "ACCEPTED")
 	mOTC.ExpectBegin()
 	mOTC.ExpectQuery("SELECT id, status, ticker, currency").
 		WillReturnRows(sqlmock.NewRows([]string{

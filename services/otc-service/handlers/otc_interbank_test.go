@@ -243,29 +243,23 @@ func TestInterbankDeleteNegotiation_Success(t *testing.T) {
 
 func TestInterbankAcceptNegotiation_InvalidID(t *testing.T) {
 	s, mOTC, _, _, _, _, _ := newTestServer(t)
-	mOTC.ExpectBegin()
-	mOTC.ExpectRollback()
+	// non-numeric ExternalId: skip primary ID lookup, creator-key fallback returns not found
+	mOTC.ExpectQuery("SELECT id, status FROM otc_negotiations").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 
 	_, err := s.InterbankAcceptNegotiation(context.Background(), &pb.InterbankNegotiationIdRequest{
 		RoutingNumber: 444, ExternalId: "not-a-number",
 	})
 	require.Error(t, err)
-	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+	assert.Equal(t, codes.NotFound, status.Code(err))
 }
 
 func TestInterbankAcceptNegotiation_NotFound(t *testing.T) {
 	s, mOTC, _, _, _, _, _ := newTestServer(t)
-
-	mOTC.ExpectBegin()
-	mOTC.ExpectQuery("SELECT id, status, ticker, currency").
-		WillReturnRows(sqlmock.NewRows([]string{
-			"id", "status", "ticker", "currency", "settlement_date",
-			"amount", "premium", "price_per_stock", "seller_id", "seller_type",
-		}))
-	mOTC.ExpectRollback()
+	addLookupNotFound(mOTC)
 
 	_, err := s.InterbankAcceptNegotiation(context.Background(), &pb.InterbankNegotiationIdRequest{
-		RoutingNumber: 444, ExternalId: "42",
+		RoutingNumber: 444, ExternalId: "9999",
 	})
 	require.Error(t, err)
 	assert.Equal(t, codes.NotFound, status.Code(err))
@@ -273,6 +267,7 @@ func TestInterbankAcceptNegotiation_NotFound(t *testing.T) {
 
 func TestInterbankAcceptNegotiation_NotBuyersTurn(t *testing.T) {
 	s, mOTC, _, _, _, _, _ := newTestServer(t)
+	addLookupByLocalID(mOTC, 42, "PENDING_SELLER")
 
 	mOTC.ExpectBegin()
 	mOTC.ExpectQuery("SELECT id, status, ticker, currency").

@@ -145,6 +145,7 @@ func TestSagaFaultHook_DelayNonMatchingPhase(t *testing.T) {
 func TestInterbankAcceptNegotiation_UpdateFails(t *testing.T) {
 	s, mOTC, _, _, _, _, _ := newTestServer(t)
 
+	addLookupByLocalID(mOTC, 42, "PENDING_BUYER")
 	mOTC.ExpectBegin()
 	mOTC.ExpectQuery("SELECT id, status, ticker, currency").
 		WillReturnRows(sqlmock.NewRows([]string{
