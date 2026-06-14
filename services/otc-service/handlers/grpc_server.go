@@ -425,6 +425,13 @@ func (s *OtcServer) CounterOffer(ctx context.Context, req *pb.CounterOfferReques
 	if err = tx.Commit(); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to commit counter offer: %v", err)
 	}
+
+	if buyerType == "INTERBANK" {
+		if fwdErr := s.forwardSellerCounterOfferToPartner(ctx, req.NegotiationId, req.Amount, req.PricePerStock, req.Premium, req.SettlementDate); fwdErr != nil {
+			log.Printf("warn: forwardSellerCounterOfferToPartner(%d): %v", req.NegotiationId, fwdErr)
+		}
+	}
+
 	return s.fetchNegotiationByID(ctx, req.NegotiationId)
 }
 
@@ -688,6 +695,13 @@ func (s *OtcServer) RejectNegotiation(ctx context.Context, req *pb.RejectNegotia
 	if err = tx.Commit(); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to commit rejection: %v", err)
 	}
+
+	if buyerType == "INTERBANK" {
+		if fwdErr := s.notifyPartnerRejection(ctx, req.NegotiationId); fwdErr != nil {
+			log.Printf("warn: notifyPartnerRejection(%d): %v", req.NegotiationId, fwdErr)
+		}
+	}
+
 	return s.fetchNegotiationByID(ctx, req.NegotiationId)
 }
 
