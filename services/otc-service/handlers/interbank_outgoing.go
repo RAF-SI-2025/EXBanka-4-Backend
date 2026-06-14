@@ -554,12 +554,123 @@ func (s *OtcServer) acceptCrossBank(
 	return s.fetchNegotiationByID(ctx, negotiationID)
 }
 
+// forwardSellerCounterOfferToPartner sends PUT /negotiations/{ownRn}/{negID} to the buyer's bank
+// (used when we are the seller and submit a counter-offer on an inbound interbank negotiation).
+func (s *OtcServer) forwardSellerCounterOfferToPartner(ctx context.Context, negID int64, amount int32, pricePerStock, premium float64, settlementDate string) error {
+	type partyID struct {
+		RoutingNumber int    `json:"routingNumber"`
+		ID            string `json:"id"`
+	}
+	type money struct {
+		Currency string  `json:"currency"`
+		Amount   float64 `json:"amount"`
+	}
+	type stock struct {
+		Ticker string `json:"ticker"`
+	}
+	type putBody struct {
+		Stock              stock   `json:"stock"`
+		SettlementDate     string  `json:"settlementDate"`
+		PricePerUnit       money   `json:"pricePerUnit"`
+		Premium            money   `json:"premium"`
+		BuyerID            partyID `json:"buyerId"`
+		SellerID           partyID `json:"sellerId"`
+		Amount             int32   `json:"amount"`
+		LastModifiedBy     partyID `json:"lastModifiedBy"`
+		BuyerAccountNumber string  `json:"buyerAccountNumber"`
+	}
+
+	var ticker, currency string
+	var buyerExtID, buyerAcctNum sql.NullString
+	var buyerRoutingNum sql.NullInt32
+	var sellerID int64
+	err := s.DB.QueryRowContext(ctx, `
+		SELECT ticker, currency, buyer_routing_number, buyer_external_id, seller_id, buyer_account_number
+		FROM otc_negotiations WHERE id = $1`, negID,
+	).Scan(&ticker, &currency, &buyerRoutingNum, &buyerExtID, &sellerID, &buyerAcctNum)
+	if err != nil {
+		return fmt.Errorf("load negotiation: %w", err)
+	}
+	if !buyerRoutingNum.Valid {
+		return fmt.Errorf("no buyer routing number stored for negotiation %d", negID)
+	}
+
+	bank, err := otcInterbank.ResolveBankByRoutingNumber(fmt.Sprintf("%d", buyerRoutingNum.Int32))
+	if err != nil {
+		return fmt.Errorf("resolve buyer bank: %w", err)
+	}
+
+	ownRouting := otcOwnRoutingInt()
+	b := putBody{
+		Stock:              stock{Ticker: ticker},
+		SettlementDate:     settlementDate,
+		PricePerUnit:       money{Currency: currency, Amount: pricePerStock},
+		Premium:            money{Currency: currency, Amount: premium},
+		BuyerID:            partyID{RoutingNumber: int(buyerRoutingNum.Int32), ID: buyerExtID.String},
+		SellerID:           partyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", sellerID)},
+		Amount:             amount,
+		LastModifiedBy:     partyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", sellerID)},
+		BuyerAccountNumber: buyerAcctNum.String,
+	}
+	data, _ := json.Marshal(b)
+	url := fmt.Sprintf("%s/negotiations/%d/%d", bank.BankURL, ownRouting, negID)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(data))
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("X-Api-Key", bank.APIKey)
+	resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("http call: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("partner returned status %d", resp.StatusCode)
+	}
+	return nil
+}
+
+// notifyPartnerRejection sends DELETE /negotiations/{ownRn}/{negID} to the buyer's bank
+// (used when we are the seller and reject an inbound interbank negotiation).
+func (s *OtcServer) notifyPartnerRejection(ctx context.Context, negID int64) error {
+	var buyerRoutingNum sql.NullInt32
+	err := s.DB.QueryRowContext(ctx,
+		`SELECT buyer_routing_number FROM otc_negotiations WHERE id = $1`, negID,
+	).Scan(&buyerRoutingNum)
+	if err != nil || !buyerRoutingNum.Valid {
+		return fmt.Errorf("load buyer routing number: %w", err)
+	}
+
+	bank, err := otcInterbank.ResolveBankByRoutingNumber(fmt.Sprintf("%d", buyerRoutingNum.Int32))
+	if err != nil {
+		return fmt.Errorf("resolve buyer bank: %w", err)
+	}
+
+	ownRouting := otcOwnRoutingInt()
+	url := fmt.Sprintf("%s/negotiations/%d/%d", bank.BankURL, ownRouting, negID)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
+	httpReq.Header.Set("X-Api-Key", bank.APIKey)
+	resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("http call: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
+		return fmt.Errorf("partner returned status %d", resp.StatusCode)
+	}
+	return nil
+}
+
 // executeInterbankAcceptOutgoing is called by InterbankAcceptNegotiation (seller-side) after
 // the negotiation row is committed to ACCEPTED. It sends a 4-posting accept 2PC to the buyer's
 // bank, reserves seller shares, and inserts the seller-side contract.
 func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNegID int64) error {
-	var buyerAcctNum, buyerExtID, currency, ticker, sellerType string
-	var buyerRoutingNum int32
+	var buyerAcctNum, buyerExtID, currency, ticker, sellerType sql.NullString
+	var buyerRoutingNum sql.NullInt32
 	var sellerID int64
 	var premium float64
 	var amount int32
@@ -572,8 +683,14 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 	if err != nil {
 		return fmt.Errorf("load negotiation: %w", err)
 	}
+	if !buyerRoutingNum.Valid {
+		return fmt.Errorf("missing buyer_routing_number on negotiation %d", localNegID)
+	}
+	if !buyerAcctNum.Valid || buyerAcctNum.String == "" {
+		return fmt.Errorf("missing buyer_account_number on negotiation %d — partner bank must include buyerAccountNumber in the offer", localNegID)
+	}
 
-	bank, err := otcInterbank.ResolveBankByRoutingNumber(fmt.Sprintf("%d", buyerRoutingNum))
+	bank, err := otcInterbank.ResolveBankByRoutingNumber(fmt.Sprintf("%d", buyerRoutingNum.Int32))
 	if err != nil {
 		return fmt.Errorf("resolve buyer bank: %w", err)
 	}
@@ -593,14 +710,14 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 			PaymentPurpose: "OTC option premium",
 			Postings: []ibOutPosting{
 				{ // buyer's account debited (premium)
-					Account: ibOutAccount{Type: "ACCOUNT", Num: buyerAcctNum},
+					Account: ibOutAccount{Type: "ACCOUNT", Num: buyerAcctNum.String},
 					Amount:  -premium,
-					Asset:   ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: currency}},
+					Asset:   ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: currency.String}},
 				},
 				{ // seller (us) receives premium
 					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", sellerID)}},
 					Amount:  premium,
-					Asset:   ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: currency}},
+					Asset:   ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: currency.String}},
 				},
 				{ // seller gives option right
 					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", sellerID)}},
@@ -608,7 +725,7 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 					Asset:   ibOutAsset{Type: "OPTION", Asset: &ibOutAssetInner{NegotiationID: &ibOutPartyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", localNegID)}}},
 				},
 				{ // buyer receives option right
-					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: int(buyerRoutingNum), ID: buyerExtID}},
+					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: int(buyerRoutingNum.Int32), ID: buyerExtID.String}},
 					Amount:  1,
 					Asset:   ibOutAsset{Type: "OPTION", Asset: &ibOutAssetInner{NegotiationID: &ibOutPartyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", localNegID)}}},
 				},
@@ -633,7 +750,7 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 	}
 
 	// YES: reserve seller shares and create seller-side contract.
-	listingID, err := listingIDForTicker(ctx, s.SecuritiesDB, ticker)
+	listingID, err := listingIDForTicker(ctx, s.SecuritiesDB, ticker.String)
 	if err != nil {
 		_, _ = otcSendInterbankRequest(ctx, bankURL, bank.APIKey, otcIbEnvelope{
 			IdempotenceKey: otcIbIdempotenceKey{RoutingNumber: ownRouting, LocallyGeneratedKey: otcGenerateUUID()},
@@ -646,7 +763,7 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 		`UPDATE portfolio_entry SET reserved_amount = reserved_amount + $1
 		 WHERE user_id = $2 AND user_type = $3 AND listing_id = $4
 		   AND (amount - reserved_amount) >= $1`,
-		amount, portfolioUserID(sellerID, sellerType), sellerType, listingID,
+		amount, portfolioUserID(sellerID, sellerType.String), sellerType.String, listingID,
 	)
 	if err != nil {
 		_, _ = otcSendInterbankRequest(ctx, bankURL, bank.APIKey, otcIbEnvelope{
@@ -676,8 +793,8 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 			 ticker, amount, strike_price, premium, currency, settlement_date)
 		VALUES ($1, $2, $3, 0, 'INTERBANK', $4, $5, $6, $7, $8, $9)
 		ON CONFLICT (negotiation_id) DO NOTHING`,
-		localNegID, sellerID, sellerType,
-		ticker, amount, strikePrice, premium, currency, settlementDate,
+		localNegID, sellerID, sellerType.String,
+		ticker.String, amount, strikePrice, premium, currency.String, settlementDate,
 	)
 
 	// COMMIT.
@@ -689,8 +806,8 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 
 	// Credit seller's account locally — the 2PC posting notifies Banka 4 but does not
 	// touch our account DB. We credit after COMMIT so the buyer's debit is already settled.
-	if currID, ok := currencyIDMap[currency]; ok && premium > 0 {
-		if sellerAcctID, findErr := findAccount(ctx, s.AccountDB, portfolioUserID(sellerID, sellerType), currID); findErr == nil {
+	if currID, ok := currencyIDMap[currency.String]; ok && premium > 0 {
+		if sellerAcctID, findErr := findAccount(ctx, s.AccountDB, portfolioUserID(sellerID, sellerType.String), currID); findErr == nil {
 			_, _ = s.AccountDB.ExecContext(ctx,
 				`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
 				premium, sellerAcctID)
