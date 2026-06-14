@@ -714,14 +714,14 @@ func newTestServerWithAccountAt(t *testing.T, accountDSN string) *handlers.OtcSe
 func toxiproxyCreateProxy(t *testing.T, toxiAddr, proxyName string, listenPort int, upstream string) func(toxicType string, attrs map[string]interface{}) {
 	t.Helper()
 	body, _ := json.Marshal(map[string]interface{}{
-		"name":   proxyName,
-		"listen": fmt.Sprintf("0.0.0.0:%d", listenPort), // bind all interfaces — "localhost" binds only loopback and Docker can't forward to it
+		"name":     proxyName,
+		"listen":   fmt.Sprintf("0.0.0.0:%d", listenPort), // bind all interfaces — "localhost" binds only loopback and Docker can't forward to it
 		"upstream": upstream,
 		"enabled":  true,
 	})
 	resp, err := http.Post(fmt.Sprintf("http://%s/proxies", toxiAddr), "application/json", bytes.NewReader(body))
 	require.NoError(t, err, "create toxiproxy proxy %s", proxyName)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	t.Cleanup(func() {
 		req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("http://%s/proxies/%s", toxiAddr, proxyName), nil)
@@ -737,7 +737,7 @@ func toxiproxyCreateProxy(t *testing.T, toxiAddr, proxyName string, listenPort i
 			fmt.Sprintf("http://%s/proxies/%s/toxics", toxiAddr, proxyName),
 			"application/json", bytes.NewReader(toxBody))
 		require.NoError(t, e, "add toxic %s to proxy %s", toxicType, proxyName)
-		r.Body.Close()
+		_ = r.Body.Close()
 	}
 }
 
@@ -791,7 +791,7 @@ func TestSG09a_AccountServicePaused(t *testing.T) {
 		if err != nil {
 			return false
 		}
-		defer db.Close()
+		defer func() { _ = db.Close() }()
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		return db.PingContext(ctx) == nil
@@ -828,11 +828,11 @@ func TestSG09b_ToxiproxyLatency(t *testing.T) {
 	}
 	if resp, err := http.Get(fmt.Sprintf("http://%s/version", toxiAddr)); err != nil || resp.StatusCode != 200 {
 		if resp != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 		t.Skipf("Toxiproxy not reachable at %s", toxiAddr)
 	} else {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 
 	// TOXI_ACCT_UPSTREAM is set by run-saga-tests.ps1 to "account-db:5432" so that
@@ -913,11 +913,11 @@ func TestSG09c_ToxiproxyDown(t *testing.T) {
 	}
 	if resp, err := http.Get(fmt.Sprintf("http://%s/version", toxiAddr)); err != nil || resp.StatusCode != 200 {
 		if resp != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 		t.Skipf("Toxiproxy not reachable at %s", toxiAddr)
 	} else {
-		resp.Body.Close()
+		_ = resp.Body.Close()
 	}
 
 	acctUpstream := os.Getenv("TOXI_ACCT_UPSTREAM")
