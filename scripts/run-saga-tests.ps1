@@ -1,8 +1,9 @@
 # run-saga-tests.ps1
 # Pokrece SAGA integration testove za otc-service.
-# Pokrecanje: .\scripts\run-saga-tests.ps1
+# Pokretanje: .\scripts\run-saga-tests.ps1
 # Samo testovi (bez restarta baza): .\scripts\run-saga-tests.ps1 -TestOnly
 # Samo odredjeni test: .\scripts\run-saga-tests.ps1 -Run TestSG01
+
 # Sa Toxiproxy testovima: .\scripts\run-saga-tests.ps1 -ToxiproxyAddr localhost:8474
 
 param(
@@ -51,7 +52,7 @@ function Wait-DbReady {
 
 if (-not $TestOnly) {
     Write-Host ""
-    Write-Host "==> Pokrecanje DB kontejnera..." -ForegroundColor Cyan
+    Write-Host "==> Pokretanje DB kontejnera..." -ForegroundColor Cyan
 
     foreach ($svc in $Services) {
         $composePath = Join-Path $Root "services\$svc\docker-compose.yml"
@@ -80,7 +81,7 @@ if (-not $TestOnly) {
     # Toxiproxy — pokrecemo ga samo kad nije TestOnly (jer startujemo sve od nule)
     if ($ToxiproxyAddr -ne "") {
         Write-Host ""
-        Write-Host "==> Pokrecanje Toxiproxy..." -ForegroundColor Cyan
+        Write-Host "==> Pokretanje Toxiproxy..." -ForegroundColor Cyan
 
         # Ukloni stari kontejner ako postoji
         docker rm -f toxiproxy-saga-test 2>&1 | Out-Null
@@ -116,7 +117,7 @@ if (-not $TestOnly) {
 }
 
 Write-Host ""
-Write-Host "==> Pokrecanje testova (-run $Run)..." -ForegroundColor Cyan
+Write-Host "==> Pokretanje testova (-run $Run)..." -ForegroundColor Cyan
 Write-Host ""
 
 $env:OTC_INTEGRATION_TEST = "true"
