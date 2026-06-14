@@ -1,10 +1,15 @@
 package handlers_test
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -627,4 +632,463 @@ func TestSG08_CompensatorFailsOnceThenSucceeds(t *testing.T) {
 	assert.Equal(t, 2, c2Count, "C2 should appear twice in log (1 COMP_FAILED + 1 COMPENSATED)")
 
 	assertInvariants(t, s, buyerBalBefore, sellerBalBefore, listingID, sellerAmt)
+}
+
+// ── Helpers for SG-09 / SG-10 / SG-11 ────────────────────────────────────────
+
+func skipUnlessDocker(t *testing.T) {
+	t.Helper()
+	if os.Getenv("OTC_DOCKER_TEST") != "true" {
+		t.Skip("set OTC_DOCKER_TEST=true to run docker-based SAGA tests")
+	}
+}
+
+// repoRoot returns the repository root (three levels above the handlers/ package directory).
+func repoRoot() string {
+	wd, _ := os.Getwd()
+	abs, _ := filepath.Abs(filepath.Join(wd, "..", "..", ".."))
+	return abs
+}
+
+// dockerCompose runs: docker compose -f services/<service>/docker-compose.yml <args...>
+func dockerCompose(t *testing.T, service string, args ...string) {
+	t.Helper()
+	composePath := filepath.Join(repoRoot(), "services", service, "docker-compose.yml")
+	cmdArgs := append([]string{"compose", "-f", composePath}, args...)
+	out, err := exec.Command("docker", cmdArgs...).CombinedOutput()
+	if err != nil {
+		t.Logf("docker compose %v output: %s", args, string(out))
+		t.FailNow()
+	}
+}
+
+// pollSaga polls otc_saga until Completed or Compensated, or fails after timeout.
+func pollSaga(t *testing.T, db *sql.DB, contractID int64, timeout time.Duration) sagaRow {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		var r sagaRow
+		err := db.QueryRow(`SELECT status, current_step FROM otc_saga WHERE contract_id=$1`, contractID).
+			Scan(&r.Status, &r.CurrentStep)
+		if err == nil && (r.Status == "Completed" || r.Status == "Compensated") {
+			return r
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	t.Fatalf("pollSaga: timeout after %s for contract %d", timeout, contractID)
+	return sagaRow{}
+}
+
+// waitFor polls cond every interval until it returns true or timeout elapses.
+func waitFor(t *testing.T, timeout, interval time.Duration, cond func() bool, msg string) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if cond() {
+			return
+		}
+		time.Sleep(interval)
+	}
+	t.Fatalf("waitFor timeout after %s: %s", timeout, msg)
+}
+
+// newTestServerWithAccountAt builds a test server with AccountDB pointed at a custom DSN.
+func newTestServerWithAccountAt(t *testing.T, accountDSN string) *handlers.OtcServer {
+	t.Helper()
+	return &handlers.OtcServer{
+		DB:           mustConnect(t, "OTC_DB_URL", "postgres://otc_user:otc_pass@localhost:5444/otc_db?sslmode=disable"),
+		AccountDB:    mustConnect(t, "", accountDSN),
+		PortfolioDB:  mustConnect(t, "PORTFOLIO_DB_URL", "postgres://portfolio_user:portfolio_pass@localhost:5443/portfolio_db?sslmode=disable"),
+		SecuritiesDB: mustConnect(t, "SECURITIES_DB_URL", "postgres://securities_user:securities_pass@localhost:5441/securities_db?sslmode=disable"),
+		ExchangeDB:   mustConnect(t, "EXCHANGE_DB_URL", "postgres://exchange_user:exchange_pass@localhost:5438/exchange_db?sslmode=disable"),
+		EmployeeDB:   mustConnect(t, "EMPLOYEE_DB_URL", "postgres://employee_user:employee_pass@localhost:5433/employee_db?sslmode=disable"),
+		ClientDB:     mustConnect(t, "CLIENT_DB_URL", "postgres://client_user:client_pass@localhost:5435/client_db?sslmode=disable"),
+	}
+}
+
+// toxiproxyCreateProxy registers a Toxiproxy proxy and returns an addToxic helper.
+// upstream is "host:port" that Toxiproxy will forward to. When Toxiproxy is connected
+// to the DB's Docker network it can use the container name (e.g. "account-db:5432")
+// instead of going through the host. Controlled via TOXI_ACCT_UPSTREAM in the run script.
+// The proxy is deleted via t.Cleanup.
+func toxiproxyCreateProxy(t *testing.T, toxiAddr, proxyName string, listenPort int, upstream string) func(toxicType string, attrs map[string]interface{}) {
+	t.Helper()
+	body, _ := json.Marshal(map[string]interface{}{
+		"name":   proxyName,
+		"listen": fmt.Sprintf("0.0.0.0:%d", listenPort), // bind all interfaces — "localhost" binds only loopback and Docker can't forward to it
+		"upstream": upstream,
+		"enabled":  true,
+	})
+	resp, err := http.Post(fmt.Sprintf("http://%s/proxies", toxiAddr), "application/json", bytes.NewReader(body))
+	require.NoError(t, err, "create toxiproxy proxy %s", proxyName)
+	resp.Body.Close()
+
+	t.Cleanup(func() {
+		req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("http://%s/proxies/%s", toxiAddr, proxyName), nil)
+		_, _ = http.DefaultClient.Do(req)
+	})
+
+	return func(toxicType string, attrs map[string]interface{}) {
+		t.Helper()
+		toxBody, _ := json.Marshal(map[string]interface{}{
+			"name": "t", "type": toxicType, "attributes": attrs,
+		})
+		r, e := http.Post(
+			fmt.Sprintf("http://%s/proxies/%s/toxics", toxiAddr, proxyName),
+			"application/json", bytes.NewReader(toxBody))
+		require.NoError(t, e, "add toxic %s to proxy %s", toxicType, proxyName)
+		r.Body.Close()
+	}
+}
+
+// ── SG-09a: account-service killed before call ───────────────────────────────
+//
+// NOTE: ExerciseContract calls findAccount + getAccountCurrencyID (both on account DB)
+// BEFORE the saga INSERT. So when account-db is unavailable from the start, the failure
+// happens before F1 is formally logged — no saga row is created. This deviates from
+// the PDF spec's "F1 FAILED" assertion, but the key invariants (no money/shares moved)
+// are still verified.
+//
+// We use "docker compose kill" (SIGKILL) rather than "docker compose pause" (SIGSTOP).
+// SIGSTOP freezes the postgres process but keeps TCP connections open (suspended). On
+// Windows, lib/pq does NOT honour context cancellation for blocked TCP reads — the
+// goroutine stays in IO-wait indefinitely. SIGKILL terminates the process; the OS
+// immediately closes all TCP connections with RST, so lib/pq returns an error at once.
+
+func TestSG09a_AccountServicePaused(t *testing.T) {
+	skipUnlessIntegration(t)
+	skipUnlessDocker(t)
+	s := newTestServer(t)
+	truncateAll(t, s)
+	listingID := ensureListing(t, s)
+
+	contractID := seedContract(t, s, 10, 300, 24*time.Hour)
+	seedBuyerAccount(t, s, 5000)
+	sellerAccID := seedSellerAccount(t, s)
+	seedSellerPortfolio(t, s, sellerAccID, 10)
+
+	buyerBalBefore, _ := getAccountBalance(t, s.AccountDB, testBuyerID)
+	sellerBalBefore, _ := getAccountBalance(t, s.AccountDB, testSellerID)
+	sellerAmt, _ := getPortfolioAmount(t, s.PortfolioDB, testSellerID, listingID)
+
+	// Kill the account-db container so the OS closes all TCP connections immediately.
+	// Cleanup restarts it in case the test fails before the explicit restart below.
+	dockerCompose(t, "account-service", "kill")
+	t.Cleanup(func() { dockerCompose(t, "account-service", "up", "-d") })
+
+	// No context timeout needed — RST from SIGKILL makes lib/pq return immediately.
+	_, err := s.ExerciseContract(context.Background(), &pb.ExerciseContractRequest{
+		ContractId: contractID, CallerId: testBuyerID, CallerType: "CLIENT",
+	})
+	require.Error(t, err, "ExerciseContract must fail when account-db is killed")
+
+	// Restart account-db so we can run assertions with fresh connections.
+	// Wait for a successful postgres ping — TCP port opens before postgres is ready for auth.
+	dockerCompose(t, "account-service", "up", "-d")
+	waitFor(t, 30*time.Second, 500*time.Millisecond, func() bool {
+		db, err := sql.Open("postgres",
+			"postgres://account_user:account_pass@localhost:5436/account_db?sslmode=disable")
+		if err != nil {
+			return false
+		}
+		defer db.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		return db.PingContext(ctx) == nil
+	}, "account-db fully ready after kill")
+
+	// Saga row may not exist (pre-saga failure at account lookup before INSERT).
+	var sagaCount int
+	_ = s.DB.QueryRow(`SELECT COUNT(*) FROM otc_saga WHERE contract_id=$1`, contractID).Scan(&sagaCount)
+	if sagaCount > 0 {
+		saga := pollSaga(t, s.DB, contractID, 10*time.Second)
+		assert.Equal(t, "Compensated", saga.Status)
+	}
+
+	// I1, I2, I3: no money or shares moved.
+	s2 := newTestServer(t)
+	buyerBal, buyerAvail := getAccountBalance(t, s2.AccountDB, testBuyerID)
+	sellerBal, sellerAvail := getAccountBalance(t, s2.AccountDB, testSellerID)
+	assert.InDelta(t, buyerBalBefore, buyerBal, 0.01, "buyer balance unchanged")
+	assert.InDelta(t, buyerBal, buyerAvail, 0.01, "I3: no buyer reserved funds")
+	assert.InDelta(t, sellerBalBefore, sellerBal, 0.01, "seller balance unchanged")
+	assert.InDelta(t, sellerBal, sellerAvail, 0.01, "I3: no seller reserved funds")
+	sellerAmtAfter, sellerReserved := getPortfolioAmount(t, s2.PortfolioDB, testSellerID, listingID)
+	assert.Equal(t, sellerAmt, sellerAmtAfter, "I2: seller shares unchanged")
+	assert.Equal(t, 0, sellerReserved, "I3: no reserved shares")
+}
+
+// ── SG-09b: Toxiproxy latency > RPC timeout ───────────────────────────────────
+
+func TestSG09b_ToxiproxyLatency(t *testing.T) {
+	skipUnlessIntegration(t)
+	toxiAddr := os.Getenv("TOXIPROXY_ADDR")
+	if toxiAddr == "" {
+		t.Skip("set TOXIPROXY_ADDR=localhost:8474 to run Toxiproxy tests")
+	}
+	if resp, err := http.Get(fmt.Sprintf("http://%s/version", toxiAddr)); err != nil || resp.StatusCode != 200 {
+		if resp != nil {
+			resp.Body.Close()
+		}
+		t.Skipf("Toxiproxy not reachable at %s", toxiAddr)
+	} else {
+		resp.Body.Close()
+	}
+
+	// TOXI_ACCT_UPSTREAM is set by run-saga-tests.ps1 to "account-db:5432" so that
+	// Toxiproxy (which runs in Docker) can reach account-db via the shared network.
+	acctUpstream := os.Getenv("TOXI_ACCT_UPSTREAM")
+	if acctUpstream == "" {
+		acctUpstream = "localhost:5436"
+	}
+	addToxic := toxiproxyCreateProxy(t, toxiAddr, "sg09b-acct", 15436, acctUpstream)
+	accountProxyDSN := "postgres://account_user:account_pass@localhost:15436/account_db?sslmode=disable"
+
+	s := newTestServerWithAccountAt(t, accountProxyDSN)
+	truncateAll(t, s)
+	listingID := ensureListing(t, s)
+
+	contractID := seedContract(t, s, 10, 300, 24*time.Hour)
+	seedBuyerAccount(t, s, 5000)
+	sellerAccID := seedSellerAccount(t, s)
+	seedSellerPortfolio(t, s, sellerAccID, 10)
+
+	buyerBalBefore, _ := getAccountBalance(t, s.AccountDB, testBuyerID)
+	sellerBalBefore, _ := getAccountBalance(t, s.AccountDB, testSellerID)
+	sellerAmt, _ := getPortfolioAmount(t, s.PortfolioDB, testSellerID, listingID)
+
+	// Add latency toxic: 30 000ms >> any RPC timeout.
+	addToxic("latency", map[string]interface{}{"latency": 30000, "jitter": 0})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// lib/pq cancels queries by opening a NEW TCP connection to send a PostgreSQL
+	// CancelRequest. That new connection also goes through the proxy and hits the
+	// same 30s latency — so the cancel takes 30s to arrive and 30s to get a response,
+	// meaning ExerciseContract would block for ~70s instead of ~10s.
+	// Fix: when the context fires, DELETE the proxy via the Toxiproxy API. Toxiproxy
+	// immediately RSTs all active connections, unblocking lib/pq's recv wait at once.
+	go func() {
+		<-ctx.Done()
+		req, _ := http.NewRequest(http.MethodDelete,
+			fmt.Sprintf("http://%s/proxies/sg09b-acct", toxiAddr), nil)
+		_, _ = http.DefaultClient.Do(req)
+	}()
+
+	_, err := s.ExerciseContract(ctx, &pb.ExerciseContractRequest{
+		ContractId: contractID, CallerId: testBuyerID, CallerType: "CLIENT",
+	})
+	require.Error(t, err, "ExerciseContract must fail with Toxiproxy latency")
+
+	var sagaCount int
+	_ = s.DB.QueryRow(`SELECT COUNT(*) FROM otc_saga WHERE contract_id=$1`, contractID).Scan(&sagaCount)
+	if sagaCount > 0 {
+		saga := pollSaga(t, s.DB, contractID, 10*time.Second)
+		assert.Equal(t, "Compensated", saga.Status)
+	}
+
+	// Invariant checks use direct DSN — the proxy may be deleted by the watchdog above,
+	// and even if it weren't, going through a 30s-latency toxic for every query is wrong.
+	directAccountDSN := "postgres://account_user:account_pass@localhost:5436/account_db?sslmode=disable"
+	s2 := newTestServerWithAccountAt(t, directAccountDSN)
+	buyerBal, buyerAvail := getAccountBalance(t, s2.AccountDB, testBuyerID)
+	sellerBal, sellerAvail := getAccountBalance(t, s2.AccountDB, testSellerID)
+	assert.InDelta(t, buyerBalBefore, buyerBal, 0.01, "buyer balance unchanged")
+	assert.InDelta(t, buyerBal, buyerAvail, 0.01, "I3: no buyer reserved funds")
+	assert.InDelta(t, sellerBalBefore, sellerBal, 0.01, "seller balance unchanged")
+	assert.InDelta(t, sellerBal, sellerAvail, 0.01, "I3: no seller reserved funds")
+	sellerAmtAfter, sellerReserved := getPortfolioAmount(t, s2.PortfolioDB, testSellerID, listingID)
+	assert.Equal(t, sellerAmt, sellerAmtAfter, "I2: seller shares unchanged")
+	assert.Equal(t, 0, sellerReserved, "I3: no reserved shares")
+}
+
+// ── SG-09c: Toxiproxy bandwidth=0 (network partition) ────────────────────────
+
+func TestSG09c_ToxiproxyDown(t *testing.T) {
+	skipUnlessIntegration(t)
+	toxiAddr := os.Getenv("TOXIPROXY_ADDR")
+	if toxiAddr == "" {
+		t.Skip("set TOXIPROXY_ADDR=localhost:8474 to run Toxiproxy tests")
+	}
+	if resp, err := http.Get(fmt.Sprintf("http://%s/version", toxiAddr)); err != nil || resp.StatusCode != 200 {
+		if resp != nil {
+			resp.Body.Close()
+		}
+		t.Skipf("Toxiproxy not reachable at %s", toxiAddr)
+	} else {
+		resp.Body.Close()
+	}
+
+	acctUpstream := os.Getenv("TOXI_ACCT_UPSTREAM")
+	if acctUpstream == "" {
+		acctUpstream = "localhost:5436"
+	}
+	addToxic := toxiproxyCreateProxy(t, toxiAddr, "sg09c-acct", 15437, acctUpstream)
+	accountProxyDSN := "postgres://account_user:account_pass@localhost:15437/account_db?sslmode=disable"
+
+	s := newTestServerWithAccountAt(t, accountProxyDSN)
+	truncateAll(t, s)
+	listingID := ensureListing(t, s)
+
+	contractID := seedContract(t, s, 10, 300, 24*time.Hour)
+	seedBuyerAccount(t, s, 5000)
+	sellerAccID := seedSellerAccount(t, s)
+	seedSellerPortfolio(t, s, sellerAccID, 10)
+
+	buyerBalBefore, _ := getAccountBalance(t, s.AccountDB, testBuyerID)
+	sellerBalBefore, _ := getAccountBalance(t, s.AccountDB, testSellerID)
+	sellerAmt, _ := getPortfolioAmount(t, s.PortfolioDB, testSellerID, listingID)
+
+	// bandwidth=0 simulates a hard network partition (no bytes flow).
+	addToxic("bandwidth", map[string]interface{}{"rate": 0})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// With bandwidth=0, lib/pq's CancelRequest (sent over a new connection to the proxy)
+	// also gets zero bytes — so the cancel never reaches postgres and the original
+	// connection's recv wait blocks forever on Windows.
+	// Fix: delete the proxy on context expiry → Toxiproxy RSTs all connections → unblocks.
+	go func() {
+		<-ctx.Done()
+		req, _ := http.NewRequest(http.MethodDelete,
+			fmt.Sprintf("http://%s/proxies/sg09c-acct", toxiAddr), nil)
+		_, _ = http.DefaultClient.Do(req)
+	}()
+
+	_, err := s.ExerciseContract(ctx, &pb.ExerciseContractRequest{
+		ContractId: contractID, CallerId: testBuyerID, CallerType: "CLIENT",
+	})
+	require.Error(t, err, "ExerciseContract must fail with Toxiproxy bandwidth=0")
+
+	var sagaCount int
+	_ = s.DB.QueryRow(`SELECT COUNT(*) FROM otc_saga WHERE contract_id=$1`, contractID).Scan(&sagaCount)
+	if sagaCount > 0 {
+		saga := pollSaga(t, s.DB, contractID, 10*time.Second)
+		assert.Equal(t, "Compensated", saga.Status)
+	}
+
+	// Invariant checks use direct DSN — the proxy is deleted by the watchdog above.
+	directAccountDSN := "postgres://account_user:account_pass@localhost:5436/account_db?sslmode=disable"
+	s2 := newTestServerWithAccountAt(t, directAccountDSN)
+	buyerBal, buyerAvail := getAccountBalance(t, s2.AccountDB, testBuyerID)
+	sellerBal, sellerAvail := getAccountBalance(t, s2.AccountDB, testSellerID)
+	assert.InDelta(t, buyerBalBefore, buyerBal, 0.01, "buyer balance unchanged")
+	assert.InDelta(t, buyerBal, buyerAvail, 0.01, "I3: no buyer reserved funds")
+	assert.InDelta(t, sellerBalBefore, sellerBal, 0.01, "seller balance unchanged")
+	assert.InDelta(t, sellerBal, sellerAvail, 0.01, "I3: no seller reserved funds")
+	sellerAmtAfter, sellerReserved := getPortfolioAmount(t, s2.PortfolioDB, testSellerID, listingID)
+	assert.Equal(t, sellerAmt, sellerAmtAfter, "I2: seller shares unchanged")
+	assert.Equal(t, 0, sellerReserved, "I3: no reserved shares")
+}
+
+// ── SG-10: F3 fails mid-saga → C2+C1 compensate ─────────────────────────────
+//
+// X-Saga-Force-Fail: F3 makes F3 fail immediately via the fault-hook, which is
+// equivalent to the account-db becoming unavailable while F3 executes: F1+F2
+// commit their side-effects, F3 fails, C2 (portfolio-db) and C1 (account-db)
+// run and restore everything.
+//
+// NOTE: "docker compose pause" (SIGSTOP) is NOT used here because on Windows
+// lib/pq cannot cancel a blocked TCP read when the remote end is frozen. The
+// goroutine would hang indefinitely instead of returning on context deadline.
+// X-Saga-Force-Fail produces the same SAGA outcome without any Docker interaction.
+
+func TestSG10_AccountPausedDuringSaga(t *testing.T) {
+	skipUnlessIntegration(t)
+	s := newTestServer(t)
+	truncateAll(t, s)
+	listingID := ensureListing(t, s)
+
+	contractID := seedContract(t, s, 10, 300, 24*time.Hour)
+	seedBuyerAccount(t, s, 5000)
+	sellerAccID := seedSellerAccount(t, s)
+	seedSellerPortfolio(t, s, sellerAccID, 10)
+
+	buyerBalBefore, _ := getAccountBalance(t, s.AccountDB, testBuyerID)
+	sellerBalBefore, _ := getAccountBalance(t, s.AccountDB, testSellerID)
+	sellerAmt, _ := getPortfolioAmount(t, s.PortfolioDB, testSellerID, listingID)
+
+	// F3 fails via the fault-hook; F1+F2 side-effects are already committed.
+	sagaCtx := ctxWithMeta("x-saga-force-fail", "F3")
+	_, err := s.ExerciseContract(sagaCtx, &pb.ExerciseContractRequest{
+		ContractId: contractID, CallerId: testBuyerID, CallerType: "CLIENT",
+	})
+	require.Error(t, err, "ExerciseContract must fail when F3 is force-failed")
+
+	saga := getSaga(t, s.DB, contractID)
+	assert.Equal(t, "Compensated", saga.Status)
+	assert.Equal(t, 3, saga.CurrentStep)
+
+	logs := getSagaLog(t, s.DB, contractID)
+	assert.GreaterOrEqual(t, len(logs), 5, "expected at least: F1 ok, F2 ok, F3 fail, C2 ok, C1 ok")
+
+	s2 := newTestServer(t)
+	assertInvariants(t, s2, buyerBalBefore, sellerBalBefore, listingID, sellerAmt)
+	assert.Equal(t, "ACTIVE", getContractStatus(t, s.DB, contractID), "I6: contract stays ACTIVE")
+}
+
+// ── SG-11: Crash recovery (koordinator ubijen mid-flight) ─────────────────────
+//
+// The saga is started with X-Saga-Inject-Delay: F3:5000. After F1+F2 complete,
+// the ExerciseContract context is cancelled (simulating SIGKILL on the process).
+// A fresh OtcServer then calls RecoverInFlightSagas() — simulating service restart.
+// The spec allows both Completed and Compensated as valid terminal states.
+
+func TestSG11_CrashRecovery(t *testing.T) {
+	skipUnlessIntegration(t)
+	s := newTestServer(t)
+	truncateAll(t, s)
+	listingID := ensureListing(t, s)
+
+	contractID := seedContract(t, s, 10, 300, 24*time.Hour)
+	seedBuyerAccount(t, s, 5000)
+	sellerAccID := seedSellerAccount(t, s)
+	seedSellerPortfolio(t, s, sellerAccID, 10)
+
+	buyerBalBefore, _ := getAccountBalance(t, s.AccountDB, testBuyerID)
+	sellerBalBefore, _ := getAccountBalance(t, s.AccountDB, testSellerID)
+	sellerAmt, _ := getPortfolioAmount(t, s.PortfolioDB, testSellerID, listingID)
+
+	// Start saga with F3 delay to open a crash window.
+	killCtx, kill := context.WithCancel(ctxWithMeta("x-saga-inject-delay", "F3:5000"))
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_, _ = s.ExerciseContract(killCtx, &pb.ExerciseContractRequest{
+			ContractId: contractID, CallerId: testBuyerID, CallerType: "CLIENT",
+		})
+	}()
+
+	// Wait for F1+F2 to complete (step >= 2), then simulate SIGKILL.
+	waitFor(t, 10*time.Second, 100*time.Millisecond, func() bool {
+		var step int
+		_ = s.DB.QueryRow(`SELECT current_step FROM otc_saga WHERE contract_id=$1`, contractID).Scan(&step)
+		return step >= 2
+	}, "F1+F2 to complete before kill")
+
+	kill() // cancel context — simulates SIGKILL on the coordinator process
+
+	// Give the goroutine time to finish (sagaLog/sagaStatus use fresh background ctx).
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		// Goroutine may be sleeping in F3 delay; proceed — recovery will handle it.
+	}
+
+	// Simulate service restart: fresh server calls RecoverInFlightSagas.
+	s2 := newTestServer(t)
+	s2.RecoverInFlightSagas()
+
+	// Both Completed and Compensated are valid outcomes (spec §SG-11).
+	saga := pollSaga(t, s2.DB, contractID, 30*time.Second)
+	assert.True(t, saga.Status == "Completed" || saga.Status == "Compensated",
+		"saga must reach terminal status, got: %s", saga.Status)
+
+	logs := getSagaLog(t, s2.DB, contractID)
+	assert.NotEmpty(t, logs, "saga log must not be empty")
+
+	// I1, I2, I3 must hold regardless of whether saga Completed or Compensated.
+	assertInvariants(t, s2, buyerBalBefore, sellerBalBefore, listingID, sellerAmt)
 }
