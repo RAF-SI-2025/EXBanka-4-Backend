@@ -71,6 +71,9 @@ CREATE TABLE IF NOT EXISTS otc_saga (
 ALTER TABLE otc_saga ADD COLUMN IF NOT EXISTS current_step INT NOT NULL DEFAULT 0;
 ALTER TABLE otc_saga ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT NOW();
 
+-- Migration: drop over-broad unique constraint that blocked multiple negotiations from the same buyer
+ALTER TABLE otc_negotiations DROP CONSTRAINT IF EXISTS otc_negotiations_creator_routing_number_creator_external_id_key;
+
 -- Migration: partner_negotiation_id = lokalni ID pregovora na partner banci (za outgoing OPTION posting)
 ALTER TABLE otc_negotiations ADD COLUMN IF NOT EXISTS partner_negotiation_id BIGINT;
 -- Migration: partner banks (e.g. Banka 4) return UUID strings, not integers
