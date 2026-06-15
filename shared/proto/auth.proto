@@ -12,6 +12,8 @@ message LoginRequest {
 message LoginResponse {
   string access_token  = 1;
   string refresh_token = 2;
+  bool   requires_totp = 3;
+  string session_token = 4;
 }
 
 message RefreshRequest {
@@ -56,6 +58,8 @@ message ClientLoginResponse {
   string access_token        = 1;  // set on mobile login
   string refresh_token       = 2;  // set on mobile login
   int64  approval_request_id = 3;  // set on web login (2FA flow)
+  bool   requires_totp       = 4;
+  string session_token       = 5;
 }
 
 message PollApprovalRequest  { int64 id = 1; }
@@ -77,6 +81,97 @@ message ActivateClientRequest {
   string confirm_password = 3;
 }
 message ActivateClientResponse {}
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+message Notification {
+  int64  id         = 1;
+  int64  user_id    = 2;
+  string user_type  = 3;
+  string title      = 4;
+  string message    = 5;
+  string type       = 6;
+  bool   is_read    = 7;
+  string created_at = 8;
+}
+
+message CreateNotificationRequest {
+  int64  user_id   = 1;
+  string user_type = 2;
+  string title     = 3;
+  string message   = 4;
+  string type      = 5;
+}
+message CreateNotificationResponse { Notification notification = 1; }
+
+message ListNotificationsRequest {
+  int64  user_id     = 1;
+  string user_type   = 2;
+  bool   unread_only = 3;
+  int32  page        = 4;
+  int32  page_size   = 5;
+}
+message ListNotificationsResponse {
+  repeated Notification notifications = 1;
+  int64 total = 2;
+}
+
+message MarkNotificationReadRequest  { int64 id = 1; int64 user_id = 2; }
+message MarkNotificationReadResponse {}
+
+message MarkAllReadRequest  { int64 user_id = 1; string user_type = 2; }
+message MarkAllReadResponse {}
+
+message GetUnreadCountRequest  { int64 user_id = 1; string user_type = 2; }
+message GetUnreadCountResponse { int64 count = 1; }
+
+// ── TOTP ─────────────────────────────────────────────────────────────────────
+
+message GenerateTOTPRequest {
+  int64  user_id   = 1;
+  string user_type = 2;  // "EMPLOYEE" | "CLIENT"
+  string email     = 3;
+}
+
+message GenerateTOTPResponse {
+  string secret       = 1;  // base32 encoded
+  string otpauth_uri  = 2;
+  string qr_code_png  = 3;  // base64 encoded PNG
+}
+
+message VerifyTOTPRequest {
+  int64  user_id   = 1;
+  string user_type = 2;
+  string code      = 3;
+}
+
+message VerifyTOTPResponse {
+  bool valid = 1;
+}
+
+message EnableTOTPRequest {
+  int64  user_id   = 1;
+  string user_type = 2;
+}
+
+message EnableTOTPResponse {}
+
+message ValidateTOTPLoginRequest {
+  string session_token = 1;
+  string code          = 2;
+}
+
+message ValidateTOTPLoginResponse {
+  string access_token  = 1;
+  string refresh_token = 2;
+}
+
+message DisableTOTPRequest {
+  int64  user_id   = 1;
+  string user_type = 2;
+}
+
+message DisableTOTPResponse {}
 
 // ── TwoFactor Approval ────────────────────────────────────────────────────────
 
@@ -149,4 +244,16 @@ service AuthService {
   rpc UnregisterPushToken(UnregisterPushTokenRequest)       returns (UnregisterPushTokenResponse);
   rpc GetPushToken(GetPushTokenRequest)                     returns (GetPushTokenResponse);
   rpc Logout(LogoutRequest)                                 returns (LogoutResponse);
+
+  rpc GenerateTOTPSecret(GenerateTOTPRequest)               returns (GenerateTOTPResponse);
+  rpc VerifyTOTP(VerifyTOTPRequest)                         returns (VerifyTOTPResponse);
+  rpc EnableTOTP(EnableTOTPRequest)                         returns (EnableTOTPResponse);
+  rpc ValidateTOTPLogin(ValidateTOTPLoginRequest)           returns (ValidateTOTPLoginResponse);
+  rpc DisableTOTP(DisableTOTPRequest)                       returns (DisableTOTPResponse);
+
+  rpc CreateNotification(CreateNotificationRequest)         returns (CreateNotificationResponse);
+  rpc ListNotifications(ListNotificationsRequest)           returns (ListNotificationsResponse);
+  rpc MarkNotificationRead(MarkNotificationReadRequest)     returns (MarkNotificationReadResponse);
+  rpc MarkAllRead(MarkAllReadRequest)                       returns (MarkAllReadResponse);
+  rpc GetUnreadCount(GetUnreadCountRequest)                 returns (GetUnreadCountResponse);
 }

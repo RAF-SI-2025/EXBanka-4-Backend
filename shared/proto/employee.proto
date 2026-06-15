@@ -52,11 +52,23 @@ message GetEmployeeCredentialsRequest {
 }
 
 message GetEmployeeCredentialsResponse {
-  int64           id            = 1;
-  string          password_hash = 2;
-  repeated string permissions   = 3;
-  bool            active        = 4;
+  int64           id                    = 1;
+  string          password_hash         = 2;
+  repeated string permissions           = 3;
+  bool            active                = 4;
+  string          email                 = 5;
+  string          first_name            = 6;
+  int32           failed_login_attempts = 7;
+  string          account_locked_until  = 8;
 }
+
+message UpdateLoginAttemptsRequest {
+  int64  id           = 1;
+  int32  attempts     = 2;
+  string locked_until = 3;
+}
+
+message UpdateLoginAttemptsResponse {}
 
 message CreateEmployeeRequest {
   string first_name    = 1;
@@ -214,4 +226,5 @@ service EmployeeService {
   rpc ResetAllActuaryUsedLimits(ResetAllActuaryUsedLimitsRequest) returns (ResetAllActuaryUsedLimitsResponse);
   rpc GetActuaryPerformers(GetActuaryPerformersRequest) returns (GetActuaryPerformersResponse);
   rpc GetSupervisors(GetSupervisorsRequest) returns (GetSupervisorsResponse);
+  rpc UpdateLoginAttempts(UpdateLoginAttemptsRequest) returns (UpdateLoginAttemptsResponse);
 }

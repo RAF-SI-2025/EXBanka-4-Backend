@@ -38,6 +38,16 @@ const (
 	AuthService_UnregisterPushToken_FullMethodName         = "/auth.AuthService/UnregisterPushToken"
 	AuthService_GetPushToken_FullMethodName                = "/auth.AuthService/GetPushToken"
 	AuthService_Logout_FullMethodName                      = "/auth.AuthService/Logout"
+	AuthService_GenerateTOTPSecret_FullMethodName          = "/auth.AuthService/GenerateTOTPSecret"
+	AuthService_VerifyTOTP_FullMethodName                  = "/auth.AuthService/VerifyTOTP"
+	AuthService_EnableTOTP_FullMethodName                  = "/auth.AuthService/EnableTOTP"
+	AuthService_ValidateTOTPLogin_FullMethodName           = "/auth.AuthService/ValidateTOTPLogin"
+	AuthService_DisableTOTP_FullMethodName                 = "/auth.AuthService/DisableTOTP"
+	AuthService_CreateNotification_FullMethodName          = "/auth.AuthService/CreateNotification"
+	AuthService_ListNotifications_FullMethodName           = "/auth.AuthService/ListNotifications"
+	AuthService_MarkNotificationRead_FullMethodName        = "/auth.AuthService/MarkNotificationRead"
+	AuthService_MarkAllRead_FullMethodName                 = "/auth.AuthService/MarkAllRead"
+	AuthService_GetUnreadCount_FullMethodName              = "/auth.AuthService/GetUnreadCount"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -63,6 +73,16 @@ type AuthServiceClient interface {
 	UnregisterPushToken(ctx context.Context, in *UnregisterPushTokenRequest, opts ...grpc.CallOption) (*UnregisterPushTokenResponse, error)
 	GetPushToken(ctx context.Context, in *GetPushTokenRequest, opts ...grpc.CallOption) (*GetPushTokenResponse, error)
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error)
+	GenerateTOTPSecret(ctx context.Context, in *GenerateTOTPRequest, opts ...grpc.CallOption) (*GenerateTOTPResponse, error)
+	VerifyTOTP(ctx context.Context, in *VerifyTOTPRequest, opts ...grpc.CallOption) (*VerifyTOTPResponse, error)
+	EnableTOTP(ctx context.Context, in *EnableTOTPRequest, opts ...grpc.CallOption) (*EnableTOTPResponse, error)
+	ValidateTOTPLogin(ctx context.Context, in *ValidateTOTPLoginRequest, opts ...grpc.CallOption) (*ValidateTOTPLoginResponse, error)
+	DisableTOTP(ctx context.Context, in *DisableTOTPRequest, opts ...grpc.CallOption) (*DisableTOTPResponse, error)
+	CreateNotification(ctx context.Context, in *CreateNotificationRequest, opts ...grpc.CallOption) (*CreateNotificationResponse, error)
+	ListNotifications(ctx context.Context, in *ListNotificationsRequest, opts ...grpc.CallOption) (*ListNotificationsResponse, error)
+	MarkNotificationRead(ctx context.Context, in *MarkNotificationReadRequest, opts ...grpc.CallOption) (*MarkNotificationReadResponse, error)
+	MarkAllRead(ctx context.Context, in *MarkAllReadRequest, opts ...grpc.CallOption) (*MarkAllReadResponse, error)
+	GetUnreadCount(ctx context.Context, in *GetUnreadCountRequest, opts ...grpc.CallOption) (*GetUnreadCountResponse, error)
 }
 
 type authServiceClient struct {
@@ -263,6 +283,106 @@ func (c *authServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts 
 	return out, nil
 }
 
+func (c *authServiceClient) GenerateTOTPSecret(ctx context.Context, in *GenerateTOTPRequest, opts ...grpc.CallOption) (*GenerateTOTPResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GenerateTOTPResponse)
+	err := c.cc.Invoke(ctx, AuthService_GenerateTOTPSecret_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) VerifyTOTP(ctx context.Context, in *VerifyTOTPRequest, opts ...grpc.CallOption) (*VerifyTOTPResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VerifyTOTPResponse)
+	err := c.cc.Invoke(ctx, AuthService_VerifyTOTP_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) EnableTOTP(ctx context.Context, in *EnableTOTPRequest, opts ...grpc.CallOption) (*EnableTOTPResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EnableTOTPResponse)
+	err := c.cc.Invoke(ctx, AuthService_EnableTOTP_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ValidateTOTPLogin(ctx context.Context, in *ValidateTOTPLoginRequest, opts ...grpc.CallOption) (*ValidateTOTPLoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ValidateTOTPLoginResponse)
+	err := c.cc.Invoke(ctx, AuthService_ValidateTOTPLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) DisableTOTP(ctx context.Context, in *DisableTOTPRequest, opts ...grpc.CallOption) (*DisableTOTPResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DisableTOTPResponse)
+	err := c.cc.Invoke(ctx, AuthService_DisableTOTP_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) CreateNotification(ctx context.Context, in *CreateNotificationRequest, opts ...grpc.CallOption) (*CreateNotificationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateNotificationResponse)
+	err := c.cc.Invoke(ctx, AuthService_CreateNotification_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ListNotifications(ctx context.Context, in *ListNotificationsRequest, opts ...grpc.CallOption) (*ListNotificationsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListNotificationsResponse)
+	err := c.cc.Invoke(ctx, AuthService_ListNotifications_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) MarkNotificationRead(ctx context.Context, in *MarkNotificationReadRequest, opts ...grpc.CallOption) (*MarkNotificationReadResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MarkNotificationReadResponse)
+	err := c.cc.Invoke(ctx, AuthService_MarkNotificationRead_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) MarkAllRead(ctx context.Context, in *MarkAllReadRequest, opts ...grpc.CallOption) (*MarkAllReadResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MarkAllReadResponse)
+	err := c.cc.Invoke(ctx, AuthService_MarkAllRead_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) GetUnreadCount(ctx context.Context, in *GetUnreadCountRequest, opts ...grpc.CallOption) (*GetUnreadCountResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUnreadCountResponse)
+	err := c.cc.Invoke(ctx, AuthService_GetUnreadCount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -286,6 +406,16 @@ type AuthServiceServer interface {
 	UnregisterPushToken(context.Context, *UnregisterPushTokenRequest) (*UnregisterPushTokenResponse, error)
 	GetPushToken(context.Context, *GetPushTokenRequest) (*GetPushTokenResponse, error)
 	Logout(context.Context, *LogoutRequest) (*LogoutResponse, error)
+	GenerateTOTPSecret(context.Context, *GenerateTOTPRequest) (*GenerateTOTPResponse, error)
+	VerifyTOTP(context.Context, *VerifyTOTPRequest) (*VerifyTOTPResponse, error)
+	EnableTOTP(context.Context, *EnableTOTPRequest) (*EnableTOTPResponse, error)
+	ValidateTOTPLogin(context.Context, *ValidateTOTPLoginRequest) (*ValidateTOTPLoginResponse, error)
+	DisableTOTP(context.Context, *DisableTOTPRequest) (*DisableTOTPResponse, error)
+	CreateNotification(context.Context, *CreateNotificationRequest) (*CreateNotificationResponse, error)
+	ListNotifications(context.Context, *ListNotificationsRequest) (*ListNotificationsResponse, error)
+	MarkNotificationRead(context.Context, *MarkNotificationReadRequest) (*MarkNotificationReadResponse, error)
+	MarkAllRead(context.Context, *MarkAllReadRequest) (*MarkAllReadResponse, error)
+	GetUnreadCount(context.Context, *GetUnreadCountRequest) (*GetUnreadCountResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -352,6 +482,36 @@ func (UnimplementedAuthServiceServer) GetPushToken(context.Context, *GetPushToke
 }
 func (UnimplementedAuthServiceServer) Logout(context.Context, *LogoutRequest) (*LogoutResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Logout not implemented")
+}
+func (UnimplementedAuthServiceServer) GenerateTOTPSecret(context.Context, *GenerateTOTPRequest) (*GenerateTOTPResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GenerateTOTPSecret not implemented")
+}
+func (UnimplementedAuthServiceServer) VerifyTOTP(context.Context, *VerifyTOTPRequest) (*VerifyTOTPResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method VerifyTOTP not implemented")
+}
+func (UnimplementedAuthServiceServer) EnableTOTP(context.Context, *EnableTOTPRequest) (*EnableTOTPResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method EnableTOTP not implemented")
+}
+func (UnimplementedAuthServiceServer) ValidateTOTPLogin(context.Context, *ValidateTOTPLoginRequest) (*ValidateTOTPLoginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ValidateTOTPLogin not implemented")
+}
+func (UnimplementedAuthServiceServer) DisableTOTP(context.Context, *DisableTOTPRequest) (*DisableTOTPResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DisableTOTP not implemented")
+}
+func (UnimplementedAuthServiceServer) CreateNotification(context.Context, *CreateNotificationRequest) (*CreateNotificationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateNotification not implemented")
+}
+func (UnimplementedAuthServiceServer) ListNotifications(context.Context, *ListNotificationsRequest) (*ListNotificationsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListNotifications not implemented")
+}
+func (UnimplementedAuthServiceServer) MarkNotificationRead(context.Context, *MarkNotificationReadRequest) (*MarkNotificationReadResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method MarkNotificationRead not implemented")
+}
+func (UnimplementedAuthServiceServer) MarkAllRead(context.Context, *MarkAllReadRequest) (*MarkAllReadResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method MarkAllRead not implemented")
+}
+func (UnimplementedAuthServiceServer) GetUnreadCount(context.Context, *GetUnreadCountRequest) (*GetUnreadCountResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUnreadCount not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -716,6 +876,186 @@ func _AuthService_Logout_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_GenerateTOTPSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateTOTPRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).GenerateTOTPSecret(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_GenerateTOTPSecret_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).GenerateTOTPSecret(ctx, req.(*GenerateTOTPRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_VerifyTOTP_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyTOTPRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).VerifyTOTP(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_VerifyTOTP_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).VerifyTOTP(ctx, req.(*VerifyTOTPRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_EnableTOTP_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnableTOTPRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).EnableTOTP(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_EnableTOTP_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).EnableTOTP(ctx, req.(*EnableTOTPRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ValidateTOTPLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ValidateTOTPLoginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ValidateTOTPLogin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ValidateTOTPLogin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ValidateTOTPLogin(ctx, req.(*ValidateTOTPLoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_DisableTOTP_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisableTOTPRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).DisableTOTP(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_DisableTOTP_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).DisableTOTP(ctx, req.(*DisableTOTPRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_CreateNotification_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateNotificationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).CreateNotification(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_CreateNotification_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).CreateNotification(ctx, req.(*CreateNotificationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ListNotifications_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListNotificationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ListNotifications(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ListNotifications_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ListNotifications(ctx, req.(*ListNotificationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_MarkNotificationRead_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MarkNotificationReadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).MarkNotificationRead(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_MarkNotificationRead_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).MarkNotificationRead(ctx, req.(*MarkNotificationReadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_MarkAllRead_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MarkAllReadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).MarkAllRead(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_MarkAllRead_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).MarkAllRead(ctx, req.(*MarkAllReadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_GetUnreadCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUnreadCountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).GetUnreadCount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_GetUnreadCount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).GetUnreadCount(ctx, req.(*GetUnreadCountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -798,6 +1138,46 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Logout",
 			Handler:    _AuthService_Logout_Handler,
+		},
+		{
+			MethodName: "GenerateTOTPSecret",
+			Handler:    _AuthService_GenerateTOTPSecret_Handler,
+		},
+		{
+			MethodName: "VerifyTOTP",
+			Handler:    _AuthService_VerifyTOTP_Handler,
+		},
+		{
+			MethodName: "EnableTOTP",
+			Handler:    _AuthService_EnableTOTP_Handler,
+		},
+		{
+			MethodName: "ValidateTOTPLogin",
+			Handler:    _AuthService_ValidateTOTPLogin_Handler,
+		},
+		{
+			MethodName: "DisableTOTP",
+			Handler:    _AuthService_DisableTOTP_Handler,
+		},
+		{
+			MethodName: "CreateNotification",
+			Handler:    _AuthService_CreateNotification_Handler,
+		},
+		{
+			MethodName: "ListNotifications",
+			Handler:    _AuthService_ListNotifications_Handler,
+		},
+		{
+			MethodName: "MarkNotificationRead",
+			Handler:    _AuthService_MarkNotificationRead_Handler,
+		},
+		{
+			MethodName: "MarkAllRead",
+			Handler:    _AuthService_MarkAllRead_Handler,
+		},
+		{
+			MethodName: "GetUnreadCount",
+			Handler:    _AuthService_GetUnreadCount_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

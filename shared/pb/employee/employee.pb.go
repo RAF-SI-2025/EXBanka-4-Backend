@@ -454,13 +454,17 @@ func (x *GetEmployeeCredentialsRequest) GetEmail() string {
 }
 
 type GetEmployeeCredentialsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	PasswordHash  string                 `protobuf:"bytes,2,opt,name=password_hash,json=passwordHash,proto3" json:"password_hash,omitempty"`
-	Permissions   []string               `protobuf:"bytes,3,rep,name=permissions,proto3" json:"permissions,omitempty"`
-	Active        bool                   `protobuf:"varint,4,opt,name=active,proto3" json:"active,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Id                  int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	PasswordHash        string                 `protobuf:"bytes,2,opt,name=password_hash,json=passwordHash,proto3" json:"password_hash,omitempty"`
+	Permissions         []string               `protobuf:"bytes,3,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	Active              bool                   `protobuf:"varint,4,opt,name=active,proto3" json:"active,omitempty"`
+	Email               string                 `protobuf:"bytes,5,opt,name=email,proto3" json:"email,omitempty"`
+	FirstName           string                 `protobuf:"bytes,6,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	FailedLoginAttempts int32                  `protobuf:"varint,7,opt,name=failed_login_attempts,json=failedLoginAttempts,proto3" json:"failed_login_attempts,omitempty"`
+	AccountLockedUntil  string                 `protobuf:"bytes,8,opt,name=account_locked_until,json=accountLockedUntil,proto3" json:"account_locked_until,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *GetEmployeeCredentialsResponse) Reset() {
@@ -521,6 +525,130 @@ func (x *GetEmployeeCredentialsResponse) GetActive() bool {
 	return false
 }
 
+func (x *GetEmployeeCredentialsResponse) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *GetEmployeeCredentialsResponse) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *GetEmployeeCredentialsResponse) GetFailedLoginAttempts() int32 {
+	if x != nil {
+		return x.FailedLoginAttempts
+	}
+	return 0
+}
+
+func (x *GetEmployeeCredentialsResponse) GetAccountLockedUntil() string {
+	if x != nil {
+		return x.AccountLockedUntil
+	}
+	return ""
+}
+
+type UpdateLoginAttemptsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Attempts      int32                  `protobuf:"varint,2,opt,name=attempts,proto3" json:"attempts,omitempty"`
+	LockedUntil   string                 `protobuf:"bytes,3,opt,name=locked_until,json=lockedUntil,proto3" json:"locked_until,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateLoginAttemptsRequest) Reset() {
+	*x = UpdateLoginAttemptsRequest{}
+	mi := &file_employee_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateLoginAttemptsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateLoginAttemptsRequest) ProtoMessage() {}
+
+func (x *UpdateLoginAttemptsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_employee_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateLoginAttemptsRequest.ProtoReflect.Descriptor instead.
+func (*UpdateLoginAttemptsRequest) Descriptor() ([]byte, []int) {
+	return file_employee_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *UpdateLoginAttemptsRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *UpdateLoginAttemptsRequest) GetAttempts() int32 {
+	if x != nil {
+		return x.Attempts
+	}
+	return 0
+}
+
+func (x *UpdateLoginAttemptsRequest) GetLockedUntil() string {
+	if x != nil {
+		return x.LockedUntil
+	}
+	return ""
+}
+
+type UpdateLoginAttemptsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateLoginAttemptsResponse) Reset() {
+	*x = UpdateLoginAttemptsResponse{}
+	mi := &file_employee_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateLoginAttemptsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateLoginAttemptsResponse) ProtoMessage() {}
+
+func (x *UpdateLoginAttemptsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_employee_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateLoginAttemptsResponse.ProtoReflect.Descriptor instead.
+func (*UpdateLoginAttemptsResponse) Descriptor() ([]byte, []int) {
+	return file_employee_proto_rawDescGZIP(), []int{8}
+}
+
 type CreateEmployeeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FirstName     string                 `protobuf:"bytes,1,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
@@ -540,7 +668,7 @@ type CreateEmployeeRequest struct {
 
 func (x *CreateEmployeeRequest) Reset() {
 	*x = CreateEmployeeRequest{}
-	mi := &file_employee_proto_msgTypes[7]
+	mi := &file_employee_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -552,7 +680,7 @@ func (x *CreateEmployeeRequest) String() string {
 func (*CreateEmployeeRequest) ProtoMessage() {}
 
 func (x *CreateEmployeeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[7]
+	mi := &file_employee_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -565,7 +693,7 @@ func (x *CreateEmployeeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateEmployeeRequest.ProtoReflect.Descriptor instead.
 func (*CreateEmployeeRequest) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{7}
+	return file_employee_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *CreateEmployeeRequest) GetFirstName() string {
@@ -654,7 +782,7 @@ type CreateEmployeeResponse struct {
 
 func (x *CreateEmployeeResponse) Reset() {
 	*x = CreateEmployeeResponse{}
-	mi := &file_employee_proto_msgTypes[8]
+	mi := &file_employee_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -666,7 +794,7 @@ func (x *CreateEmployeeResponse) String() string {
 func (*CreateEmployeeResponse) ProtoMessage() {}
 
 func (x *CreateEmployeeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[8]
+	mi := &file_employee_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -679,7 +807,7 @@ func (x *CreateEmployeeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateEmployeeResponse.ProtoReflect.Descriptor instead.
 func (*CreateEmployeeResponse) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{8}
+	return file_employee_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *CreateEmployeeResponse) GetEmployee() *Employee {
@@ -698,7 +826,7 @@ type GetEmployeeByIdRequest struct {
 
 func (x *GetEmployeeByIdRequest) Reset() {
 	*x = GetEmployeeByIdRequest{}
-	mi := &file_employee_proto_msgTypes[9]
+	mi := &file_employee_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -710,7 +838,7 @@ func (x *GetEmployeeByIdRequest) String() string {
 func (*GetEmployeeByIdRequest) ProtoMessage() {}
 
 func (x *GetEmployeeByIdRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[9]
+	mi := &file_employee_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -723,7 +851,7 @@ func (x *GetEmployeeByIdRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEmployeeByIdRequest.ProtoReflect.Descriptor instead.
 func (*GetEmployeeByIdRequest) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{9}
+	return file_employee_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetEmployeeByIdRequest) GetId() int64 {
@@ -742,7 +870,7 @@ type GetEmployeeByIdResponse struct {
 
 func (x *GetEmployeeByIdResponse) Reset() {
 	*x = GetEmployeeByIdResponse{}
-	mi := &file_employee_proto_msgTypes[10]
+	mi := &file_employee_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -754,7 +882,7 @@ func (x *GetEmployeeByIdResponse) String() string {
 func (*GetEmployeeByIdResponse) ProtoMessage() {}
 
 func (x *GetEmployeeByIdResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[10]
+	mi := &file_employee_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -767,7 +895,7 @@ func (x *GetEmployeeByIdResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEmployeeByIdResponse.ProtoReflect.Descriptor instead.
 func (*GetEmployeeByIdResponse) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{10}
+	return file_employee_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetEmployeeByIdResponse) GetEmployee() *Employee {
@@ -799,7 +927,7 @@ type UpdateEmployeeRequest struct {
 
 func (x *UpdateEmployeeRequest) Reset() {
 	*x = UpdateEmployeeRequest{}
-	mi := &file_employee_proto_msgTypes[11]
+	mi := &file_employee_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -811,7 +939,7 @@ func (x *UpdateEmployeeRequest) String() string {
 func (*UpdateEmployeeRequest) ProtoMessage() {}
 
 func (x *UpdateEmployeeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[11]
+	mi := &file_employee_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -824,7 +952,7 @@ func (x *UpdateEmployeeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateEmployeeRequest.ProtoReflect.Descriptor instead.
 func (*UpdateEmployeeRequest) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{11}
+	return file_employee_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *UpdateEmployeeRequest) GetId() int64 {
@@ -934,7 +1062,7 @@ type UpdateEmployeeResponse struct {
 
 func (x *UpdateEmployeeResponse) Reset() {
 	*x = UpdateEmployeeResponse{}
-	mi := &file_employee_proto_msgTypes[12]
+	mi := &file_employee_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -946,7 +1074,7 @@ func (x *UpdateEmployeeResponse) String() string {
 func (*UpdateEmployeeResponse) ProtoMessage() {}
 
 func (x *UpdateEmployeeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[12]
+	mi := &file_employee_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -959,7 +1087,7 @@ func (x *UpdateEmployeeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateEmployeeResponse.ProtoReflect.Descriptor instead.
 func (*UpdateEmployeeResponse) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{12}
+	return file_employee_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *UpdateEmployeeResponse) GetEmployee() *Employee {
@@ -979,7 +1107,7 @@ type ActivateEmployeeRequest struct {
 
 func (x *ActivateEmployeeRequest) Reset() {
 	*x = ActivateEmployeeRequest{}
-	mi := &file_employee_proto_msgTypes[13]
+	mi := &file_employee_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -991,7 +1119,7 @@ func (x *ActivateEmployeeRequest) String() string {
 func (*ActivateEmployeeRequest) ProtoMessage() {}
 
 func (x *ActivateEmployeeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[13]
+	mi := &file_employee_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1004,7 +1132,7 @@ func (x *ActivateEmployeeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActivateEmployeeRequest.ProtoReflect.Descriptor instead.
 func (*ActivateEmployeeRequest) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{13}
+	return file_employee_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ActivateEmployeeRequest) GetEmployeeId() int64 {
@@ -1029,7 +1157,7 @@ type ActivateEmployeeResponse struct {
 
 func (x *ActivateEmployeeResponse) Reset() {
 	*x = ActivateEmployeeResponse{}
-	mi := &file_employee_proto_msgTypes[14]
+	mi := &file_employee_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1041,7 +1169,7 @@ func (x *ActivateEmployeeResponse) String() string {
 func (*ActivateEmployeeResponse) ProtoMessage() {}
 
 func (x *ActivateEmployeeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[14]
+	mi := &file_employee_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1054,7 +1182,7 @@ func (x *ActivateEmployeeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActivateEmployeeResponse.ProtoReflect.Descriptor instead.
 func (*ActivateEmployeeResponse) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{14}
+	return file_employee_proto_rawDescGZIP(), []int{16}
 }
 
 type GetEmployeeByEmailRequest struct {
@@ -1066,7 +1194,7 @@ type GetEmployeeByEmailRequest struct {
 
 func (x *GetEmployeeByEmailRequest) Reset() {
 	*x = GetEmployeeByEmailRequest{}
-	mi := &file_employee_proto_msgTypes[15]
+	mi := &file_employee_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1078,7 +1206,7 @@ func (x *GetEmployeeByEmailRequest) String() string {
 func (*GetEmployeeByEmailRequest) ProtoMessage() {}
 
 func (x *GetEmployeeByEmailRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[15]
+	mi := &file_employee_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1091,7 +1219,7 @@ func (x *GetEmployeeByEmailRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEmployeeByEmailRequest.ProtoReflect.Descriptor instead.
 func (*GetEmployeeByEmailRequest) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{15}
+	return file_employee_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GetEmployeeByEmailRequest) GetEmail() string {
@@ -1112,7 +1240,7 @@ type GetEmployeeByEmailResponse struct {
 
 func (x *GetEmployeeByEmailResponse) Reset() {
 	*x = GetEmployeeByEmailResponse{}
-	mi := &file_employee_proto_msgTypes[16]
+	mi := &file_employee_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1124,7 +1252,7 @@ func (x *GetEmployeeByEmailResponse) String() string {
 func (*GetEmployeeByEmailResponse) ProtoMessage() {}
 
 func (x *GetEmployeeByEmailResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[16]
+	mi := &file_employee_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1137,7 +1265,7 @@ func (x *GetEmployeeByEmailResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEmployeeByEmailResponse.ProtoReflect.Descriptor instead.
 func (*GetEmployeeByEmailResponse) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{16}
+	return file_employee_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *GetEmployeeByEmailResponse) GetId() int64 {
@@ -1171,7 +1299,7 @@ type UpdatePasswordRequest struct {
 
 func (x *UpdatePasswordRequest) Reset() {
 	*x = UpdatePasswordRequest{}
-	mi := &file_employee_proto_msgTypes[17]
+	mi := &file_employee_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1183,7 +1311,7 @@ func (x *UpdatePasswordRequest) String() string {
 func (*UpdatePasswordRequest) ProtoMessage() {}
 
 func (x *UpdatePasswordRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[17]
+	mi := &file_employee_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1196,7 +1324,7 @@ func (x *UpdatePasswordRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdatePasswordRequest.ProtoReflect.Descriptor instead.
 func (*UpdatePasswordRequest) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{17}
+	return file_employee_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *UpdatePasswordRequest) GetEmployeeId() int64 {
@@ -1221,7 +1349,7 @@ type UpdatePasswordResponse struct {
 
 func (x *UpdatePasswordResponse) Reset() {
 	*x = UpdatePasswordResponse{}
-	mi := &file_employee_proto_msgTypes[18]
+	mi := &file_employee_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1233,7 +1361,7 @@ func (x *UpdatePasswordResponse) String() string {
 func (*UpdatePasswordResponse) ProtoMessage() {}
 
 func (x *UpdatePasswordResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[18]
+	mi := &file_employee_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1246,7 +1374,7 @@ func (x *UpdatePasswordResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdatePasswordResponse.ProtoReflect.Descriptor instead.
 func (*UpdatePasswordResponse) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{18}
+	return file_employee_proto_rawDescGZIP(), []int{20}
 }
 
 type ActuaryInfo struct {
@@ -1265,7 +1393,7 @@ type ActuaryInfo struct {
 
 func (x *ActuaryInfo) Reset() {
 	*x = ActuaryInfo{}
-	mi := &file_employee_proto_msgTypes[19]
+	mi := &file_employee_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1277,7 +1405,7 @@ func (x *ActuaryInfo) String() string {
 func (*ActuaryInfo) ProtoMessage() {}
 
 func (x *ActuaryInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[19]
+	mi := &file_employee_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1290,7 +1418,7 @@ func (x *ActuaryInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActuaryInfo.ProtoReflect.Descriptor instead.
 func (*ActuaryInfo) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{19}
+	return file_employee_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ActuaryInfo) GetEmployeeId() int64 {
@@ -1361,7 +1489,7 @@ type GetActuariesRequest struct {
 
 func (x *GetActuariesRequest) Reset() {
 	*x = GetActuariesRequest{}
-	mi := &file_employee_proto_msgTypes[20]
+	mi := &file_employee_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1373,7 +1501,7 @@ func (x *GetActuariesRequest) String() string {
 func (*GetActuariesRequest) ProtoMessage() {}
 
 func (x *GetActuariesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[20]
+	mi := &file_employee_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1386,7 +1514,7 @@ func (x *GetActuariesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActuariesRequest.ProtoReflect.Descriptor instead.
 func (*GetActuariesRequest) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{20}
+	return file_employee_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *GetActuariesRequest) GetEmail() string {
@@ -1426,7 +1554,7 @@ type GetActuariesResponse struct {
 
 func (x *GetActuariesResponse) Reset() {
 	*x = GetActuariesResponse{}
-	mi := &file_employee_proto_msgTypes[21]
+	mi := &file_employee_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1438,7 +1566,7 @@ func (x *GetActuariesResponse) String() string {
 func (*GetActuariesResponse) ProtoMessage() {}
 
 func (x *GetActuariesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[21]
+	mi := &file_employee_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1451,7 +1579,7 @@ func (x *GetActuariesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActuariesResponse.ProtoReflect.Descriptor instead.
 func (*GetActuariesResponse) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{21}
+	return file_employee_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *GetActuariesResponse) GetActuaries() []*ActuaryInfo {
@@ -1471,7 +1599,7 @@ type SetAgentLimitRequest struct {
 
 func (x *SetAgentLimitRequest) Reset() {
 	*x = SetAgentLimitRequest{}
-	mi := &file_employee_proto_msgTypes[22]
+	mi := &file_employee_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1483,7 +1611,7 @@ func (x *SetAgentLimitRequest) String() string {
 func (*SetAgentLimitRequest) ProtoMessage() {}
 
 func (x *SetAgentLimitRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[22]
+	mi := &file_employee_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1496,7 +1624,7 @@ func (x *SetAgentLimitRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetAgentLimitRequest.ProtoReflect.Descriptor instead.
 func (*SetAgentLimitRequest) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{22}
+	return file_employee_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *SetAgentLimitRequest) GetEmployeeId() int64 {
@@ -1521,7 +1649,7 @@ type SetAgentLimitResponse struct {
 
 func (x *SetAgentLimitResponse) Reset() {
 	*x = SetAgentLimitResponse{}
-	mi := &file_employee_proto_msgTypes[23]
+	mi := &file_employee_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1533,7 +1661,7 @@ func (x *SetAgentLimitResponse) String() string {
 func (*SetAgentLimitResponse) ProtoMessage() {}
 
 func (x *SetAgentLimitResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[23]
+	mi := &file_employee_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1546,7 +1674,7 @@ func (x *SetAgentLimitResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetAgentLimitResponse.ProtoReflect.Descriptor instead.
 func (*SetAgentLimitResponse) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{23}
+	return file_employee_proto_rawDescGZIP(), []int{25}
 }
 
 type ResetAgentUsedLimitRequest struct {
@@ -1558,7 +1686,7 @@ type ResetAgentUsedLimitRequest struct {
 
 func (x *ResetAgentUsedLimitRequest) Reset() {
 	*x = ResetAgentUsedLimitRequest{}
-	mi := &file_employee_proto_msgTypes[24]
+	mi := &file_employee_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1570,7 +1698,7 @@ func (x *ResetAgentUsedLimitRequest) String() string {
 func (*ResetAgentUsedLimitRequest) ProtoMessage() {}
 
 func (x *ResetAgentUsedLimitRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[24]
+	mi := &file_employee_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1583,7 +1711,7 @@ func (x *ResetAgentUsedLimitRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResetAgentUsedLimitRequest.ProtoReflect.Descriptor instead.
 func (*ResetAgentUsedLimitRequest) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{24}
+	return file_employee_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *ResetAgentUsedLimitRequest) GetEmployeeId() int64 {
@@ -1601,7 +1729,7 @@ type ResetAgentUsedLimitResponse struct {
 
 func (x *ResetAgentUsedLimitResponse) Reset() {
 	*x = ResetAgentUsedLimitResponse{}
-	mi := &file_employee_proto_msgTypes[25]
+	mi := &file_employee_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1613,7 +1741,7 @@ func (x *ResetAgentUsedLimitResponse) String() string {
 func (*ResetAgentUsedLimitResponse) ProtoMessage() {}
 
 func (x *ResetAgentUsedLimitResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[25]
+	mi := &file_employee_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1626,7 +1754,7 @@ func (x *ResetAgentUsedLimitResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResetAgentUsedLimitResponse.ProtoReflect.Descriptor instead.
 func (*ResetAgentUsedLimitResponse) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{25}
+	return file_employee_proto_rawDescGZIP(), []int{27}
 }
 
 type SetNeedApprovalRequest struct {
@@ -1639,7 +1767,7 @@ type SetNeedApprovalRequest struct {
 
 func (x *SetNeedApprovalRequest) Reset() {
 	*x = SetNeedApprovalRequest{}
-	mi := &file_employee_proto_msgTypes[26]
+	mi := &file_employee_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1651,7 +1779,7 @@ func (x *SetNeedApprovalRequest) String() string {
 func (*SetNeedApprovalRequest) ProtoMessage() {}
 
 func (x *SetNeedApprovalRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[26]
+	mi := &file_employee_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1664,7 +1792,7 @@ func (x *SetNeedApprovalRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetNeedApprovalRequest.ProtoReflect.Descriptor instead.
 func (*SetNeedApprovalRequest) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{26}
+	return file_employee_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *SetNeedApprovalRequest) GetEmployeeId() int64 {
@@ -1689,7 +1817,7 @@ type SetNeedApprovalResponse struct {
 
 func (x *SetNeedApprovalResponse) Reset() {
 	*x = SetNeedApprovalResponse{}
-	mi := &file_employee_proto_msgTypes[27]
+	mi := &file_employee_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1701,7 +1829,7 @@ func (x *SetNeedApprovalResponse) String() string {
 func (*SetNeedApprovalResponse) ProtoMessage() {}
 
 func (x *SetNeedApprovalResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[27]
+	mi := &file_employee_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1714,7 +1842,7 @@ func (x *SetNeedApprovalResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetNeedApprovalResponse.ProtoReflect.Descriptor instead.
 func (*SetNeedApprovalResponse) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{27}
+	return file_employee_proto_rawDescGZIP(), []int{29}
 }
 
 type ResetAllActuaryUsedLimitsRequest struct {
@@ -1725,7 +1853,7 @@ type ResetAllActuaryUsedLimitsRequest struct {
 
 func (x *ResetAllActuaryUsedLimitsRequest) Reset() {
 	*x = ResetAllActuaryUsedLimitsRequest{}
-	mi := &file_employee_proto_msgTypes[28]
+	mi := &file_employee_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1737,7 +1865,7 @@ func (x *ResetAllActuaryUsedLimitsRequest) String() string {
 func (*ResetAllActuaryUsedLimitsRequest) ProtoMessage() {}
 
 func (x *ResetAllActuaryUsedLimitsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[28]
+	mi := &file_employee_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1750,7 +1878,7 @@ func (x *ResetAllActuaryUsedLimitsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResetAllActuaryUsedLimitsRequest.ProtoReflect.Descriptor instead.
 func (*ResetAllActuaryUsedLimitsRequest) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{28}
+	return file_employee_proto_rawDescGZIP(), []int{30}
 }
 
 type ResetAllActuaryUsedLimitsResponse struct {
@@ -1761,7 +1889,7 @@ type ResetAllActuaryUsedLimitsResponse struct {
 
 func (x *ResetAllActuaryUsedLimitsResponse) Reset() {
 	*x = ResetAllActuaryUsedLimitsResponse{}
-	mi := &file_employee_proto_msgTypes[29]
+	mi := &file_employee_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1773,7 +1901,7 @@ func (x *ResetAllActuaryUsedLimitsResponse) String() string {
 func (*ResetAllActuaryUsedLimitsResponse) ProtoMessage() {}
 
 func (x *ResetAllActuaryUsedLimitsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[29]
+	mi := &file_employee_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1786,7 +1914,7 @@ func (x *ResetAllActuaryUsedLimitsResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use ResetAllActuaryUsedLimitsResponse.ProtoReflect.Descriptor instead.
 func (*ResetAllActuaryUsedLimitsResponse) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{29}
+	return file_employee_proto_rawDescGZIP(), []int{31}
 }
 
 type GetSupervisorsRequest struct {
@@ -1797,7 +1925,7 @@ type GetSupervisorsRequest struct {
 
 func (x *GetSupervisorsRequest) Reset() {
 	*x = GetSupervisorsRequest{}
-	mi := &file_employee_proto_msgTypes[30]
+	mi := &file_employee_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1809,7 +1937,7 @@ func (x *GetSupervisorsRequest) String() string {
 func (*GetSupervisorsRequest) ProtoMessage() {}
 
 func (x *GetSupervisorsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[30]
+	mi := &file_employee_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1822,7 +1950,7 @@ func (x *GetSupervisorsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSupervisorsRequest.ProtoReflect.Descriptor instead.
 func (*GetSupervisorsRequest) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{30}
+	return file_employee_proto_rawDescGZIP(), []int{32}
 }
 
 type SupervisorInfo struct {
@@ -1838,7 +1966,7 @@ type SupervisorInfo struct {
 
 func (x *SupervisorInfo) Reset() {
 	*x = SupervisorInfo{}
-	mi := &file_employee_proto_msgTypes[31]
+	mi := &file_employee_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1850,7 +1978,7 @@ func (x *SupervisorInfo) String() string {
 func (*SupervisorInfo) ProtoMessage() {}
 
 func (x *SupervisorInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[31]
+	mi := &file_employee_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1863,7 +1991,7 @@ func (x *SupervisorInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SupervisorInfo.ProtoReflect.Descriptor instead.
 func (*SupervisorInfo) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{31}
+	return file_employee_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *SupervisorInfo) GetEmployeeId() int64 {
@@ -1910,7 +2038,7 @@ type GetSupervisorsResponse struct {
 
 func (x *GetSupervisorsResponse) Reset() {
 	*x = GetSupervisorsResponse{}
-	mi := &file_employee_proto_msgTypes[32]
+	mi := &file_employee_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1922,7 +2050,7 @@ func (x *GetSupervisorsResponse) String() string {
 func (*GetSupervisorsResponse) ProtoMessage() {}
 
 func (x *GetSupervisorsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[32]
+	mi := &file_employee_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1935,7 +2063,7 @@ func (x *GetSupervisorsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetSupervisorsResponse.ProtoReflect.Descriptor instead.
 func (*GetSupervisorsResponse) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{32}
+	return file_employee_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *GetSupervisorsResponse) GetSupervisors() []*SupervisorInfo {
@@ -1957,7 +2085,7 @@ type ActuaryPerformer struct {
 
 func (x *ActuaryPerformer) Reset() {
 	*x = ActuaryPerformer{}
-	mi := &file_employee_proto_msgTypes[33]
+	mi := &file_employee_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1969,7 +2097,7 @@ func (x *ActuaryPerformer) String() string {
 func (*ActuaryPerformer) ProtoMessage() {}
 
 func (x *ActuaryPerformer) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[33]
+	mi := &file_employee_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1982,7 +2110,7 @@ func (x *ActuaryPerformer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActuaryPerformer.ProtoReflect.Descriptor instead.
 func (*ActuaryPerformer) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{33}
+	return file_employee_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *ActuaryPerformer) GetUserId() int64 {
@@ -2021,7 +2149,7 @@ type GetActuaryPerformersRequest struct {
 
 func (x *GetActuaryPerformersRequest) Reset() {
 	*x = GetActuaryPerformersRequest{}
-	mi := &file_employee_proto_msgTypes[34]
+	mi := &file_employee_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2033,7 +2161,7 @@ func (x *GetActuaryPerformersRequest) String() string {
 func (*GetActuaryPerformersRequest) ProtoMessage() {}
 
 func (x *GetActuaryPerformersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[34]
+	mi := &file_employee_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2046,7 +2174,7 @@ func (x *GetActuaryPerformersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActuaryPerformersRequest.ProtoReflect.Descriptor instead.
 func (*GetActuaryPerformersRequest) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{34}
+	return file_employee_proto_rawDescGZIP(), []int{36}
 }
 
 type GetActuaryPerformersResponse struct {
@@ -2058,7 +2186,7 @@ type GetActuaryPerformersResponse struct {
 
 func (x *GetActuaryPerformersResponse) Reset() {
 	*x = GetActuaryPerformersResponse{}
-	mi := &file_employee_proto_msgTypes[35]
+	mi := &file_employee_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2070,7 +2198,7 @@ func (x *GetActuaryPerformersResponse) String() string {
 func (*GetActuaryPerformersResponse) ProtoMessage() {}
 
 func (x *GetActuaryPerformersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_employee_proto_msgTypes[35]
+	mi := &file_employee_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2083,7 +2211,7 @@ func (x *GetActuaryPerformersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActuaryPerformersResponse.ProtoReflect.Descriptor instead.
 func (*GetActuaryPerformersResponse) Descriptor() ([]byte, []int) {
-	return file_employee_proto_rawDescGZIP(), []int{35}
+	return file_employee_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *GetActuaryPerformersResponse) GetPerformers() []*ActuaryPerformer {
@@ -2137,12 +2265,22 @@ const file_employee_proto_rawDesc = "" +
 	"\vtotal_count\x18\x02 \x01(\x05R\n" +
 	"totalCount\"5\n" +
 	"\x1dGetEmployeeCredentialsRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\"\x8f\x01\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\"\xaa\x02\n" +
 	"\x1eGetEmployeeCredentialsResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12#\n" +
 	"\rpassword_hash\x18\x02 \x01(\tR\fpasswordHash\x12 \n" +
 	"\vpermissions\x18\x03 \x03(\tR\vpermissions\x12\x16\n" +
-	"\x06active\x18\x04 \x01(\bR\x06active\"\xce\x02\n" +
+	"\x06active\x18\x04 \x01(\bR\x06active\x12\x14\n" +
+	"\x05email\x18\x05 \x01(\tR\x05email\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\x06 \x01(\tR\tfirstName\x122\n" +
+	"\x15failed_login_attempts\x18\a \x01(\x05R\x13failedLoginAttempts\x120\n" +
+	"\x14account_locked_until\x18\b \x01(\tR\x12accountLockedUntil\"k\n" +
+	"\x1aUpdateLoginAttemptsRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1a\n" +
+	"\battempts\x18\x02 \x01(\x05R\battempts\x12!\n" +
+	"\flocked_until\x18\x03 \x01(\tR\vlockedUntil\"\x1d\n" +
+	"\x1bUpdateLoginAttemptsResponse\"\xce\x02\n" +
 	"\x15CreateEmployeeRequest\x12\x1d\n" +
 	"\n" +
 	"first_name\x18\x01 \x01(\tR\tfirstName\x12\x1b\n" +
@@ -2260,7 +2398,7 @@ const file_employee_proto_rawDesc = "" +
 	"\x1cGetActuaryPerformersResponse\x12:\n" +
 	"\n" +
 	"performers\x18\x01 \x03(\v2\x1a.employee.ActuaryPerformerR\n" +
-	"performers2\xd0\v\n" +
+	"performers2\xb4\f\n" +
 	"\x0fEmployeeService\x12V\n" +
 	"\x0fGetAllEmployees\x12 .employee.GetAllEmployeesRequest\x1a!.employee.GetAllEmployeesResponse\x12V\n" +
 	"\x0fSearchEmployees\x12 .employee.SearchEmployeesRequest\x1a!.employee.SearchEmployeesResponse\x12k\n" +
@@ -2277,7 +2415,8 @@ const file_employee_proto_rawDesc = "" +
 	"\x0fSetNeedApproval\x12 .employee.SetNeedApprovalRequest\x1a!.employee.SetNeedApprovalResponse\x12t\n" +
 	"\x19ResetAllActuaryUsedLimits\x12*.employee.ResetAllActuaryUsedLimitsRequest\x1a+.employee.ResetAllActuaryUsedLimitsResponse\x12e\n" +
 	"\x14GetActuaryPerformers\x12%.employee.GetActuaryPerformersRequest\x1a&.employee.GetActuaryPerformersResponse\x12S\n" +
-	"\x0eGetSupervisors\x12\x1f.employee.GetSupervisorsRequest\x1a .employee.GetSupervisorsResponseB=Z;github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employeeb\x06proto3"
+	"\x0eGetSupervisors\x12\x1f.employee.GetSupervisorsRequest\x1a .employee.GetSupervisorsResponse\x12b\n" +
+	"\x13UpdateLoginAttempts\x12$.employee.UpdateLoginAttemptsRequest\x1a%.employee.UpdateLoginAttemptsResponseB=Z;github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employeeb\x06proto3"
 
 var (
 	file_employee_proto_rawDescOnce sync.Once
@@ -2291,7 +2430,7 @@ func file_employee_proto_rawDescGZIP() []byte {
 	return file_employee_proto_rawDescData
 }
 
-var file_employee_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
+var file_employee_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
 var file_employee_proto_goTypes = []any{
 	(*Employee)(nil),                          // 0: employee.Employee
 	(*GetAllEmployeesRequest)(nil),            // 1: employee.GetAllEmployeesRequest
@@ -2300,35 +2439,37 @@ var file_employee_proto_goTypes = []any{
 	(*SearchEmployeesResponse)(nil),           // 4: employee.SearchEmployeesResponse
 	(*GetEmployeeCredentialsRequest)(nil),     // 5: employee.GetEmployeeCredentialsRequest
 	(*GetEmployeeCredentialsResponse)(nil),    // 6: employee.GetEmployeeCredentialsResponse
-	(*CreateEmployeeRequest)(nil),             // 7: employee.CreateEmployeeRequest
-	(*CreateEmployeeResponse)(nil),            // 8: employee.CreateEmployeeResponse
-	(*GetEmployeeByIdRequest)(nil),            // 9: employee.GetEmployeeByIdRequest
-	(*GetEmployeeByIdResponse)(nil),           // 10: employee.GetEmployeeByIdResponse
-	(*UpdateEmployeeRequest)(nil),             // 11: employee.UpdateEmployeeRequest
-	(*UpdateEmployeeResponse)(nil),            // 12: employee.UpdateEmployeeResponse
-	(*ActivateEmployeeRequest)(nil),           // 13: employee.ActivateEmployeeRequest
-	(*ActivateEmployeeResponse)(nil),          // 14: employee.ActivateEmployeeResponse
-	(*GetEmployeeByEmailRequest)(nil),         // 15: employee.GetEmployeeByEmailRequest
-	(*GetEmployeeByEmailResponse)(nil),        // 16: employee.GetEmployeeByEmailResponse
-	(*UpdatePasswordRequest)(nil),             // 17: employee.UpdatePasswordRequest
-	(*UpdatePasswordResponse)(nil),            // 18: employee.UpdatePasswordResponse
-	(*ActuaryInfo)(nil),                       // 19: employee.ActuaryInfo
-	(*GetActuariesRequest)(nil),               // 20: employee.GetActuariesRequest
-	(*GetActuariesResponse)(nil),              // 21: employee.GetActuariesResponse
-	(*SetAgentLimitRequest)(nil),              // 22: employee.SetAgentLimitRequest
-	(*SetAgentLimitResponse)(nil),             // 23: employee.SetAgentLimitResponse
-	(*ResetAgentUsedLimitRequest)(nil),        // 24: employee.ResetAgentUsedLimitRequest
-	(*ResetAgentUsedLimitResponse)(nil),       // 25: employee.ResetAgentUsedLimitResponse
-	(*SetNeedApprovalRequest)(nil),            // 26: employee.SetNeedApprovalRequest
-	(*SetNeedApprovalResponse)(nil),           // 27: employee.SetNeedApprovalResponse
-	(*ResetAllActuaryUsedLimitsRequest)(nil),  // 28: employee.ResetAllActuaryUsedLimitsRequest
-	(*ResetAllActuaryUsedLimitsResponse)(nil), // 29: employee.ResetAllActuaryUsedLimitsResponse
-	(*GetSupervisorsRequest)(nil),             // 30: employee.GetSupervisorsRequest
-	(*SupervisorInfo)(nil),                    // 31: employee.SupervisorInfo
-	(*GetSupervisorsResponse)(nil),            // 32: employee.GetSupervisorsResponse
-	(*ActuaryPerformer)(nil),                  // 33: employee.ActuaryPerformer
-	(*GetActuaryPerformersRequest)(nil),       // 34: employee.GetActuaryPerformersRequest
-	(*GetActuaryPerformersResponse)(nil),      // 35: employee.GetActuaryPerformersResponse
+	(*UpdateLoginAttemptsRequest)(nil),        // 7: employee.UpdateLoginAttemptsRequest
+	(*UpdateLoginAttemptsResponse)(nil),       // 8: employee.UpdateLoginAttemptsResponse
+	(*CreateEmployeeRequest)(nil),             // 9: employee.CreateEmployeeRequest
+	(*CreateEmployeeResponse)(nil),            // 10: employee.CreateEmployeeResponse
+	(*GetEmployeeByIdRequest)(nil),            // 11: employee.GetEmployeeByIdRequest
+	(*GetEmployeeByIdResponse)(nil),           // 12: employee.GetEmployeeByIdResponse
+	(*UpdateEmployeeRequest)(nil),             // 13: employee.UpdateEmployeeRequest
+	(*UpdateEmployeeResponse)(nil),            // 14: employee.UpdateEmployeeResponse
+	(*ActivateEmployeeRequest)(nil),           // 15: employee.ActivateEmployeeRequest
+	(*ActivateEmployeeResponse)(nil),          // 16: employee.ActivateEmployeeResponse
+	(*GetEmployeeByEmailRequest)(nil),         // 17: employee.GetEmployeeByEmailRequest
+	(*GetEmployeeByEmailResponse)(nil),        // 18: employee.GetEmployeeByEmailResponse
+	(*UpdatePasswordRequest)(nil),             // 19: employee.UpdatePasswordRequest
+	(*UpdatePasswordResponse)(nil),            // 20: employee.UpdatePasswordResponse
+	(*ActuaryInfo)(nil),                       // 21: employee.ActuaryInfo
+	(*GetActuariesRequest)(nil),               // 22: employee.GetActuariesRequest
+	(*GetActuariesResponse)(nil),              // 23: employee.GetActuariesResponse
+	(*SetAgentLimitRequest)(nil),              // 24: employee.SetAgentLimitRequest
+	(*SetAgentLimitResponse)(nil),             // 25: employee.SetAgentLimitResponse
+	(*ResetAgentUsedLimitRequest)(nil),        // 26: employee.ResetAgentUsedLimitRequest
+	(*ResetAgentUsedLimitResponse)(nil),       // 27: employee.ResetAgentUsedLimitResponse
+	(*SetNeedApprovalRequest)(nil),            // 28: employee.SetNeedApprovalRequest
+	(*SetNeedApprovalResponse)(nil),           // 29: employee.SetNeedApprovalResponse
+	(*ResetAllActuaryUsedLimitsRequest)(nil),  // 30: employee.ResetAllActuaryUsedLimitsRequest
+	(*ResetAllActuaryUsedLimitsResponse)(nil), // 31: employee.ResetAllActuaryUsedLimitsResponse
+	(*GetSupervisorsRequest)(nil),             // 32: employee.GetSupervisorsRequest
+	(*SupervisorInfo)(nil),                    // 33: employee.SupervisorInfo
+	(*GetSupervisorsResponse)(nil),            // 34: employee.GetSupervisorsResponse
+	(*ActuaryPerformer)(nil),                  // 35: employee.ActuaryPerformer
+	(*GetActuaryPerformersRequest)(nil),       // 36: employee.GetActuaryPerformersRequest
+	(*GetActuaryPerformersResponse)(nil),      // 37: employee.GetActuaryPerformersResponse
 }
 var file_employee_proto_depIdxs = []int32{
 	0,  // 0: employee.GetAllEmployeesResponse.employees:type_name -> employee.Employee
@@ -2336,43 +2477,45 @@ var file_employee_proto_depIdxs = []int32{
 	0,  // 2: employee.CreateEmployeeResponse.employee:type_name -> employee.Employee
 	0,  // 3: employee.GetEmployeeByIdResponse.employee:type_name -> employee.Employee
 	0,  // 4: employee.UpdateEmployeeResponse.employee:type_name -> employee.Employee
-	19, // 5: employee.GetActuariesResponse.actuaries:type_name -> employee.ActuaryInfo
-	31, // 6: employee.GetSupervisorsResponse.supervisors:type_name -> employee.SupervisorInfo
-	33, // 7: employee.GetActuaryPerformersResponse.performers:type_name -> employee.ActuaryPerformer
+	21, // 5: employee.GetActuariesResponse.actuaries:type_name -> employee.ActuaryInfo
+	33, // 6: employee.GetSupervisorsResponse.supervisors:type_name -> employee.SupervisorInfo
+	35, // 7: employee.GetActuaryPerformersResponse.performers:type_name -> employee.ActuaryPerformer
 	1,  // 8: employee.EmployeeService.GetAllEmployees:input_type -> employee.GetAllEmployeesRequest
 	3,  // 9: employee.EmployeeService.SearchEmployees:input_type -> employee.SearchEmployeesRequest
 	5,  // 10: employee.EmployeeService.GetEmployeeCredentials:input_type -> employee.GetEmployeeCredentialsRequest
-	7,  // 11: employee.EmployeeService.CreateEmployee:input_type -> employee.CreateEmployeeRequest
-	9,  // 12: employee.EmployeeService.GetEmployeeById:input_type -> employee.GetEmployeeByIdRequest
-	11, // 13: employee.EmployeeService.UpdateEmployee:input_type -> employee.UpdateEmployeeRequest
-	13, // 14: employee.EmployeeService.ActivateEmployee:input_type -> employee.ActivateEmployeeRequest
-	15, // 15: employee.EmployeeService.GetEmployeeByEmail:input_type -> employee.GetEmployeeByEmailRequest
-	17, // 16: employee.EmployeeService.UpdatePassword:input_type -> employee.UpdatePasswordRequest
-	20, // 17: employee.EmployeeService.GetActuaries:input_type -> employee.GetActuariesRequest
-	22, // 18: employee.EmployeeService.SetAgentLimit:input_type -> employee.SetAgentLimitRequest
-	24, // 19: employee.EmployeeService.ResetAgentUsedLimit:input_type -> employee.ResetAgentUsedLimitRequest
-	26, // 20: employee.EmployeeService.SetNeedApproval:input_type -> employee.SetNeedApprovalRequest
-	28, // 21: employee.EmployeeService.ResetAllActuaryUsedLimits:input_type -> employee.ResetAllActuaryUsedLimitsRequest
-	34, // 22: employee.EmployeeService.GetActuaryPerformers:input_type -> employee.GetActuaryPerformersRequest
-	30, // 23: employee.EmployeeService.GetSupervisors:input_type -> employee.GetSupervisorsRequest
-	2,  // 24: employee.EmployeeService.GetAllEmployees:output_type -> employee.GetAllEmployeesResponse
-	4,  // 25: employee.EmployeeService.SearchEmployees:output_type -> employee.SearchEmployeesResponse
-	6,  // 26: employee.EmployeeService.GetEmployeeCredentials:output_type -> employee.GetEmployeeCredentialsResponse
-	8,  // 27: employee.EmployeeService.CreateEmployee:output_type -> employee.CreateEmployeeResponse
-	10, // 28: employee.EmployeeService.GetEmployeeById:output_type -> employee.GetEmployeeByIdResponse
-	12, // 29: employee.EmployeeService.UpdateEmployee:output_type -> employee.UpdateEmployeeResponse
-	14, // 30: employee.EmployeeService.ActivateEmployee:output_type -> employee.ActivateEmployeeResponse
-	16, // 31: employee.EmployeeService.GetEmployeeByEmail:output_type -> employee.GetEmployeeByEmailResponse
-	18, // 32: employee.EmployeeService.UpdatePassword:output_type -> employee.UpdatePasswordResponse
-	21, // 33: employee.EmployeeService.GetActuaries:output_type -> employee.GetActuariesResponse
-	23, // 34: employee.EmployeeService.SetAgentLimit:output_type -> employee.SetAgentLimitResponse
-	25, // 35: employee.EmployeeService.ResetAgentUsedLimit:output_type -> employee.ResetAgentUsedLimitResponse
-	27, // 36: employee.EmployeeService.SetNeedApproval:output_type -> employee.SetNeedApprovalResponse
-	29, // 37: employee.EmployeeService.ResetAllActuaryUsedLimits:output_type -> employee.ResetAllActuaryUsedLimitsResponse
-	35, // 38: employee.EmployeeService.GetActuaryPerformers:output_type -> employee.GetActuaryPerformersResponse
-	32, // 39: employee.EmployeeService.GetSupervisors:output_type -> employee.GetSupervisorsResponse
-	24, // [24:40] is the sub-list for method output_type
-	8,  // [8:24] is the sub-list for method input_type
+	9,  // 11: employee.EmployeeService.CreateEmployee:input_type -> employee.CreateEmployeeRequest
+	11, // 12: employee.EmployeeService.GetEmployeeById:input_type -> employee.GetEmployeeByIdRequest
+	13, // 13: employee.EmployeeService.UpdateEmployee:input_type -> employee.UpdateEmployeeRequest
+	15, // 14: employee.EmployeeService.ActivateEmployee:input_type -> employee.ActivateEmployeeRequest
+	17, // 15: employee.EmployeeService.GetEmployeeByEmail:input_type -> employee.GetEmployeeByEmailRequest
+	19, // 16: employee.EmployeeService.UpdatePassword:input_type -> employee.UpdatePasswordRequest
+	22, // 17: employee.EmployeeService.GetActuaries:input_type -> employee.GetActuariesRequest
+	24, // 18: employee.EmployeeService.SetAgentLimit:input_type -> employee.SetAgentLimitRequest
+	26, // 19: employee.EmployeeService.ResetAgentUsedLimit:input_type -> employee.ResetAgentUsedLimitRequest
+	28, // 20: employee.EmployeeService.SetNeedApproval:input_type -> employee.SetNeedApprovalRequest
+	30, // 21: employee.EmployeeService.ResetAllActuaryUsedLimits:input_type -> employee.ResetAllActuaryUsedLimitsRequest
+	36, // 22: employee.EmployeeService.GetActuaryPerformers:input_type -> employee.GetActuaryPerformersRequest
+	32, // 23: employee.EmployeeService.GetSupervisors:input_type -> employee.GetSupervisorsRequest
+	7,  // 24: employee.EmployeeService.UpdateLoginAttempts:input_type -> employee.UpdateLoginAttemptsRequest
+	2,  // 25: employee.EmployeeService.GetAllEmployees:output_type -> employee.GetAllEmployeesResponse
+	4,  // 26: employee.EmployeeService.SearchEmployees:output_type -> employee.SearchEmployeesResponse
+	6,  // 27: employee.EmployeeService.GetEmployeeCredentials:output_type -> employee.GetEmployeeCredentialsResponse
+	10, // 28: employee.EmployeeService.CreateEmployee:output_type -> employee.CreateEmployeeResponse
+	12, // 29: employee.EmployeeService.GetEmployeeById:output_type -> employee.GetEmployeeByIdResponse
+	14, // 30: employee.EmployeeService.UpdateEmployee:output_type -> employee.UpdateEmployeeResponse
+	16, // 31: employee.EmployeeService.ActivateEmployee:output_type -> employee.ActivateEmployeeResponse
+	18, // 32: employee.EmployeeService.GetEmployeeByEmail:output_type -> employee.GetEmployeeByEmailResponse
+	20, // 33: employee.EmployeeService.UpdatePassword:output_type -> employee.UpdatePasswordResponse
+	23, // 34: employee.EmployeeService.GetActuaries:output_type -> employee.GetActuariesResponse
+	25, // 35: employee.EmployeeService.SetAgentLimit:output_type -> employee.SetAgentLimitResponse
+	27, // 36: employee.EmployeeService.ResetAgentUsedLimit:output_type -> employee.ResetAgentUsedLimitResponse
+	29, // 37: employee.EmployeeService.SetNeedApproval:output_type -> employee.SetNeedApprovalResponse
+	31, // 38: employee.EmployeeService.ResetAllActuaryUsedLimits:output_type -> employee.ResetAllActuaryUsedLimitsResponse
+	37, // 39: employee.EmployeeService.GetActuaryPerformers:output_type -> employee.GetActuaryPerformersResponse
+	34, // 40: employee.EmployeeService.GetSupervisors:output_type -> employee.GetSupervisorsResponse
+	8,  // 41: employee.EmployeeService.UpdateLoginAttempts:output_type -> employee.UpdateLoginAttemptsResponse
+	25, // [25:42] is the sub-list for method output_type
+	8,  // [8:25] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name
 	8,  // [8:8] is the sub-list for extension extendee
 	0,  // [0:8] is the sub-list for field type_name
@@ -2389,7 +2532,7 @@ func file_employee_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_employee_proto_rawDesc), len(file_employee_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   36,
+			NumMessages:   38,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

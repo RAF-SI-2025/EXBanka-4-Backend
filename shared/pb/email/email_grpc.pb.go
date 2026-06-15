@@ -25,6 +25,11 @@ const (
 	EmailService_SendAccountCreatedEmail_FullMethodName       = "/email.EmailService/SendAccountCreatedEmail"
 	EmailService_SendCardConfirmationEmail_FullMethodName     = "/email.EmailService/SendCardConfirmationEmail"
 	EmailService_SendLoanLatePaymentEmail_FullMethodName      = "/email.EmailService/SendLoanLatePaymentEmail"
+	EmailService_SendAccountLockedEmail_FullMethodName        = "/email.EmailService/SendAccountLockedEmail"
+	EmailService_SendPaymentNotificationEmail_FullMethodName  = "/email.EmailService/SendPaymentNotificationEmail"
+	EmailService_SendCardBlockedEmail_FullMethodName          = "/email.EmailService/SendCardBlockedEmail"
+	EmailService_SendLoanApprovedEmail_FullMethodName         = "/email.EmailService/SendLoanApprovedEmail"
+	EmailService_SendLimitChangeEmail_FullMethodName          = "/email.EmailService/SendLimitChangeEmail"
 )
 
 // EmailServiceClient is the client API for EmailService service.
@@ -38,6 +43,11 @@ type EmailServiceClient interface {
 	SendAccountCreatedEmail(ctx context.Context, in *SendAccountCreatedEmailRequest, opts ...grpc.CallOption) (*SendAccountCreatedEmailResponse, error)
 	SendCardConfirmationEmail(ctx context.Context, in *SendCardConfirmationEmailRequest, opts ...grpc.CallOption) (*SendCardConfirmationEmailResponse, error)
 	SendLoanLatePaymentEmail(ctx context.Context, in *SendLoanLatePaymentEmailRequest, opts ...grpc.CallOption) (*SendLoanLatePaymentEmailResponse, error)
+	SendAccountLockedEmail(ctx context.Context, in *SendAccountLockedEmailRequest, opts ...grpc.CallOption) (*SendAccountLockedEmailResponse, error)
+	SendPaymentNotificationEmail(ctx context.Context, in *SendPaymentNotificationEmailRequest, opts ...grpc.CallOption) (*SendPaymentNotificationEmailResponse, error)
+	SendCardBlockedEmail(ctx context.Context, in *SendCardBlockedEmailRequest, opts ...grpc.CallOption) (*SendCardBlockedEmailResponse, error)
+	SendLoanApprovedEmail(ctx context.Context, in *SendLoanApprovedEmailRequest, opts ...grpc.CallOption) (*SendLoanApprovedEmailResponse, error)
+	SendLimitChangeEmail(ctx context.Context, in *SendLimitChangeEmailRequest, opts ...grpc.CallOption) (*SendLimitChangeEmailResponse, error)
 }
 
 type emailServiceClient struct {
@@ -108,6 +118,56 @@ func (c *emailServiceClient) SendLoanLatePaymentEmail(ctx context.Context, in *S
 	return out, nil
 }
 
+func (c *emailServiceClient) SendAccountLockedEmail(ctx context.Context, in *SendAccountLockedEmailRequest, opts ...grpc.CallOption) (*SendAccountLockedEmailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendAccountLockedEmailResponse)
+	err := c.cc.Invoke(ctx, EmailService_SendAccountLockedEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *emailServiceClient) SendPaymentNotificationEmail(ctx context.Context, in *SendPaymentNotificationEmailRequest, opts ...grpc.CallOption) (*SendPaymentNotificationEmailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendPaymentNotificationEmailResponse)
+	err := c.cc.Invoke(ctx, EmailService_SendPaymentNotificationEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *emailServiceClient) SendCardBlockedEmail(ctx context.Context, in *SendCardBlockedEmailRequest, opts ...grpc.CallOption) (*SendCardBlockedEmailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendCardBlockedEmailResponse)
+	err := c.cc.Invoke(ctx, EmailService_SendCardBlockedEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *emailServiceClient) SendLoanApprovedEmail(ctx context.Context, in *SendLoanApprovedEmailRequest, opts ...grpc.CallOption) (*SendLoanApprovedEmailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendLoanApprovedEmailResponse)
+	err := c.cc.Invoke(ctx, EmailService_SendLoanApprovedEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *emailServiceClient) SendLimitChangeEmail(ctx context.Context, in *SendLimitChangeEmailRequest, opts ...grpc.CallOption) (*SendLimitChangeEmailResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendLimitChangeEmailResponse)
+	err := c.cc.Invoke(ctx, EmailService_SendLimitChangeEmail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EmailServiceServer is the server API for EmailService service.
 // All implementations must embed UnimplementedEmailServiceServer
 // for forward compatibility.
@@ -119,6 +179,11 @@ type EmailServiceServer interface {
 	SendAccountCreatedEmail(context.Context, *SendAccountCreatedEmailRequest) (*SendAccountCreatedEmailResponse, error)
 	SendCardConfirmationEmail(context.Context, *SendCardConfirmationEmailRequest) (*SendCardConfirmationEmailResponse, error)
 	SendLoanLatePaymentEmail(context.Context, *SendLoanLatePaymentEmailRequest) (*SendLoanLatePaymentEmailResponse, error)
+	SendAccountLockedEmail(context.Context, *SendAccountLockedEmailRequest) (*SendAccountLockedEmailResponse, error)
+	SendPaymentNotificationEmail(context.Context, *SendPaymentNotificationEmailRequest) (*SendPaymentNotificationEmailResponse, error)
+	SendCardBlockedEmail(context.Context, *SendCardBlockedEmailRequest) (*SendCardBlockedEmailResponse, error)
+	SendLoanApprovedEmail(context.Context, *SendLoanApprovedEmailRequest) (*SendLoanApprovedEmailResponse, error)
+	SendLimitChangeEmail(context.Context, *SendLimitChangeEmailRequest) (*SendLimitChangeEmailResponse, error)
 	mustEmbedUnimplementedEmailServiceServer()
 }
 
@@ -146,6 +211,21 @@ func (UnimplementedEmailServiceServer) SendCardConfirmationEmail(context.Context
 }
 func (UnimplementedEmailServiceServer) SendLoanLatePaymentEmail(context.Context, *SendLoanLatePaymentEmailRequest) (*SendLoanLatePaymentEmailResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendLoanLatePaymentEmail not implemented")
+}
+func (UnimplementedEmailServiceServer) SendAccountLockedEmail(context.Context, *SendAccountLockedEmailRequest) (*SendAccountLockedEmailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendAccountLockedEmail not implemented")
+}
+func (UnimplementedEmailServiceServer) SendPaymentNotificationEmail(context.Context, *SendPaymentNotificationEmailRequest) (*SendPaymentNotificationEmailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendPaymentNotificationEmail not implemented")
+}
+func (UnimplementedEmailServiceServer) SendCardBlockedEmail(context.Context, *SendCardBlockedEmailRequest) (*SendCardBlockedEmailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendCardBlockedEmail not implemented")
+}
+func (UnimplementedEmailServiceServer) SendLoanApprovedEmail(context.Context, *SendLoanApprovedEmailRequest) (*SendLoanApprovedEmailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendLoanApprovedEmail not implemented")
+}
+func (UnimplementedEmailServiceServer) SendLimitChangeEmail(context.Context, *SendLimitChangeEmailRequest) (*SendLimitChangeEmailResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendLimitChangeEmail not implemented")
 }
 func (UnimplementedEmailServiceServer) mustEmbedUnimplementedEmailServiceServer() {}
 func (UnimplementedEmailServiceServer) testEmbeddedByValue()                      {}
@@ -276,6 +356,96 @@ func _EmailService_SendLoanLatePaymentEmail_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _EmailService_SendAccountLockedEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendAccountLockedEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EmailServiceServer).SendAccountLockedEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EmailService_SendAccountLockedEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EmailServiceServer).SendAccountLockedEmail(ctx, req.(*SendAccountLockedEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EmailService_SendPaymentNotificationEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendPaymentNotificationEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EmailServiceServer).SendPaymentNotificationEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EmailService_SendPaymentNotificationEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EmailServiceServer).SendPaymentNotificationEmail(ctx, req.(*SendPaymentNotificationEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EmailService_SendCardBlockedEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendCardBlockedEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EmailServiceServer).SendCardBlockedEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EmailService_SendCardBlockedEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EmailServiceServer).SendCardBlockedEmail(ctx, req.(*SendCardBlockedEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EmailService_SendLoanApprovedEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendLoanApprovedEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EmailServiceServer).SendLoanApprovedEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EmailService_SendLoanApprovedEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EmailServiceServer).SendLoanApprovedEmail(ctx, req.(*SendLoanApprovedEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EmailService_SendLimitChangeEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendLimitChangeEmailRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EmailServiceServer).SendLimitChangeEmail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EmailService_SendLimitChangeEmail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EmailServiceServer).SendLimitChangeEmail(ctx, req.(*SendLimitChangeEmailRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // EmailService_ServiceDesc is the grpc.ServiceDesc for EmailService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -306,6 +476,26 @@ var EmailService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendLoanLatePaymentEmail",
 			Handler:    _EmailService_SendLoanLatePaymentEmail_Handler,
+		},
+		{
+			MethodName: "SendAccountLockedEmail",
+			Handler:    _EmailService_SendAccountLockedEmail_Handler,
+		},
+		{
+			MethodName: "SendPaymentNotificationEmail",
+			Handler:    _EmailService_SendPaymentNotificationEmail_Handler,
+		},
+		{
+			MethodName: "SendCardBlockedEmail",
+			Handler:    _EmailService_SendCardBlockedEmail_Handler,
+		},
+		{
+			MethodName: "SendLoanApprovedEmail",
+			Handler:    _EmailService_SendLoanApprovedEmail_Handler,
+		},
+		{
+			MethodName: "SendLimitChangeEmail",
+			Handler:    _EmailService_SendLimitChangeEmail_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

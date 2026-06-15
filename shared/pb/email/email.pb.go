@@ -541,6 +541,550 @@ func (*SendLoanLatePaymentEmailResponse) Descriptor() ([]byte, []int) {
 	return file_email_proto_rawDescGZIP(), []int{9}
 }
 
+type SendAccountLockedEmailRequest struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Email             string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	FirstName         string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	PasswordResetLink string                 `protobuf:"bytes,3,opt,name=password_reset_link,json=passwordResetLink,proto3" json:"password_reset_link,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *SendAccountLockedEmailRequest) Reset() {
+	*x = SendAccountLockedEmailRequest{}
+	mi := &file_email_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendAccountLockedEmailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendAccountLockedEmailRequest) ProtoMessage() {}
+
+func (x *SendAccountLockedEmailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_email_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendAccountLockedEmailRequest.ProtoReflect.Descriptor instead.
+func (*SendAccountLockedEmailRequest) Descriptor() ([]byte, []int) {
+	return file_email_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *SendAccountLockedEmailRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *SendAccountLockedEmailRequest) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *SendAccountLockedEmailRequest) GetPasswordResetLink() string {
+	if x != nil {
+		return x.PasswordResetLink
+	}
+	return ""
+}
+
+type SendAccountLockedEmailResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendAccountLockedEmailResponse) Reset() {
+	*x = SendAccountLockedEmailResponse{}
+	mi := &file_email_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendAccountLockedEmailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendAccountLockedEmailResponse) ProtoMessage() {}
+
+func (x *SendAccountLockedEmailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_email_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendAccountLockedEmailResponse.ProtoReflect.Descriptor instead.
+func (*SendAccountLockedEmailResponse) Descriptor() ([]byte, []int) {
+	return file_email_proto_rawDescGZIP(), []int{11}
+}
+
+type SendPaymentNotificationEmailRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	FirstName     string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	Direction     string                 `protobuf:"bytes,3,opt,name=direction,proto3" json:"direction,omitempty"` // "incoming" | "outgoing"
+	Amount        float64                `protobuf:"fixed64,4,opt,name=amount,proto3" json:"amount,omitempty"`
+	Currency      string                 `protobuf:"bytes,5,opt,name=currency,proto3" json:"currency,omitempty"`
+	Counterparty  string                 `protobuf:"bytes,6,opt,name=counterparty,proto3" json:"counterparty,omitempty"`
+	AccountNumber string                 `protobuf:"bytes,7,opt,name=account_number,json=accountNumber,proto3" json:"account_number,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendPaymentNotificationEmailRequest) Reset() {
+	*x = SendPaymentNotificationEmailRequest{}
+	mi := &file_email_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendPaymentNotificationEmailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendPaymentNotificationEmailRequest) ProtoMessage() {}
+
+func (x *SendPaymentNotificationEmailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_email_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendPaymentNotificationEmailRequest.ProtoReflect.Descriptor instead.
+func (*SendPaymentNotificationEmailRequest) Descriptor() ([]byte, []int) {
+	return file_email_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *SendPaymentNotificationEmailRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *SendPaymentNotificationEmailRequest) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *SendPaymentNotificationEmailRequest) GetDirection() string {
+	if x != nil {
+		return x.Direction
+	}
+	return ""
+}
+
+func (x *SendPaymentNotificationEmailRequest) GetAmount() float64 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+func (x *SendPaymentNotificationEmailRequest) GetCurrency() string {
+	if x != nil {
+		return x.Currency
+	}
+	return ""
+}
+
+func (x *SendPaymentNotificationEmailRequest) GetCounterparty() string {
+	if x != nil {
+		return x.Counterparty
+	}
+	return ""
+}
+
+func (x *SendPaymentNotificationEmailRequest) GetAccountNumber() string {
+	if x != nil {
+		return x.AccountNumber
+	}
+	return ""
+}
+
+type SendPaymentNotificationEmailResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendPaymentNotificationEmailResponse) Reset() {
+	*x = SendPaymentNotificationEmailResponse{}
+	mi := &file_email_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendPaymentNotificationEmailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendPaymentNotificationEmailResponse) ProtoMessage() {}
+
+func (x *SendPaymentNotificationEmailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_email_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendPaymentNotificationEmailResponse.ProtoReflect.Descriptor instead.
+func (*SendPaymentNotificationEmailResponse) Descriptor() ([]byte, []int) {
+	return file_email_proto_rawDescGZIP(), []int{13}
+}
+
+type SendCardBlockedEmailRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	FirstName     string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	CardNumber    string                 `protobuf:"bytes,3,opt,name=card_number,json=cardNumber,proto3" json:"card_number,omitempty"` // masked, e.g. **** **** **** 1234
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendCardBlockedEmailRequest) Reset() {
+	*x = SendCardBlockedEmailRequest{}
+	mi := &file_email_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendCardBlockedEmailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendCardBlockedEmailRequest) ProtoMessage() {}
+
+func (x *SendCardBlockedEmailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_email_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendCardBlockedEmailRequest.ProtoReflect.Descriptor instead.
+func (*SendCardBlockedEmailRequest) Descriptor() ([]byte, []int) {
+	return file_email_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *SendCardBlockedEmailRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *SendCardBlockedEmailRequest) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *SendCardBlockedEmailRequest) GetCardNumber() string {
+	if x != nil {
+		return x.CardNumber
+	}
+	return ""
+}
+
+type SendCardBlockedEmailResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendCardBlockedEmailResponse) Reset() {
+	*x = SendCardBlockedEmailResponse{}
+	mi := &file_email_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendCardBlockedEmailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendCardBlockedEmailResponse) ProtoMessage() {}
+
+func (x *SendCardBlockedEmailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_email_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendCardBlockedEmailResponse.ProtoReflect.Descriptor instead.
+func (*SendCardBlockedEmailResponse) Descriptor() ([]byte, []int) {
+	return file_email_proto_rawDescGZIP(), []int{15}
+}
+
+type SendLoanApprovedEmailRequest struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Email              string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	FirstName          string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LoanAmount         float64                `protobuf:"fixed64,3,opt,name=loan_amount,json=loanAmount,proto3" json:"loan_amount,omitempty"`
+	Currency           string                 `protobuf:"bytes,4,opt,name=currency,proto3" json:"currency,omitempty"`
+	MonthlyInstallment float64                `protobuf:"fixed64,5,opt,name=monthly_installment,json=monthlyInstallment,proto3" json:"monthly_installment,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *SendLoanApprovedEmailRequest) Reset() {
+	*x = SendLoanApprovedEmailRequest{}
+	mi := &file_email_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendLoanApprovedEmailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendLoanApprovedEmailRequest) ProtoMessage() {}
+
+func (x *SendLoanApprovedEmailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_email_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendLoanApprovedEmailRequest.ProtoReflect.Descriptor instead.
+func (*SendLoanApprovedEmailRequest) Descriptor() ([]byte, []int) {
+	return file_email_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *SendLoanApprovedEmailRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *SendLoanApprovedEmailRequest) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *SendLoanApprovedEmailRequest) GetLoanAmount() float64 {
+	if x != nil {
+		return x.LoanAmount
+	}
+	return 0
+}
+
+func (x *SendLoanApprovedEmailRequest) GetCurrency() string {
+	if x != nil {
+		return x.Currency
+	}
+	return ""
+}
+
+func (x *SendLoanApprovedEmailRequest) GetMonthlyInstallment() float64 {
+	if x != nil {
+		return x.MonthlyInstallment
+	}
+	return 0
+}
+
+type SendLoanApprovedEmailResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendLoanApprovedEmailResponse) Reset() {
+	*x = SendLoanApprovedEmailResponse{}
+	mi := &file_email_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendLoanApprovedEmailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendLoanApprovedEmailResponse) ProtoMessage() {}
+
+func (x *SendLoanApprovedEmailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_email_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendLoanApprovedEmailResponse.ProtoReflect.Descriptor instead.
+func (*SendLoanApprovedEmailResponse) Descriptor() ([]byte, []int) {
+	return file_email_proto_rawDescGZIP(), []int{17}
+}
+
+type SendLimitChangeEmailRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	FirstName     string                 `protobuf:"bytes,2,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	DailyLimit    float64                `protobuf:"fixed64,3,opt,name=daily_limit,json=dailyLimit,proto3" json:"daily_limit,omitempty"`
+	MonthlyLimit  float64                `protobuf:"fixed64,4,opt,name=monthly_limit,json=monthlyLimit,proto3" json:"monthly_limit,omitempty"`
+	Currency      string                 `protobuf:"bytes,5,opt,name=currency,proto3" json:"currency,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendLimitChangeEmailRequest) Reset() {
+	*x = SendLimitChangeEmailRequest{}
+	mi := &file_email_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendLimitChangeEmailRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendLimitChangeEmailRequest) ProtoMessage() {}
+
+func (x *SendLimitChangeEmailRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_email_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendLimitChangeEmailRequest.ProtoReflect.Descriptor instead.
+func (*SendLimitChangeEmailRequest) Descriptor() ([]byte, []int) {
+	return file_email_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *SendLimitChangeEmailRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *SendLimitChangeEmailRequest) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *SendLimitChangeEmailRequest) GetDailyLimit() float64 {
+	if x != nil {
+		return x.DailyLimit
+	}
+	return 0
+}
+
+func (x *SendLimitChangeEmailRequest) GetMonthlyLimit() float64 {
+	if x != nil {
+		return x.MonthlyLimit
+	}
+	return 0
+}
+
+func (x *SendLimitChangeEmailRequest) GetCurrency() string {
+	if x != nil {
+		return x.Currency
+	}
+	return ""
+}
+
+type SendLimitChangeEmailResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SendLimitChangeEmailResponse) Reset() {
+	*x = SendLimitChangeEmailResponse{}
+	mi := &file_email_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SendLimitChangeEmailResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SendLimitChangeEmailResponse) ProtoMessage() {}
+
+func (x *SendLimitChangeEmailResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_email_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SendLimitChangeEmailResponse.ProtoReflect.Descriptor instead.
+func (*SendLimitChangeEmailResponse) Descriptor() ([]byte, []int) {
+	return file_email_proto_rawDescGZIP(), []int{19}
+}
+
 var File_email_proto protoreflect.FileDescriptor
 
 const file_email_proto_rawDesc = "" +
@@ -584,14 +1128,60 @@ const file_email_proto_rawDesc = "" +
 	"\bcurrency\x18\x05 \x01(\tR\bcurrency\x12\x1f\n" +
 	"\vretry_count\x18\x06 \x01(\x05R\n" +
 	"retryCount\"\"\n" +
-	" SendLoanLatePaymentEmailResponse2\x82\x05\n" +
+	" SendLoanLatePaymentEmailResponse\"\x84\x01\n" +
+	"\x1dSendAccountLockedEmailRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\x02 \x01(\tR\tfirstName\x12.\n" +
+	"\x13password_reset_link\x18\x03 \x01(\tR\x11passwordResetLink\" \n" +
+	"\x1eSendAccountLockedEmailResponse\"\xf7\x01\n" +
+	"#SendPaymentNotificationEmailRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\x02 \x01(\tR\tfirstName\x12\x1c\n" +
+	"\tdirection\x18\x03 \x01(\tR\tdirection\x12\x16\n" +
+	"\x06amount\x18\x04 \x01(\x01R\x06amount\x12\x1a\n" +
+	"\bcurrency\x18\x05 \x01(\tR\bcurrency\x12\"\n" +
+	"\fcounterparty\x18\x06 \x01(\tR\fcounterparty\x12%\n" +
+	"\x0eaccount_number\x18\a \x01(\tR\raccountNumber\"&\n" +
+	"$SendPaymentNotificationEmailResponse\"s\n" +
+	"\x1bSendCardBlockedEmailRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\x02 \x01(\tR\tfirstName\x12\x1f\n" +
+	"\vcard_number\x18\x03 \x01(\tR\n" +
+	"cardNumber\"\x1e\n" +
+	"\x1cSendCardBlockedEmailResponse\"\xc1\x01\n" +
+	"\x1cSendLoanApprovedEmailRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\x02 \x01(\tR\tfirstName\x12\x1f\n" +
+	"\vloan_amount\x18\x03 \x01(\x01R\n" +
+	"loanAmount\x12\x1a\n" +
+	"\bcurrency\x18\x04 \x01(\tR\bcurrency\x12/\n" +
+	"\x13monthly_installment\x18\x05 \x01(\x01R\x12monthlyInstallment\"\x1f\n" +
+	"\x1dSendLoanApprovedEmailResponse\"\xb4\x01\n" +
+	"\x1bSendLimitChangeEmailRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\x02 \x01(\tR\tfirstName\x12\x1f\n" +
+	"\vdaily_limit\x18\x03 \x01(\x01R\n" +
+	"dailyLimit\x12#\n" +
+	"\rmonthly_limit\x18\x04 \x01(\x01R\fmonthlyLimit\x12\x1a\n" +
+	"\bcurrency\x18\x05 \x01(\tR\bcurrency\"\x1e\n" +
+	"\x1cSendLimitChangeEmailResponse2\x88\t\n" +
 	"\fEmailService\x12\\\n" +
 	"\x13SendActivationEmail\x12!.email.SendActivationEmailRequest\x1a\".email.SendActivationEmailResponse\x12e\n" +
 	"\x16SendPasswordResetEmail\x12$.email.SendPasswordResetEmailRequest\x1a%.email.SendPasswordResetEmailResponse\x12f\n" +
 	"\x1dSendPasswordConfirmationEmail\x12!.email.SendActivationEmailRequest\x1a\".email.SendActivationEmailResponse\x12h\n" +
 	"\x17SendAccountCreatedEmail\x12%.email.SendAccountCreatedEmailRequest\x1a&.email.SendAccountCreatedEmailResponse\x12n\n" +
 	"\x19SendCardConfirmationEmail\x12'.email.SendCardConfirmationEmailRequest\x1a(.email.SendCardConfirmationEmailResponse\x12k\n" +
-	"\x18SendLoanLatePaymentEmail\x12&.email.SendLoanLatePaymentEmailRequest\x1a'.email.SendLoanLatePaymentEmailResponseB:Z8github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/emailb\x06proto3"
+	"\x18SendLoanLatePaymentEmail\x12&.email.SendLoanLatePaymentEmailRequest\x1a'.email.SendLoanLatePaymentEmailResponse\x12e\n" +
+	"\x16SendAccountLockedEmail\x12$.email.SendAccountLockedEmailRequest\x1a%.email.SendAccountLockedEmailResponse\x12w\n" +
+	"\x1cSendPaymentNotificationEmail\x12*.email.SendPaymentNotificationEmailRequest\x1a+.email.SendPaymentNotificationEmailResponse\x12_\n" +
+	"\x14SendCardBlockedEmail\x12\".email.SendCardBlockedEmailRequest\x1a#.email.SendCardBlockedEmailResponse\x12b\n" +
+	"\x15SendLoanApprovedEmail\x12#.email.SendLoanApprovedEmailRequest\x1a$.email.SendLoanApprovedEmailResponse\x12_\n" +
+	"\x14SendLimitChangeEmail\x12\".email.SendLimitChangeEmailRequest\x1a#.email.SendLimitChangeEmailResponseB:Z8github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/emailb\x06proto3"
 
 var (
 	file_email_proto_rawDescOnce sync.Once
@@ -605,37 +1195,57 @@ func file_email_proto_rawDescGZIP() []byte {
 	return file_email_proto_rawDescData
 }
 
-var file_email_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_email_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_email_proto_goTypes = []any{
-	(*SendActivationEmailRequest)(nil),        // 0: email.SendActivationEmailRequest
-	(*SendActivationEmailResponse)(nil),       // 1: email.SendActivationEmailResponse
-	(*SendPasswordResetEmailRequest)(nil),     // 2: email.SendPasswordResetEmailRequest
-	(*SendPasswordResetEmailResponse)(nil),    // 3: email.SendPasswordResetEmailResponse
-	(*SendAccountCreatedEmailRequest)(nil),    // 4: email.SendAccountCreatedEmailRequest
-	(*SendAccountCreatedEmailResponse)(nil),   // 5: email.SendAccountCreatedEmailResponse
-	(*SendCardConfirmationEmailRequest)(nil),  // 6: email.SendCardConfirmationEmailRequest
-	(*SendCardConfirmationEmailResponse)(nil), // 7: email.SendCardConfirmationEmailResponse
-	(*SendLoanLatePaymentEmailRequest)(nil),   // 8: email.SendLoanLatePaymentEmailRequest
-	(*SendLoanLatePaymentEmailResponse)(nil),  // 9: email.SendLoanLatePaymentEmailResponse
+	(*SendActivationEmailRequest)(nil),           // 0: email.SendActivationEmailRequest
+	(*SendActivationEmailResponse)(nil),          // 1: email.SendActivationEmailResponse
+	(*SendPasswordResetEmailRequest)(nil),        // 2: email.SendPasswordResetEmailRequest
+	(*SendPasswordResetEmailResponse)(nil),       // 3: email.SendPasswordResetEmailResponse
+	(*SendAccountCreatedEmailRequest)(nil),       // 4: email.SendAccountCreatedEmailRequest
+	(*SendAccountCreatedEmailResponse)(nil),      // 5: email.SendAccountCreatedEmailResponse
+	(*SendCardConfirmationEmailRequest)(nil),     // 6: email.SendCardConfirmationEmailRequest
+	(*SendCardConfirmationEmailResponse)(nil),    // 7: email.SendCardConfirmationEmailResponse
+	(*SendLoanLatePaymentEmailRequest)(nil),      // 8: email.SendLoanLatePaymentEmailRequest
+	(*SendLoanLatePaymentEmailResponse)(nil),     // 9: email.SendLoanLatePaymentEmailResponse
+	(*SendAccountLockedEmailRequest)(nil),        // 10: email.SendAccountLockedEmailRequest
+	(*SendAccountLockedEmailResponse)(nil),       // 11: email.SendAccountLockedEmailResponse
+	(*SendPaymentNotificationEmailRequest)(nil),  // 12: email.SendPaymentNotificationEmailRequest
+	(*SendPaymentNotificationEmailResponse)(nil), // 13: email.SendPaymentNotificationEmailResponse
+	(*SendCardBlockedEmailRequest)(nil),          // 14: email.SendCardBlockedEmailRequest
+	(*SendCardBlockedEmailResponse)(nil),         // 15: email.SendCardBlockedEmailResponse
+	(*SendLoanApprovedEmailRequest)(nil),         // 16: email.SendLoanApprovedEmailRequest
+	(*SendLoanApprovedEmailResponse)(nil),        // 17: email.SendLoanApprovedEmailResponse
+	(*SendLimitChangeEmailRequest)(nil),          // 18: email.SendLimitChangeEmailRequest
+	(*SendLimitChangeEmailResponse)(nil),         // 19: email.SendLimitChangeEmailResponse
 }
 var file_email_proto_depIdxs = []int32{
-	0, // 0: email.EmailService.SendActivationEmail:input_type -> email.SendActivationEmailRequest
-	2, // 1: email.EmailService.SendPasswordResetEmail:input_type -> email.SendPasswordResetEmailRequest
-	0, // 2: email.EmailService.SendPasswordConfirmationEmail:input_type -> email.SendActivationEmailRequest
-	4, // 3: email.EmailService.SendAccountCreatedEmail:input_type -> email.SendAccountCreatedEmailRequest
-	6, // 4: email.EmailService.SendCardConfirmationEmail:input_type -> email.SendCardConfirmationEmailRequest
-	8, // 5: email.EmailService.SendLoanLatePaymentEmail:input_type -> email.SendLoanLatePaymentEmailRequest
-	1, // 6: email.EmailService.SendActivationEmail:output_type -> email.SendActivationEmailResponse
-	3, // 7: email.EmailService.SendPasswordResetEmail:output_type -> email.SendPasswordResetEmailResponse
-	1, // 8: email.EmailService.SendPasswordConfirmationEmail:output_type -> email.SendActivationEmailResponse
-	5, // 9: email.EmailService.SendAccountCreatedEmail:output_type -> email.SendAccountCreatedEmailResponse
-	7, // 10: email.EmailService.SendCardConfirmationEmail:output_type -> email.SendCardConfirmationEmailResponse
-	9, // 11: email.EmailService.SendLoanLatePaymentEmail:output_type -> email.SendLoanLatePaymentEmailResponse
-	6, // [6:12] is the sub-list for method output_type
-	0, // [0:6] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0,  // 0: email.EmailService.SendActivationEmail:input_type -> email.SendActivationEmailRequest
+	2,  // 1: email.EmailService.SendPasswordResetEmail:input_type -> email.SendPasswordResetEmailRequest
+	0,  // 2: email.EmailService.SendPasswordConfirmationEmail:input_type -> email.SendActivationEmailRequest
+	4,  // 3: email.EmailService.SendAccountCreatedEmail:input_type -> email.SendAccountCreatedEmailRequest
+	6,  // 4: email.EmailService.SendCardConfirmationEmail:input_type -> email.SendCardConfirmationEmailRequest
+	8,  // 5: email.EmailService.SendLoanLatePaymentEmail:input_type -> email.SendLoanLatePaymentEmailRequest
+	10, // 6: email.EmailService.SendAccountLockedEmail:input_type -> email.SendAccountLockedEmailRequest
+	12, // 7: email.EmailService.SendPaymentNotificationEmail:input_type -> email.SendPaymentNotificationEmailRequest
+	14, // 8: email.EmailService.SendCardBlockedEmail:input_type -> email.SendCardBlockedEmailRequest
+	16, // 9: email.EmailService.SendLoanApprovedEmail:input_type -> email.SendLoanApprovedEmailRequest
+	18, // 10: email.EmailService.SendLimitChangeEmail:input_type -> email.SendLimitChangeEmailRequest
+	1,  // 11: email.EmailService.SendActivationEmail:output_type -> email.SendActivationEmailResponse
+	3,  // 12: email.EmailService.SendPasswordResetEmail:output_type -> email.SendPasswordResetEmailResponse
+	1,  // 13: email.EmailService.SendPasswordConfirmationEmail:output_type -> email.SendActivationEmailResponse
+	5,  // 14: email.EmailService.SendAccountCreatedEmail:output_type -> email.SendAccountCreatedEmailResponse
+	7,  // 15: email.EmailService.SendCardConfirmationEmail:output_type -> email.SendCardConfirmationEmailResponse
+	9,  // 16: email.EmailService.SendLoanLatePaymentEmail:output_type -> email.SendLoanLatePaymentEmailResponse
+	11, // 17: email.EmailService.SendAccountLockedEmail:output_type -> email.SendAccountLockedEmailResponse
+	13, // 18: email.EmailService.SendPaymentNotificationEmail:output_type -> email.SendPaymentNotificationEmailResponse
+	15, // 19: email.EmailService.SendCardBlockedEmail:output_type -> email.SendCardBlockedEmailResponse
+	17, // 20: email.EmailService.SendLoanApprovedEmail:output_type -> email.SendLoanApprovedEmailResponse
+	19, // 21: email.EmailService.SendLimitChangeEmail:output_type -> email.SendLimitChangeEmailResponse
+	11, // [11:22] is the sub-list for method output_type
+	0,  // [0:11] is the sub-list for method input_type
+	0,  // [0:0] is the sub-list for extension type_name
+	0,  // [0:0] is the sub-list for extension extendee
+	0,  // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_email_proto_init() }
@@ -649,7 +1259,7 @@ func file_email_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_email_proto_rawDesc), len(file_email_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
