@@ -1385,10 +1385,20 @@ func (s *OtcServer) lookupInterbankNegotiation(ctx context.Context, routingNumbe
 		}
 	}
 
-	// Fallback: {creatorRn}/{creatorExtId} — backward compat for callers that pass buyer routing/id.
-	err := s.DB.QueryRowContext(ctx, `
+	// Fallback 1: {creatorRn}/{creatorExtId} — backward compat for callers that pass buyer routing/id.
+	creatorErr := s.DB.QueryRowContext(ctx, `
 		SELECT id, status FROM otc_negotiations
 		WHERE creator_routing_number = $1 AND creator_external_id = $2`,
+		routingNumber, externalID,
+	).Scan(&localID, &currentStatus)
+	if creatorErr == nil {
+		return localID, currentStatus, nil
+	}
+
+	// Fallback 2: outbound negotiation — bank4 is seller, externalID is their UUID stored in partner_negotiation_id.
+	err := s.DB.QueryRowContext(ctx, `
+		SELECT id, status FROM otc_negotiations
+		WHERE seller_routing_number = $1 AND partner_negotiation_id = $2`,
 		routingNumber, externalID,
 	).Scan(&localID, &currentStatus)
 	if err == sql.ErrNoRows {
@@ -1551,13 +1561,23 @@ func (s *OtcServer) InterbankAcceptNegotiation(ctx context.Context, req *pb.Inte
 			return &pb.OtcEmptyResponse{}, nil // idempotent
 		}
 	}
-	// The partner bank is the buyer; they can accept only when it is their turn.
-	if currentStatus != "PENDING_BUYER" {
-		return nil, status.Error(codes.FailedPrecondition, "not your turn to accept")
+
+	// Check turn precondition before mutating state.
+	if sellerType == "INTERBANK" {
+		// Outbound negotiation: we are the buyer, bank4 (seller) is accepting.
+		if currentStatus != "PENDING_SELLER" {
+			_ = tx.Rollback()
+			return nil, status.Error(codes.FailedPrecondition, "not the seller's turn to accept")
+		}
+	} else {
+		// Inbound negotiation: we are the seller, bank4 (buyer) is accepting.
+		if currentStatus != "PENDING_BUYER" {
+			_ = tx.Rollback()
+			return nil, status.Error(codes.FailedPrecondition, "not your turn to accept")
+		}
 	}
 
 	now := time.Now()
-	// Contract will be created by CommitOtcInterbank after 2PC with the buyer's bank.
 	if _, err = tx.ExecContext(ctx, `
 		UPDATE otc_negotiations
 		SET status = 'ACCEPTED', last_modified = $1, modified_by_id = 0, modified_by_type = 'INTERBANK'
@@ -1565,15 +1585,22 @@ func (s *OtcServer) InterbankAcceptNegotiation(ctx context.Context, req *pb.Inte
 	); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to accept negotiation: %v", err)
 	}
-
 	if err = tx.Commit(); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to commit: %v", err)
 	}
 
-	if twopcErr := s.executeInterbankAcceptOutgoing(ctx, localID); twopcErr != nil {
-		_, _ = s.DB.ExecContext(context.Background(),
-			`UPDATE otc_negotiations SET status='PENDING_BUYER' WHERE id = $1`, localID)
-		return nil, status.Errorf(codes.Unavailable, "accept 2PC failed: %v", twopcErr)
+	if sellerType == "INTERBANK" {
+		if twopcErr := s.executeInterbankAcceptBuyerSide(ctx, localID); twopcErr != nil {
+			_, _ = s.DB.ExecContext(context.Background(),
+				`UPDATE otc_negotiations SET status='PENDING_SELLER' WHERE id = $1`, localID)
+			return nil, status.Errorf(codes.Unavailable, "buyer-side accept 2PC failed: %v", twopcErr)
+		}
+	} else {
+		if twopcErr := s.executeInterbankAcceptOutgoing(ctx, localID); twopcErr != nil {
+			_, _ = s.DB.ExecContext(context.Background(),
+				`UPDATE otc_negotiations SET status='PENDING_BUYER' WHERE id = $1`, localID)
+			return nil, status.Errorf(codes.Unavailable, "accept 2PC failed: %v", twopcErr)
+		}
 	}
 	return &pb.OtcEmptyResponse{}, nil
 }
