@@ -80,6 +80,21 @@ func (s *stubOrderClient) GetActuaryProfits(ctx context.Context, in *pb.GetActua
 	}
 	return nil, fmt.Errorf("not implemented")
 }
+func (s *stubOrderClient) CreateRecurringOrder(ctx context.Context, in *pb.CreateRecurringOrderRequest, opts ...grpc.CallOption) (*pb.RecurringOrderResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubOrderClient) ListRecurringOrders(ctx context.Context, in *pb.ListRecurringOrdersRequest, opts ...grpc.CallOption) (*pb.ListRecurringOrdersResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubOrderClient) PauseRecurringOrder(ctx context.Context, in *pb.RecurringOrderIdRequest, opts ...grpc.CallOption) (*pb.RecurringOrderResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubOrderClient) ResumeRecurringOrder(ctx context.Context, in *pb.RecurringOrderIdRequest, opts ...grpc.CallOption) (*pb.RecurringOrderResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubOrderClient) CancelRecurringOrder(ctx context.Context, in *pb.RecurringOrderIdRequest, opts ...grpc.CallOption) (*pb.RecurringOrderResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
 
 // ---- stub employee client ----
 
@@ -131,6 +146,15 @@ func (s *stubEmployeeClient) GetActuaryPerformers(_ context.Context, _ *pb_emp.G
 	return nil, nil
 }
 func (s *stubEmployeeClient) GetSupervisors(_ context.Context, _ *pb_emp.GetSupervisorsRequest, _ ...grpc.CallOption) (*pb_emp.GetSupervisorsResponse, error) {
+	return nil, nil
+}
+func (s *stubEmployeeClient) UpdateLoginAttempts(_ context.Context, _ *pb_emp.UpdateLoginAttemptsRequest, _ ...grpc.CallOption) (*pb_emp.UpdateLoginAttemptsResponse, error) {
+	return nil, nil
+}
+func (s *stubEmployeeClient) LogAuditEvent(_ context.Context, _ *pb_emp.AuditLogRequest, _ ...grpc.CallOption) (*pb_emp.AuditLogResponse, error) {
+	return nil, nil
+}
+func (s *stubEmployeeClient) ListAuditLogs(_ context.Context, _ *pb_emp.ListAuditLogsRequest, _ ...grpc.CallOption) (*pb_emp.ListAuditLogsResponse, error) {
 	return nil, nil
 }
 

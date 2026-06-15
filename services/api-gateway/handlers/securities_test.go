@@ -142,6 +142,15 @@ func (s *stubSecuritiesClient) GetListingHistory(ctx context.Context, in *pb.Get
 	}
 	return nil, fmt.Errorf("not implemented")
 }
+func (s *stubSecuritiesClient) CreatePriceAlert(ctx context.Context, in *pb.CreatePriceAlertRequest, opts ...grpc.CallOption) (*pb.CreatePriceAlertResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubSecuritiesClient) ListPriceAlerts(ctx context.Context, in *pb.ListPriceAlertsRequest, opts ...grpc.CallOption) (*pb.ListPriceAlertsResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubSecuritiesClient) DeletePriceAlert(ctx context.Context, in *pb.DeletePriceAlertRequest, opts ...grpc.CallOption) (*pb.DeletePriceAlertResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
 
 // ---- GetTestMode ----
 

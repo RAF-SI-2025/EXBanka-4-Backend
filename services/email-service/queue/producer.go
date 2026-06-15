@@ -7,6 +7,8 @@ import (
 )
 
 const QueueName = "email.activation"
+const OrderStatusQueueName = "email.orderstatus"
+const PriceAlertQueueName = "email.pricealert"
 const ResetQueueName = "email.passwordreset"
 const ConfirmQueueName = "email.passwordconfirmation"
 const AccountCreatedQueueName = "email.accountcreated"
@@ -65,13 +67,13 @@ type AccountLockedMessage struct {
 }
 
 type PaymentNotificationMessage struct {
-	Email        string  `json:"email"`
-	FirstName    string  `json:"first_name"`
-	Direction    string  `json:"direction"`
-	Amount       float64 `json:"amount"`
-	Currency     string  `json:"currency"`
-	Counterparty string  `json:"counterparty"`
-	AccountNumber string `json:"account_number"`
+	Email         string  `json:"email"`
+	FirstName     string  `json:"first_name"`
+	Direction     string  `json:"direction"`
+	Amount        float64 `json:"amount"`
+	Currency      string  `json:"currency"`
+	Counterparty  string  `json:"counterparty"`
+	AccountNumber string  `json:"account_number"`
 }
 
 type CardBlockedMessage struct {
@@ -86,6 +88,27 @@ type LoanApprovedMessage struct {
 	LoanAmount         float64 `json:"loan_amount"`
 	Currency           string  `json:"currency"`
 	MonthlyInstallment float64 `json:"monthly_installment"`
+}
+
+type OrderStatusMessage struct {
+	Email        string  `json:"email"`
+	FirstName    string  `json:"first_name"`
+	OrderID      int64   `json:"order_id"`
+	Ticker       string  `json:"ticker"`
+	Direction    string  `json:"direction"`
+	Status       string  `json:"status"`
+	Quantity     int32   `json:"quantity"`
+	FilledQty    int32   `json:"filled_qty"`
+	PricePerUnit float64 `json:"price_per_unit"`
+}
+
+type PriceAlertMessage struct {
+	Email        string  `json:"email"`
+	FirstName    string  `json:"first_name"`
+	Ticker       string  `json:"ticker"`
+	Condition    string  `json:"condition"`
+	Threshold    float64 `json:"threshold"`
+	CurrentPrice float64 `json:"current_price"`
 }
 
 type LimitChangeMessage struct {
@@ -109,7 +132,7 @@ func NewProducer(ch Channel) (*Producer, error) {
 	queues := []string{QueueName, ResetQueueName, ConfirmQueueName, AccountCreatedQueueName,
 		CardConfirmationQueueName, LoanLatePaymentQueueName, AccountLockedQueueName,
 		PaymentNotificationQueueName, CardBlockedQueueName, LoanApprovedQueueName,
-		LimitChangeQueueName}
+		LimitChangeQueueName, OrderStatusQueueName, PriceAlertQueueName}
 	for _, q := range queues {
 		if _, err := ch.QueueDeclare(q, true, false, false, false, nil); err != nil {
 			return nil, err
@@ -232,6 +255,30 @@ func (p *Producer) PublishLoanApproved(msg LoanApprovedMessage) error {
 		return err
 	}
 	return p.ch.Publish("", LoanApprovedQueueName, false, false, amqp.Publishing{
+		ContentType:  "application/json",
+		DeliveryMode: amqp.Persistent,
+		Body:         body,
+	})
+}
+
+func (p *Producer) PublishOrderStatus(msg OrderStatusMessage) error {
+	body, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	return p.ch.Publish("", OrderStatusQueueName, false, false, amqp.Publishing{
+		ContentType:  "application/json",
+		DeliveryMode: amqp.Persistent,
+		Body:         body,
+	})
+}
+
+func (p *Producer) PublishPriceAlert(msg PriceAlertMessage) error {
+	body, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	return p.ch.Publish("", PriceAlertQueueName, false, false, amqp.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp.Persistent,
 		Body:         body,

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Price Alert — AnkaBanka</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .header { background-color: #ffffff; padding: 32px; text-align: center; border-bottom: 3px solid #7c3aed; }
+    .header h1 { color: #7c3aed; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 1px; }
+    .header p { color: #a78bfa; margin: 6px 0 0; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; }
+    .body { padding: 40px 32px; color: #374151; }
+    .body p { line-height: 1.7; margin: 0 0 16px; }
+    .info-box { background: #f5f3ff; border-left: 3px solid #7c3aed; padding: 16px; border-radius: 4px; margin-bottom: 24px; }
+    .info-box p { margin: 4px 0; }
+    .price { font-size: 24px; font-weight: 700; color: #7c3aed; }
+    .footer { padding: 20px 32px; background-color: #f5f3ff; text-align: center; font-size: 12px; color: #a78bfa; border-top: 1px solid #ede9fe; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>AnkaBanka</h1>
+      <p>Price Alert Triggered</p>
+    </div>
+    <div class="body">
+      <p>Hello, <strong>{{.FirstName}}</strong>,</p>
+      <p>Your price alert for <strong>{{.Ticker}}</strong> has been triggered.</p>
+      <div class="info-box">
+        <p class="price">{{printf "%.4f" .CurrentPrice}}</p>
+        <p><strong>Condition:</strong> {{.Condition}}</p>
+        <p><strong>Threshold:</strong> {{printf "%.4f" .Threshold}}</p>
+      </div>
+      <p>Log in to AnkaBanka to view your portfolio and manage your alerts.</p>
+    </div>
+    <div class="footer">&copy; AnkaBanka. All rights reserved.</div>
+  </div>
+</body>
+</html>

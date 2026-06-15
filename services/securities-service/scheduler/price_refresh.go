@@ -8,12 +8,16 @@ import (
 	"time"
 
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/securities-service/seeder"
+	pb_client "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
+	pb_emp "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
 )
 
 // StartPriceRefresh launches a background goroutine that refreshes listing prices
 // every interval using AlphaVantage. The first tick fires after one full interval.
-func StartPriceRefresh(db *sql.DB, avKey string, interval time.Duration, rdb *redis.Client) {
+func StartPriceRefresh(db *sql.DB, avKey string, interval time.Duration, rdb *redis.Client,
+	amqpCh *amqp.Channel, empClient pb_emp.EmployeeServiceClient, cliClient pb_client.ClientServiceClient) {
 	if avKey == "" {
 		log.Println("price_refresh: ALPHAVANTAGE_API_KEY not set, price refresh disabled")
 		return
@@ -22,7 +26,7 @@ func StartPriceRefresh(db *sql.DB, avKey string, interval time.Duration, rdb *re
 	go func() {
 		for range ticker.C {
 			log.Println("price_refresh: running")
-			refreshPrices(db, avKey, rdb)
+			refreshPrices(db, avKey, rdb, amqpCh, empClient, cliClient)
 			log.Println("price_refresh: done")
 		}
 	}()
@@ -36,12 +40,14 @@ func invalidateListing(rdb *redis.Client, id int64) {
 	_ = rdb.Del(context.Background(), fmt.Sprintf("listing:%d", id)).Err()
 }
 
-func refreshPrices(db *sql.DB, avKey string, rdb *redis.Client) {
-	refreshStocks(db, avKey, rdb)
+func refreshPrices(db *sql.DB, avKey string, rdb *redis.Client,
+	amqpCh *amqp.Channel, empClient pb_emp.EmployeeServiceClient, cliClient pb_client.ClientServiceClient) {
+	refreshStocks(db, avKey, rdb, amqpCh, empClient, cliClient)
 	refreshForex(db, avKey, rdb)
 }
 
-func refreshStocks(db *sql.DB, avKey string, rdb *redis.Client) {
+func refreshStocks(db *sql.DB, avKey string, rdb *redis.Client,
+	amqpCh *amqp.Channel, empClient pb_emp.EmployeeServiceClient, cliClient pb_client.ClientServiceClient) {
 	rows, err := db.Query(`SELECT id, ticker FROM listing WHERE type = 'STOCK'`)
 	if err != nil {
 		log.Printf("price_refresh: query stocks: %v", err)
@@ -74,6 +80,8 @@ func refreshStocks(db *sql.DB, avKey string, rdb *redis.Client) {
 		if q == nil {
 			continue // rate-limit hit, skip
 		}
+		var oldPrice float64
+		_ = db.QueryRow(`SELECT price FROM listing WHERE id = $1`, s.id).Scan(&oldPrice)
 		_, err = db.Exec(`
 			UPDATE listing SET price=$2, ask=$3, bid=$4, change=$5, volume=$6, last_refresh=$7
 			WHERE id=$1`,
@@ -83,6 +91,11 @@ func refreshStocks(db *sql.DB, avKey string, rdb *redis.Client) {
 			continue
 		}
 		invalidateListing(rdb, s.id)
+		var changePercent float64
+		if oldPrice > 0 {
+			changePercent = (q.Price - oldPrice) / oldPrice * 100
+		}
+		go checkPriceAlerts(db, s.id, q.Price, changePercent, amqpCh, empClient, cliClient)
 	}
 }
 

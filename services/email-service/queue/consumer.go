@@ -482,6 +482,53 @@ func ConsumeLimitChange(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Templat
 	}
 }
 
+func ConsumeOrderStatus(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	if _, err := ch.QueueDeclare(OrderStatusQueueName, true, false, false, false, nil); err != nil {
+		log.Fatalf("failed to declare order status queue: %v", err)
+	}
+	msgs, err := ch.Consume(OrderStatusQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start order status consumer: %v", err)
+	}
+	log.Println("order status email consumer started")
+	for d := range msgs {
+		var msg OrderStatusMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode order status message: %v", err)
+			_ = d.Ack(false)
+			continue
+		}
+		subject := fmt.Sprintf("Order %s — AnkaBanka", msg.Status)
+		if err := sendTemplatedEmail(cfg, tmpl, "order_status.html", msg, msg.Email, subject); err != nil {
+			log.Printf("failed to send order status email to %s: %v", msg.Email, err)
+		}
+		_ = d.Ack(false)
+	}
+}
+
+func ConsumePriceAlert(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	if _, err := ch.QueueDeclare(PriceAlertQueueName, true, false, false, false, nil); err != nil {
+		log.Fatalf("failed to declare price alert queue: %v", err)
+	}
+	msgs, err := ch.Consume(PriceAlertQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start price alert consumer: %v", err)
+	}
+	log.Println("price alert email consumer started")
+	for d := range msgs {
+		var msg PriceAlertMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode price alert message: %v", err)
+			_ = d.Ack(false)
+			continue
+		}
+		if err := sendTemplatedEmail(cfg, tmpl, "price_alert.html", msg, msg.Email, "Price Alert Triggered — AnkaBanka"); err != nil {
+			log.Printf("failed to send price alert email to %s: %v", msg.Email, err)
+		}
+		_ = d.Ack(false)
+	}
+}
+
 func sendTemplatedEmail(cfg SMTPConfig, tmpl *template.Template, _ string, data interface{}, to, subject string) error {
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, data); err != nil {

@@ -145,6 +145,15 @@ func (m *mockSecClient) GetListingById(ctx context.Context, in *pb_sec.GetListin
 func (m *mockSecClient) GetListingHistory(ctx context.Context, in *pb_sec.GetListingHistoryRequest, opts ...grpc.CallOption) (*pb_sec.GetListingHistoryResponse, error) {
 	return nil, fmt.Errorf("not mocked")
 }
+func (m *mockSecClient) CreatePriceAlert(ctx context.Context, in *pb_sec.CreatePriceAlertRequest, opts ...grpc.CallOption) (*pb_sec.CreatePriceAlertResponse, error) {
+	return nil, fmt.Errorf("not mocked")
+}
+func (m *mockSecClient) ListPriceAlerts(ctx context.Context, in *pb_sec.ListPriceAlertsRequest, opts ...grpc.CallOption) (*pb_sec.ListPriceAlertsResponse, error) {
+	return nil, fmt.Errorf("not mocked")
+}
+func (m *mockSecClient) DeletePriceAlert(ctx context.Context, in *pb_sec.DeletePriceAlertRequest, opts ...grpc.CallOption) (*pb_sec.DeletePriceAlertResponse, error) {
+	return nil, fmt.Errorf("not mocked")
+}
 
 // mockPortfolioClient is a configurable mock for pb_portfolio.PortfolioServiceClient.
 type mockPortfolioClient struct {
@@ -179,6 +188,33 @@ func (m *mockPortfolioClient) CollectTaxForUser(ctx context.Context, in *pb_port
 	return nil, fmt.Errorf("not mocked")
 }
 func (m *mockPortfolioClient) SetPublicMode(ctx context.Context, in *pb_portfolio.SetPublicModeRequest, opts ...grpc.CallOption) (*pb_portfolio.SetPublicModeResponse, error) {
+	return nil, fmt.Errorf("not mocked")
+}
+func (m *mockPortfolioClient) CreateWatchlist(ctx context.Context, in *pb_portfolio.CreateWatchlistRequest, opts ...grpc.CallOption) (*pb_portfolio.WatchlistResponse, error) {
+	return nil, fmt.Errorf("not mocked")
+}
+func (m *mockPortfolioClient) ListWatchlists(ctx context.Context, in *pb_portfolio.ListWatchlistsRequest, opts ...grpc.CallOption) (*pb_portfolio.ListWatchlistsResponse, error) {
+	return nil, fmt.Errorf("not mocked")
+}
+func (m *mockPortfolioClient) DeleteWatchlist(ctx context.Context, in *pb_portfolio.DeleteWatchlistRequest, opts ...grpc.CallOption) (*pb_portfolio.DeleteWatchlistResponse, error) {
+	return nil, fmt.Errorf("not mocked")
+}
+func (m *mockPortfolioClient) AddWatchlistItem(ctx context.Context, in *pb_portfolio.AddWatchlistItemRequest, opts ...grpc.CallOption) (*pb_portfolio.WatchlistItemResponse, error) {
+	return nil, fmt.Errorf("not mocked")
+}
+func (m *mockPortfolioClient) RemoveWatchlistItem(ctx context.Context, in *pb_portfolio.RemoveWatchlistItemRequest, opts ...grpc.CallOption) (*pb_portfolio.RemoveWatchlistItemResponse, error) {
+	return nil, fmt.Errorf("not mocked")
+}
+func (m *mockPortfolioClient) GetWatchlistItems(ctx context.Context, in *pb_portfolio.GetWatchlistItemsRequest, opts ...grpc.CallOption) (*pb_portfolio.GetWatchlistItemsResponse, error) {
+	return nil, fmt.Errorf("not mocked")
+}
+func (m *mockPortfolioClient) CreateDividendPayout(ctx context.Context, in *pb_portfolio.CreateDividendPayoutRequest, opts ...grpc.CallOption) (*pb_portfolio.DividendPayoutResponse, error) {
+	return nil, fmt.Errorf("not mocked")
+}
+func (m *mockPortfolioClient) GetDividendHistory(ctx context.Context, in *pb_portfolio.GetDividendHistoryRequest, opts ...grpc.CallOption) (*pb_portfolio.GetDividendHistoryResponse, error) {
+	return nil, fmt.Errorf("not mocked")
+}
+func (m *mockPortfolioClient) GetHoldersByListing(ctx context.Context, in *pb_portfolio.GetHoldersByListingRequest, opts ...grpc.CallOption) (*pb_portfolio.GetHoldersByListingResponse, error) {
 	return nil, fmt.Errorf("not mocked")
 }
 

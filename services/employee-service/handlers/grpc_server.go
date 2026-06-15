@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -176,14 +177,14 @@ func (s *EmployeeServer) GetEmployeeCredentials(ctx context.Context, req *pb.Get
 		lockedUntilStr = lockedUntil.Time.UTC().Format(time.RFC3339)
 	}
 	return &pb.GetEmployeeCredentialsResponse{
-		Id:                   id,
-		PasswordHash:         passwordHash,
-		Active:               active,
-		Permissions:          permissions,
-		Email:                email,
-		FirstName:            firstName,
-		FailedLoginAttempts:  failedAttempts,
-		AccountLockedUntil:   lockedUntilStr,
+		Id:                  id,
+		PasswordHash:        passwordHash,
+		Active:              active,
+		Permissions:         permissions,
+		Email:               email,
+		FirstName:           firstName,
+		FailedLoginAttempts: failedAttempts,
+		AccountLockedUntil:  lockedUntilStr,
 	}, nil
 }
 
@@ -337,6 +338,14 @@ func (s *EmployeeServer) UpdateEmployee(ctx context.Context, req *pb.UpdateEmplo
 	// If employee lost both AGENT and SUPERVISOR → delete row
 	if (hadAgent || hadSupervisor) && !willHaveAgent && !willHaveSupervisor {
 		_, _ = s.DB.ExecContext(ctx, `DELETE FROM actuary_info WHERE employee_id = $1`, req.Id)
+	}
+
+	if req.ActorId != 0 {
+		oldPerms := strings.Join(targetPerms, ",")
+		newPerms := strings.Join(req.Permissions, ",")
+		if oldPerms != newPerms {
+			s.insertAuditLog(ctx, req.ActorId, "EMPLOYEE", "PERMISSION_CHANGE", req.Id, oldPerms, newPerms)
+		}
 	}
 
 	return &pb.UpdateEmployeeResponse{Employee: &e}, nil
@@ -520,6 +529,8 @@ func (s *EmployeeServer) SetAgentLimit(ctx context.Context, req *pb.SetAgentLimi
 	if !containsPermission(perms, "AGENT") {
 		return nil, status.Error(codes.InvalidArgument, "employee is not an agent")
 	}
+	var oldLimit float64
+	_ = s.DB.QueryRowContext(ctx, `SELECT limit_amount FROM actuary_info WHERE employee_id = $1`, req.EmployeeId).Scan(&oldLimit)
 	res, err := s.DB.ExecContext(ctx,
 		`UPDATE actuary_info SET limit_amount = $2 WHERE employee_id = $1`,
 		req.EmployeeId, req.LimitAmount)
@@ -528,6 +539,10 @@ func (s *EmployeeServer) SetAgentLimit(ctx context.Context, req *pb.SetAgentLimi
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return nil, status.Error(codes.NotFound, "actuary info not found")
+	}
+	if req.ActorId != 0 {
+		s.insertAuditLog(ctx, req.ActorId, "EMPLOYEE", "LIMIT_CHANGE", req.EmployeeId,
+			fmt.Sprintf("%.2f", oldLimit), fmt.Sprintf("%.2f", req.LimitAmount))
 	}
 	return &pb.SetAgentLimitResponse{}, nil
 }
@@ -545,6 +560,8 @@ func (s *EmployeeServer) ResetAgentUsedLimit(ctx context.Context, req *pb.ResetA
 	if !containsPermission(perms, "AGENT") {
 		return nil, status.Error(codes.InvalidArgument, "employee is not an agent")
 	}
+	var oldUsed float64
+	_ = s.DB.QueryRowContext(ctx, `SELECT used_limit FROM actuary_info WHERE employee_id = $1`, req.EmployeeId).Scan(&oldUsed)
 	res, err := s.DB.ExecContext(ctx,
 		`UPDATE actuary_info SET used_limit = 0 WHERE employee_id = $1`,
 		req.EmployeeId)
@@ -553,6 +570,10 @@ func (s *EmployeeServer) ResetAgentUsedLimit(ctx context.Context, req *pb.ResetA
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return nil, status.Error(codes.NotFound, "actuary info not found")
+	}
+	if req.ActorId != 0 {
+		s.insertAuditLog(ctx, req.ActorId, "EMPLOYEE", "RESET_USED_LIMIT", req.EmployeeId,
+			fmt.Sprintf("%.2f", oldUsed), "0.00")
 	}
 	return &pb.ResetAgentUsedLimitResponse{}, nil
 }

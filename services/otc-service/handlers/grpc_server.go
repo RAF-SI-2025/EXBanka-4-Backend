@@ -1439,6 +1439,17 @@ func (s *OtcServer) CreateInterbankNegotiation(ctx context.Context, req *pb.Crea
 		}
 	}
 
+	// Idempotency: if this creator already opened a negotiation, return it.
+	if req.CreatorExternalId != "" {
+		existingID, _, lookupErr := s.lookupInterbankNegotiation(ctx, req.CreatorRoutingNumber, req.CreatorExternalId)
+		if lookupErr == nil {
+			return s.fetchInterbankNegotiationByID(ctx, existingID)
+		}
+		if status.Code(lookupErr) != codes.NotFound {
+			return nil, lookupErr
+		}
+	}
+
 	now := time.Now()
 	var id int64
 	err := s.DB.QueryRowContext(ctx, `

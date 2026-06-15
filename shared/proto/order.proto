@@ -32,6 +32,9 @@ message Order {
   bool   is_margin          = 18;
   int64  account_id         = 19;
   int64  fund_id            = 20;
+  double commission_paid    = 21;
+  string ticker             = 22;
+  string asset_type         = 23;
 }
 
 // ── CreateOrder ───────────────────────────────────────────────────────────────
@@ -60,8 +63,17 @@ message CreateOrderResponse {
 // ── ListOrders ────────────────────────────────────────────────────────────────
 
 message ListOrdersRequest {
-  string status   = 1; // ALL, PENDING, APPROVED, DECLINED, DONE — empty = ALL
-  int64  agent_id = 2; // 0 = no filter
+  string status      = 1; // ALL, PENDING, APPROVED, DECLINED, DONE — empty = ALL
+  int64  agent_id    = 2; // 0 = no filter
+  bool   my_orders   = 3; // true = return caller's own orders only
+  int64  caller_id   = 4;
+  string caller_type = 5; // "CLIENT" or "EMPLOYEE"
+  string direction   = 6; // "BUY", "SELL", "" = both
+  string asset_type  = 7; // "STOCK", "FOREX_PAIR", "FUTURES_CONTRACT", "" = all
+  string from_date   = 8; // ISO date YYYY-MM-DD
+  string to_date     = 9; // ISO date YYYY-MM-DD
+  int32  page        = 10;
+  int32  page_size   = 11;
 }
 
 message ListOrdersResponse {
@@ -105,6 +117,53 @@ service OrderService {
   rpc CancelOrder         (CancelOrderRequest)        returns (CancelOrderResponse);
   rpc CancelOrderPortions (CancelOrderPortionsRequest) returns (CancelOrderPortionsResponse);
   rpc GetActuaryProfits   (GetActuaryProfitsRequest)   returns (GetActuaryProfitsResponse);
+  // Recurring orders (BE-C3-06)
+  rpc CreateRecurringOrder  (CreateRecurringOrderRequest)  returns (RecurringOrderResponse);
+  rpc ListRecurringOrders   (ListRecurringOrdersRequest)   returns (ListRecurringOrdersResponse);
+  rpc PauseRecurringOrder   (RecurringOrderIdRequest)      returns (RecurringOrderResponse);
+  rpc ResumeRecurringOrder  (RecurringOrderIdRequest)      returns (RecurringOrderResponse);
+  rpc CancelRecurringOrder  (RecurringOrderIdRequest)      returns (RecurringOrderResponse);
+}
+
+// ── RecurringOrder messages (BE-C3-06) ───────────────────────────────────────
+
+message RecurringOrder {
+  int64  id         = 1;
+  int64  user_id    = 2;
+  string user_type  = 3;
+  int64  asset_id   = 4;
+  string direction  = 5;
+  string mode       = 6; // BY_QUANTITY or BY_AMOUNT
+  double value      = 7;
+  int64  account_id = 8;
+  string cadence    = 9; // DAILY, WEEKLY, MONTHLY
+  string next_run   = 10;
+  bool   active     = 11;
+  string created_at = 12;
+}
+
+message CreateRecurringOrderRequest {
+  int64  user_id    = 1;
+  string user_type  = 2;
+  int64  asset_id   = 3;
+  string direction  = 4;
+  string mode       = 5;
+  double value      = 6;
+  int64  account_id = 7;
+  string cadence    = 8;
+}
+message RecurringOrderResponse { RecurringOrder order = 1; }
+
+message ListRecurringOrdersRequest {
+  int64  user_id   = 1;
+  string user_type = 2;
+}
+message ListRecurringOrdersResponse { repeated RecurringOrder orders = 1; }
+
+message RecurringOrderIdRequest {
+  int64  id        = 1;
+  int64  user_id   = 2;
+  string user_type = 3;
 }
 
 // ── GetActuaryProfits ─────────────────────────────────────────────────────────

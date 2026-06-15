@@ -39,6 +39,9 @@ type orderResponse struct {
 	IsAon             bool    `json:"is_aon"`
 	IsMargin          bool    `json:"is_margin"`
 	AccountId         int64   `json:"account_id"`
+	CommissionPaid    float64 `json:"commission_paid"`
+	Ticker            string  `json:"ticker"`
+	AssetType         string  `json:"asset_type"`
 }
 
 func orderError(c *gin.Context, err error) {
@@ -218,6 +221,75 @@ func ListOrders(orderClient pb.OrderServiceClient, employeeClient pb_emp.Employe
 				IsAon:             o.IsAon,
 				IsMargin:          o.IsMargin,
 				AccountId:         o.AccountId,
+				CommissionPaid:    o.CommissionPaid,
+				Ticker:            o.Ticker,
+				AssetType:         o.AssetType,
+			})
+		}
+
+		c.JSON(http.StatusOK, gin.H{"orders": enriched})
+	}
+}
+
+// GetMyOrders handles GET /orders/my (employee) and GET /client/orders (client).
+// userType must be "EMPLOYEE" or "CLIENT".
+func GetMyOrders(orderClient pb.OrderServiceClient, userType string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		callerID, err := middleware.GetUserIDFromToken(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "could not extract identity from token"})
+			return
+		}
+
+		page, _ := strconv.ParseInt(c.DefaultQuery("page", "1"), 10, 32)
+		pageSize, _ := strconv.ParseInt(c.DefaultQuery("page_size", "20"), 10, 32)
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+		defer cancel()
+
+		resp, err := orderClient.ListOrders(ctx, &pb.ListOrdersRequest{
+			MyOrders:   true,
+			CallerId:   callerID,
+			CallerType: userType,
+			Status:     c.DefaultQuery("status", ""),
+			AssetType:  c.Query("asset_type"),
+			Direction:  c.Query("direction"),
+			FromDate:   c.Query("from_date"),
+			ToDate:     c.Query("to_date"),
+			Page:       int32(page),
+			PageSize:   int32(pageSize),
+		})
+		if err != nil {
+			orderError(c, err)
+			return
+		}
+
+		enriched := make([]orderResponse, 0, len(resp.Orders))
+		for _, o := range resp.Orders {
+			enriched = append(enriched, orderResponse{
+				Id:                o.Id,
+				UserId:            o.UserId,
+				AssetId:           o.AssetId,
+				AssetTicker:       o.Ticker,
+				OrderType:         o.OrderType,
+				Quantity:          o.Quantity,
+				ContractSize:      o.ContractSize,
+				PricePerUnit:      o.PricePerUnit,
+				LimitValue:        o.LimitValue,
+				StopValue:         o.StopValue,
+				Direction:         o.Direction,
+				Status:            o.Status,
+				ApprovedBy:        o.ApprovedBy,
+				IsDone:            o.IsDone,
+				LastModification:  o.LastModification,
+				RemainingPortions: o.RemainingPortions,
+				AfterHours:        o.AfterHours,
+				IsAon:             o.IsAon,
+				IsMargin:          o.IsMargin,
+				AccountId:         o.AccountId,
+				CommissionPaid:    o.CommissionPaid,
+				Ticker:            o.Ticker,
+				AssetType:         o.AssetType,
 			})
 		}
 

@@ -24,4 +24,7 @@ type Order struct {
 	IsMargin          bool
 	AccountID         int64
 	FundID            int64
+	CommissionPaid    float64
+	Ticker            string
+	AssetType         string
 }
