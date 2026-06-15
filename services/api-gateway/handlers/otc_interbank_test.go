@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/otc"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -23,11 +23,11 @@ func init() {
 
 // mockOtcClient is a minimal stub implementing pb.OtcServiceClient.
 type mockOtcClient struct {
-	createInterbankFn      func(ctx context.Context, req *pb.CreateInterbankNegotiationRequest, opts ...grpc.CallOption) (*pb.InterbankNegotiationResponse, error)
-	counterOfferFn         func(ctx context.Context, req *pb.InterbankCounterOfferRequest, opts ...grpc.CallOption) (*pb.InterbankNegotiationResponse, error)
-	getNegotiationFn       func(ctx context.Context, req *pb.InterbankNegotiationIdRequest, opts ...grpc.CallOption) (*pb.InterbankNegotiationResponse, error)
-	deleteNegotiationFn    func(ctx context.Context, req *pb.InterbankNegotiationIdRequest, opts ...grpc.CallOption) (*pb.OtcEmptyResponse, error)
-	acceptNegotiationFn    func(ctx context.Context, req *pb.InterbankNegotiationIdRequest, opts ...grpc.CallOption) (*pb.OtcEmptyResponse, error)
+	createInterbankFn   func(ctx context.Context, req *pb.CreateInterbankNegotiationRequest, opts ...grpc.CallOption) (*pb.InterbankNegotiationResponse, error)
+	counterOfferFn      func(ctx context.Context, req *pb.InterbankCounterOfferRequest, opts ...grpc.CallOption) (*pb.InterbankNegotiationResponse, error)
+	getNegotiationFn    func(ctx context.Context, req *pb.InterbankNegotiationIdRequest, opts ...grpc.CallOption) (*pb.InterbankNegotiationResponse, error)
+	deleteNegotiationFn func(ctx context.Context, req *pb.InterbankNegotiationIdRequest, opts ...grpc.CallOption) (*pb.OtcEmptyResponse, error)
+	acceptNegotiationFn func(ctx context.Context, req *pb.InterbankNegotiationIdRequest, opts ...grpc.CallOption) (*pb.OtcEmptyResponse, error)
 }
 
 func (m *mockOtcClient) Ping(ctx context.Context, in *pb.PingRequest, opts ...grpc.CallOption) (*pb.PingResponse, error) {

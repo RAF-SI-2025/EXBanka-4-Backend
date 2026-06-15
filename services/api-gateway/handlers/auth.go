@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/middleware"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
 	pb_email "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
-	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"google.golang.org/grpc/codes"
