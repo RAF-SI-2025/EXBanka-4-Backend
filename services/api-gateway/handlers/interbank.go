@@ -127,27 +127,31 @@ func handleNewTx(c *gin.Context, client pb.PaymentServiceClient, otcClient pb_ot
 	if exercisePosting != nil || acceptPosting != nil {
 		// OTC transaction — skip payment service entirely.
 		var negID int64
+		var partnerNegExternalID string
 		var stockAmt int32
 		var isAccept bool
 		if acceptPosting != nil {
 			if acceptPosting.Asset.Asset != nil && acceptPosting.Asset.Asset.NegotiationID != nil {
-				negID, _ = strconv.ParseInt(acceptPosting.Asset.Asset.NegotiationID.ID, 10, 64)
+				partnerNegExternalID = acceptPosting.Asset.Asset.NegotiationID.ID
+				negID, _ = strconv.ParseInt(partnerNegExternalID, 10, 64)
 			}
 			stockAmt = 1
 			isAccept = true
 		} else {
-			negID, _ = strconv.ParseInt(exercisePosting.Account.ID.ID, 10, 64)
+			partnerNegExternalID = exercisePosting.Account.ID.ID
+			negID, _ = strconv.ParseInt(partnerNegExternalID, 10, 64)
 			stockAmt = int32(math.Abs(exercisePosting.Amount))
 			isAccept = false
 		}
 		otcResp, otcErr := otcClient.PrepareOtcInterbank(ctx, &pb_otc.OtcInterbankPrepareRequest{
-			IdemRoutingNumber: fmt.Sprintf("%d", env.IdempotenceKey.RoutingNumber),
-			IdemKey:           env.IdempotenceKey.LocallyGeneratedKey,
-			TxRoutingNumber:   fmt.Sprintf("%d", msg.TransactionId.RoutingNumber),
-			TxId:              msg.TransactionId.ID,
-			NegotiationId:     negID,
-			StockAmount:       stockAmt,
-			IsAccept:          isAccept,
+			IdemRoutingNumber:    fmt.Sprintf("%d", env.IdempotenceKey.RoutingNumber),
+			IdemKey:              env.IdempotenceKey.LocallyGeneratedKey,
+			TxRoutingNumber:      fmt.Sprintf("%d", msg.TransactionId.RoutingNumber),
+			TxId:                 msg.TransactionId.ID,
+			NegotiationId:        negID,
+			StockAmount:          stockAmt,
+			IsAccept:             isAccept,
+			PartnerNegExternalId: partnerNegExternalID,
 		})
 		vote := "NO"
 		reason := ""
