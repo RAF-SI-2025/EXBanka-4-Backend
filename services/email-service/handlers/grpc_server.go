@@ -18,6 +18,11 @@ type Publisher interface {
 	PublishAccountCreated(msg queue.AccountCreatedMessage) error
 	PublishCardConfirmation(msg queue.CardConfirmationMessage) error
 	PublishLoanLatePayment(msg queue.LoanLatePaymentMessage) error
+	PublishAccountLocked(msg queue.AccountLockedMessage) error
+	PublishPaymentNotification(msg queue.PaymentNotificationMessage) error
+	PublishCardBlocked(msg queue.CardBlockedMessage) error
+	PublishLoanApproved(msg queue.LoanApprovedMessage) error
+	PublishLimitChange(msg queue.LimitChangeMessage) error
 }
 
 type EmailServer struct {
@@ -117,4 +122,87 @@ func (s *EmailServer) SendLoanLatePaymentEmail(_ context.Context, req *pb.SendLo
 		return nil, status.Errorf(codes.Internal, "failed to enqueue email: %v", err)
 	}
 	return &pb.SendLoanLatePaymentEmailResponse{}, nil
+}
+
+func (s *EmailServer) SendAccountLockedEmail(_ context.Context, req *pb.SendAccountLockedEmailRequest) (*pb.SendAccountLockedEmailResponse, error) {
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email address: %v", err)
+	}
+	err := s.Producer.PublishAccountLocked(queue.AccountLockedMessage{
+		Email:             req.Email,
+		FirstName:         req.FirstName,
+		PasswordResetLink: req.PasswordResetLink,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to enqueue email: %v", err)
+	}
+	return &pb.SendAccountLockedEmailResponse{}, nil
+}
+
+func (s *EmailServer) SendPaymentNotificationEmail(_ context.Context, req *pb.SendPaymentNotificationEmailRequest) (*pb.SendPaymentNotificationEmailResponse, error) {
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email address: %v", err)
+	}
+	err := s.Producer.PublishPaymentNotification(queue.PaymentNotificationMessage{
+		Email:        req.Email,
+		FirstName:    req.FirstName,
+		Direction:    req.Direction,
+		Amount:       req.Amount,
+		Currency:     req.Currency,
+		Counterparty: req.Counterparty,
+		AccountNumber: req.AccountNumber,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to enqueue email: %v", err)
+	}
+	return &pb.SendPaymentNotificationEmailResponse{}, nil
+}
+
+func (s *EmailServer) SendCardBlockedEmail(_ context.Context, req *pb.SendCardBlockedEmailRequest) (*pb.SendCardBlockedEmailResponse, error) {
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email address: %v", err)
+	}
+	err := s.Producer.PublishCardBlocked(queue.CardBlockedMessage{
+		Email:      req.Email,
+		FirstName:  req.FirstName,
+		CardNumber: req.CardNumber,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to enqueue email: %v", err)
+	}
+	return &pb.SendCardBlockedEmailResponse{}, nil
+}
+
+func (s *EmailServer) SendLoanApprovedEmail(_ context.Context, req *pb.SendLoanApprovedEmailRequest) (*pb.SendLoanApprovedEmailResponse, error) {
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email address: %v", err)
+	}
+	err := s.Producer.PublishLoanApproved(queue.LoanApprovedMessage{
+		Email:              req.Email,
+		FirstName:          req.FirstName,
+		LoanAmount:         req.LoanAmount,
+		Currency:           req.Currency,
+		MonthlyInstallment: req.MonthlyInstallment,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to enqueue email: %v", err)
+	}
+	return &pb.SendLoanApprovedEmailResponse{}, nil
+}
+
+func (s *EmailServer) SendLimitChangeEmail(_ context.Context, req *pb.SendLimitChangeEmailRequest) (*pb.SendLimitChangeEmailResponse, error) {
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid email address: %v", err)
+	}
+	err := s.Producer.PublishLimitChange(queue.LimitChangeMessage{
+		Email:        req.Email,
+		FirstName:    req.FirstName,
+		DailyLimit:   req.DailyLimit,
+		MonthlyLimit: req.MonthlyLimit,
+		Currency:     req.Currency,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to enqueue email: %v", err)
+	}
+	return &pb.SendLimitChangeEmailResponse{}, nil
 }

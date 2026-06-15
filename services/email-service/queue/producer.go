@@ -12,6 +12,11 @@ const ConfirmQueueName = "email.passwordconfirmation"
 const AccountCreatedQueueName = "email.accountcreated"
 const CardConfirmationQueueName = "email.cardconfirmation"
 const LoanLatePaymentQueueName = "email.loanlate"
+const AccountLockedQueueName = "email.accountlocked"
+const PaymentNotificationQueueName = "email.payment"
+const CardBlockedQueueName = "email.cardblocked"
+const LoanApprovedQueueName = "email.loanapproved"
+const LimitChangeQueueName = "email.limitchange"
 
 type ActivationMessage struct {
 	Email          string `json:"email"`
@@ -53,6 +58,44 @@ type LoanLatePaymentMessage struct {
 	RetryCount int32   `json:"retry_count"`
 }
 
+type AccountLockedMessage struct {
+	Email             string `json:"email"`
+	FirstName         string `json:"first_name"`
+	PasswordResetLink string `json:"password_reset_link"`
+}
+
+type PaymentNotificationMessage struct {
+	Email        string  `json:"email"`
+	FirstName    string  `json:"first_name"`
+	Direction    string  `json:"direction"`
+	Amount       float64 `json:"amount"`
+	Currency     string  `json:"currency"`
+	Counterparty string  `json:"counterparty"`
+	AccountNumber string `json:"account_number"`
+}
+
+type CardBlockedMessage struct {
+	Email      string `json:"email"`
+	FirstName  string `json:"first_name"`
+	CardNumber string `json:"card_number"`
+}
+
+type LoanApprovedMessage struct {
+	Email              string  `json:"email"`
+	FirstName          string  `json:"first_name"`
+	LoanAmount         float64 `json:"loan_amount"`
+	Currency           string  `json:"currency"`
+	MonthlyInstallment float64 `json:"monthly_installment"`
+}
+
+type LimitChangeMessage struct {
+	Email        string  `json:"email"`
+	FirstName    string  `json:"first_name"`
+	DailyLimit   float64 `json:"daily_limit"`
+	MonthlyLimit float64 `json:"monthly_limit"`
+	Currency     string  `json:"currency"`
+}
+
 type Channel interface {
 	QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool, args amqp.Table) (amqp.Queue, error)
 	Publish(exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error
@@ -63,23 +106,14 @@ type Producer struct {
 }
 
 func NewProducer(ch Channel) (*Producer, error) {
-	if _, err := ch.QueueDeclare(QueueName, true, false, false, false, nil); err != nil {
-		return nil, err
-	}
-	if _, err := ch.QueueDeclare(ResetQueueName, true, false, false, false, nil); err != nil {
-		return nil, err
-	}
-	if _, err := ch.QueueDeclare(ConfirmQueueName, true, false, false, false, nil); err != nil {
-		return nil, err
-	}
-	if _, err := ch.QueueDeclare(AccountCreatedQueueName, true, false, false, false, nil); err != nil {
-		return nil, err
-	}
-	if _, err := ch.QueueDeclare(CardConfirmationQueueName, true, false, false, false, nil); err != nil {
-		return nil, err
-	}
-	if _, err := ch.QueueDeclare(LoanLatePaymentQueueName, true, false, false, false, nil); err != nil {
-		return nil, err
+	queues := []string{QueueName, ResetQueueName, ConfirmQueueName, AccountCreatedQueueName,
+		CardConfirmationQueueName, LoanLatePaymentQueueName, AccountLockedQueueName,
+		PaymentNotificationQueueName, CardBlockedQueueName, LoanApprovedQueueName,
+		LimitChangeQueueName}
+	for _, q := range queues {
+		if _, err := ch.QueueDeclare(q, true, false, false, false, nil); err != nil {
+			return nil, err
+		}
 	}
 	return &Producer{ch: ch}, nil
 }
@@ -150,6 +184,66 @@ func (p *Producer) PublishLoanLatePayment(msg LoanLatePaymentMessage) error {
 		return err
 	}
 	return p.ch.Publish("", LoanLatePaymentQueueName, false, false, amqp.Publishing{
+		ContentType:  "application/json",
+		DeliveryMode: amqp.Persistent,
+		Body:         body,
+	})
+}
+
+func (p *Producer) PublishAccountLocked(msg AccountLockedMessage) error {
+	body, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	return p.ch.Publish("", AccountLockedQueueName, false, false, amqp.Publishing{
+		ContentType:  "application/json",
+		DeliveryMode: amqp.Persistent,
+		Body:         body,
+	})
+}
+
+func (p *Producer) PublishPaymentNotification(msg PaymentNotificationMessage) error {
+	body, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	return p.ch.Publish("", PaymentNotificationQueueName, false, false, amqp.Publishing{
+		ContentType:  "application/json",
+		DeliveryMode: amqp.Persistent,
+		Body:         body,
+	})
+}
+
+func (p *Producer) PublishCardBlocked(msg CardBlockedMessage) error {
+	body, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	return p.ch.Publish("", CardBlockedQueueName, false, false, amqp.Publishing{
+		ContentType:  "application/json",
+		DeliveryMode: amqp.Persistent,
+		Body:         body,
+	})
+}
+
+func (p *Producer) PublishLoanApproved(msg LoanApprovedMessage) error {
+	body, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	return p.ch.Publish("", LoanApprovedQueueName, false, false, amqp.Publishing{
+		ContentType:  "application/json",
+		DeliveryMode: amqp.Persistent,
+		Body:         body,
+	})
+}
+
+func (p *Producer) PublishLimitChange(msg LimitChangeMessage) error {
+	body, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	return p.ch.Publish("", LimitChangeQueueName, false, false, amqp.Publishing{
 		ContentType:  "application/json",
 		DeliveryMode: amqp.Persistent,
 		Body:         body,

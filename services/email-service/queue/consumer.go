@@ -332,3 +332,166 @@ func sendPasswordConfirmationEmail(cfg SMTPConfig, tmpl *template.Template, msg 
 	d := gomail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password)
 	return d.DialAndSend(m)
 }
+
+func ConsumeAccountLocked(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	if _, err := ch.QueueDeclare(AccountLockedQueueName, true, false, false, false, nil); err != nil {
+		log.Fatalf("failed to declare account locked queue: %v", err)
+	}
+
+	msgs, err := ch.Consume(AccountLockedQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start account locked consumer: %v", err)
+	}
+
+	log.Println("account locked email consumer started, waiting for messages")
+
+	for d := range msgs {
+		var msg AccountLockedMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode account locked message: %v", err)
+			if err := d.Ack(false); err != nil {
+				log.Printf("failed to ack message: %v", err)
+			}
+			continue
+		}
+
+		if err := sendAccountLockedEmail(cfg, tmpl, msg); err != nil {
+			log.Printf("failed to send account locked email to %s: %v", msg.Email, err)
+		} else {
+			log.Printf("account locked email sent to %s", msg.Email)
+		}
+
+		if err := d.Ack(false); err != nil {
+			log.Printf("failed to ack message: %v", err)
+		}
+	}
+}
+
+func sendAccountLockedEmail(cfg SMTPConfig, tmpl *template.Template, msg AccountLockedMessage) error {
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, map[string]string{
+		"FirstName":         msg.FirstName,
+		"PasswordResetLink": msg.PasswordResetLink,
+	}); err != nil {
+		return err
+	}
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", cfg.From)
+	m.SetHeader("To", msg.Email)
+	m.SetHeader("Subject", "Your AnkaBanka account has been locked")
+	m.SetBody("text/html", buf.String())
+
+	d := gomail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password)
+	return d.DialAndSend(m)
+}
+
+func ConsumePaymentNotification(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	if _, err := ch.QueueDeclare(PaymentNotificationQueueName, true, false, false, false, nil); err != nil {
+		log.Fatalf("failed to declare payment notification queue: %v", err)
+	}
+	msgs, err := ch.Consume(PaymentNotificationQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start payment notification consumer: %v", err)
+	}
+	log.Println("payment notification email consumer started")
+	for d := range msgs {
+		var msg PaymentNotificationMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode payment notification message: %v", err)
+			_ = d.Ack(false)
+			continue
+		}
+		subject := "Payment Sent — AnkaBanka"
+		if msg.Direction == "incoming" {
+			subject = "Payment Received — AnkaBanka"
+		}
+		if err := sendTemplatedEmail(cfg, tmpl, "payment_notification.html", msg, msg.Email, subject); err != nil {
+			log.Printf("failed to send payment notification email to %s: %v", msg.Email, err)
+		}
+		_ = d.Ack(false)
+	}
+}
+
+func ConsumeCardBlocked(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	if _, err := ch.QueueDeclare(CardBlockedQueueName, true, false, false, false, nil); err != nil {
+		log.Fatalf("failed to declare card blocked queue: %v", err)
+	}
+	msgs, err := ch.Consume(CardBlockedQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start card blocked consumer: %v", err)
+	}
+	log.Println("card blocked email consumer started")
+	for d := range msgs {
+		var msg CardBlockedMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode card blocked message: %v", err)
+			_ = d.Ack(false)
+			continue
+		}
+		if err := sendTemplatedEmail(cfg, tmpl, "card_blocked.html", msg, msg.Email, "Your Card Has Been Blocked — AnkaBanka"); err != nil {
+			log.Printf("failed to send card blocked email to %s: %v", msg.Email, err)
+		}
+		_ = d.Ack(false)
+	}
+}
+
+func ConsumeLoanApproved(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	if _, err := ch.QueueDeclare(LoanApprovedQueueName, true, false, false, false, nil); err != nil {
+		log.Fatalf("failed to declare loan approved queue: %v", err)
+	}
+	msgs, err := ch.Consume(LoanApprovedQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start loan approved consumer: %v", err)
+	}
+	log.Println("loan approved email consumer started")
+	for d := range msgs {
+		var msg LoanApprovedMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode loan approved message: %v", err)
+			_ = d.Ack(false)
+			continue
+		}
+		if err := sendTemplatedEmail(cfg, tmpl, "loan_approved.html", msg, msg.Email, "Your Loan Has Been Approved — AnkaBanka"); err != nil {
+			log.Printf("failed to send loan approved email to %s: %v", msg.Email, err)
+		}
+		_ = d.Ack(false)
+	}
+}
+
+func ConsumeLimitChange(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	if _, err := ch.QueueDeclare(LimitChangeQueueName, true, false, false, false, nil); err != nil {
+		log.Fatalf("failed to declare limit change queue: %v", err)
+	}
+	msgs, err := ch.Consume(LimitChangeQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start limit change consumer: %v", err)
+	}
+	log.Println("limit change email consumer started")
+	for d := range msgs {
+		var msg LimitChangeMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode limit change message: %v", err)
+			_ = d.Ack(false)
+			continue
+		}
+		if err := sendTemplatedEmail(cfg, tmpl, "limit_change.html", msg, msg.Email, "Account Limit Updated — AnkaBanka"); err != nil {
+			log.Printf("failed to send limit change email to %s: %v", msg.Email, err)
+		}
+		_ = d.Ack(false)
+	}
+}
+
+func sendTemplatedEmail(cfg SMTPConfig, tmpl *template.Template, _ string, data interface{}, to, subject string) error {
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return err
+	}
+	m := gomail.NewMessage()
+	m.SetHeader("From", cfg.From)
+	m.SetHeader("To", to)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/html", buf.String())
+	d := gomail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password)
+	return d.DialAndSend(m)
+}

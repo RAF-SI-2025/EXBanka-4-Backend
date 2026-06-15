@@ -128,6 +128,16 @@ func main() {
 		}
 	}()
 
+	accountLockedConsumeCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to open account locked consume channel: %v", err)
+	}
+	defer func() {
+		if err := accountLockedConsumeCh.Close(); err != nil {
+			log.Printf("account locked consume channel close: %v", err)
+		}
+	}()
+
 	producer, err := queue.NewProducer(publishCh)
 	if err != nil {
 		log.Fatalf("failed to create producer: %v", err)
@@ -163,12 +173,60 @@ func main() {
 		log.Fatalf("failed to parse loan late payment email template: %v", err)
 	}
 
+	accountLockedTmpl, err := template.ParseFiles("templates/account_locked.html")
+	if err != nil {
+		log.Fatalf("failed to parse account locked email template: %v", err)
+	}
+
+	paymentNotifTmpl, err := template.ParseFiles("templates/payment_notification.html")
+	if err != nil {
+		log.Fatalf("failed to parse payment notification email template: %v", err)
+	}
+	cardBlockedTmpl, err := template.ParseFiles("templates/card_blocked.html")
+	if err != nil {
+		log.Fatalf("failed to parse card blocked email template: %v", err)
+	}
+	loanApprovedTmpl, err := template.ParseFiles("templates/loan_approved.html")
+	if err != nil {
+		log.Fatalf("failed to parse loan approved email template: %v", err)
+	}
+	limitChangeTmpl, err := template.ParseFiles("templates/limit_change.html")
+	if err != nil {
+		log.Fatalf("failed to parse limit change email template: %v", err)
+	}
+
+	paymentNotifCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to open payment notification consume channel: %v", err)
+	}
+	defer func() { _ = paymentNotifCh.Close() }()
+	cardBlockedCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to open card blocked consume channel: %v", err)
+	}
+	defer func() { _ = cardBlockedCh.Close() }()
+	loanApprovedCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to open loan approved consume channel: %v", err)
+	}
+	defer func() { _ = loanApprovedCh.Close() }()
+	limitChangeCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to open limit change consume channel: %v", err)
+	}
+	defer func() { _ = limitChangeCh.Close() }()
+
 	go queue.Consume(consumeCh, smtpCfg, tmpl)
 	go queue.ConsumePasswordReset(resetConsumeCh, smtpCfg, resetTmpl)
 	go queue.ConsumePasswordConfirmation(confirmConsumeCh, smtpCfg, confirmTmpl)
 	go queue.ConsumeAccountCreated(accountCreatedConsumeCh, smtpCfg, accountCreatedTmpl)
 	go queue.ConsumeCardConfirmation(cardConfirmConsumeCh, smtpCfg, cardConfirmTmpl)
 	go queue.ConsumeLoanLatePayment(loanLateConsumeCh, smtpCfg, loanLateTmpl)
+	go queue.ConsumeAccountLocked(accountLockedConsumeCh, smtpCfg, accountLockedTmpl)
+	go queue.ConsumePaymentNotification(paymentNotifCh, smtpCfg, paymentNotifTmpl)
+	go queue.ConsumeCardBlocked(cardBlockedCh, smtpCfg, cardBlockedTmpl)
+	go queue.ConsumeLoanApproved(loanApprovedCh, smtpCfg, loanApprovedTmpl)
+	go queue.ConsumeLimitChange(limitChangeCh, smtpCfg, limitChangeTmpl)
 
 	lis, err := net.Listen("tcp", ":50053")
 	if err != nil {

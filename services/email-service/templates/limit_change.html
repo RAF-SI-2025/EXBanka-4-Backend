@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Account Limit Updated — AnkaBanka</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .header { background-color: #ffffff; padding: 32px; text-align: center; border-bottom: 3px solid #7c3aed; }
+    .header h1 { color: #7c3aed; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 1px; }
+    .header p { color: #a78bfa; margin: 6px 0 0; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; }
+    .body { padding: 40px 32px; color: #374151; }
+    .body p { line-height: 1.7; margin: 0 0 16px; }
+    .info-box { background: #f5f3ff; border-left: 3px solid #7c3aed; padding: 16px; border-radius: 4px; margin-bottom: 24px; }
+    .info-box p { margin: 4px 0; }
+    .limit-value { font-size: 20px; font-weight: 700; color: #7c3aed; }
+    .footer { padding: 20px 32px; background-color: #f5f3ff; text-align: center; font-size: 12px; color: #a78bfa; border-top: 1px solid #ede9fe; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>AnkaBanka</h1>
+      <p>Account Limits Updated</p>
+    </div>
+    <div class="body">
+      <p>Hello, <strong>{{.FirstName}}</strong>,</p>
+      <p>Your account transaction limits have been updated by your account manager.</p>
+      <div class="info-box">
+        <p><strong>Daily limit:</strong> <span class="limit-value">{{printf "%.2f" .DailyLimit}} {{.Currency}}</span></p>
+        <p><strong>Monthly limit:</strong> <span class="limit-value">{{printf "%.2f" .MonthlyLimit}} {{.Currency}}</span></p>
+      </div>
+      <p>If you did not request this change or believe it was made in error, please contact our support team immediately.</p>
+    </div>
+    <div class="footer">&copy; AnkaBanka. All rights reserved.</div>
+  </div>
+</body>
+</html>
