@@ -10,7 +10,9 @@ import (
 
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
 	pb_email "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
+	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/middleware"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -73,10 +75,21 @@ func Login(client pb.AuthServiceClient) gin.HandlerFunc {
 			Password: req.Password,
 		})
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+			if status.Code(err) == codes.PermissionDenied {
+				c.JSON(http.StatusForbidden, gin.H{"error": status.Convert(err).Message()})
+			} else {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+			}
 			return
 		}
 
+		if resp.RequiresTotp {
+			c.JSON(http.StatusOK, gin.H{
+				"requires_totp": true,
+				"session_token": resp.SessionToken,
+			})
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"access_token":  resp.AccessToken,
 			"refresh_token": resp.RefreshToken,
@@ -257,7 +270,18 @@ func ClientLogin(client pb.AuthServiceClient) gin.HandlerFunc {
 			Source:   req.Source,
 		})
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+			if status.Code(err) == codes.PermissionDenied {
+				c.JSON(http.StatusForbidden, gin.H{"error": status.Convert(err).Message()})
+			} else {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+			}
+			return
+		}
+		if resp.RequiresTotp {
+			c.JSON(http.StatusOK, gin.H{
+				"requires_totp": true,
+				"session_token": resp.SessionToken,
+			})
 			return
 		}
 		if resp.ApprovalRequestId != 0 {
@@ -269,6 +293,149 @@ func ClientLogin(client pb.AuthServiceClient) gin.HandlerFunc {
 			"refresh_token": resp.RefreshToken,
 		})
 	}
+}
+
+func TOTPGenerate(client pb.AuthServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, err := middleware.GetUserIDFromToken(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+		userType := middleware.GetCallerRoleFromToken(c)
+		email := getEmailFromToken(c)
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		resp, err := client.GenerateTOTPSecret(ctx, &pb.GenerateTOTPRequest{
+			UserId:   userID,
+			UserType: userType,
+			Email:    email,
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate TOTP secret"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"secret":      resp.Secret,
+			"otpauth_uri": resp.OtpauthUri,
+			"qr_code_png": resp.QrCodePng,
+		})
+	}
+}
+
+func TOTPVerify(client pb.AuthServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			Code string `json:"code" binding:"required"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		userID, err := middleware.GetUserIDFromToken(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+		userType := middleware.GetCallerRoleFromToken(c)
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+
+		verifyResp, err := client.VerifyTOTP(ctx, &pb.VerifyTOTPRequest{
+			UserId:   userID,
+			UserType: userType,
+			Code:     req.Code,
+		})
+		if err != nil || !verifyResp.Valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid TOTP code"})
+			return
+		}
+
+		_, err = client.EnableTOTP(ctx, &pb.EnableTOTPRequest{
+			UserId:   userID,
+			UserType: userType,
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to enable TOTP"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "TOTP enabled"})
+	}
+}
+
+func TOTPValidateLogin(client pb.AuthServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			SessionToken string `json:"session_token" binding:"required"`
+			Code         string `json:"code"          binding:"required"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+
+		resp, err := client.ValidateTOTPLogin(ctx, &pb.ValidateTOTPLoginRequest{
+			SessionToken: req.SessionToken,
+			Code:         req.Code,
+		})
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid TOTP code"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"access_token":  resp.AccessToken,
+			"refresh_token": resp.RefreshToken,
+		})
+	}
+}
+
+func TOTPDisable(client pb.AuthServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, err := middleware.GetUserIDFromToken(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+		userType := middleware.GetCallerRoleFromToken(c)
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+
+		if _, err := client.DisableTOTP(ctx, &pb.DisableTOTPRequest{
+			UserId:   userID,
+			UserType: userType,
+		}); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to disable TOTP"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "TOTP disabled"})
+	}
+}
+
+func getEmailFromToken(c *gin.Context) string {
+	header := c.GetHeader("Authorization")
+	if !strings.HasPrefix(header, "Bearer ") {
+		return ""
+	}
+	jwtSecret := os.Getenv("JWT_SECRET")
+	token, err := jwt.Parse(strings.TrimPrefix(header, "Bearer "), func(t *jwt.Token) (interface{}, error) {
+		return []byte(jwtSecret), nil
+	})
+	if err != nil || !token.Valid {
+		return ""
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return ""
+	}
+	email, _ := claims["email"].(string)
+	return email
 }
 
 // ClientRefresh godoc

@@ -9,7 +9,10 @@ import (
 
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/middleware"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/account"
+	pbauth "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
 	pbcard "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/card"
+	pbclient "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
+	pbemail "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -323,7 +326,12 @@ func GetAllAccounts(accountClient pb.AccountServiceClient) gin.HandlerFunc {
 // @Failure      404        {object}  map[string]string
 // @Security     BearerAuth
 // @Router       /api/accounts/{accountId}/limits [put]
-func UpdateAccountLimits(accountClient pb.AccountServiceClient) gin.HandlerFunc {
+func UpdateAccountLimits(
+	accountClient pb.AccountServiceClient,
+	emailClient pbemail.EmailServiceClient,
+	authClient pbauth.AuthServiceClient,
+	clientClient pbclient.ClientServiceClient,
+) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		accountID, err := parseID(c, "accountId")
 		if err != nil {
@@ -359,7 +367,72 @@ func UpdateAccountLimits(accountClient pb.AccountServiceClient) gin.HandlerFunc 
 			}
 			return
 		}
+
+		go sendLimitChangeNotification(accountID, body.DailyLimit, body.MonthlyLimit,
+			accountClient, emailClient, authClient, clientClient)
+
 		c.JSON(http.StatusOK, gin.H{"message": "limits updated successfully"})
+	}
+}
+
+func sendLimitChangeNotification(
+	accountID int64,
+	dailyLimit, monthlyLimit float64,
+	accountClient pb.AccountServiceClient,
+	emailClient pbemail.EmailServiceClient,
+	authClient pbauth.AuthServiceClient,
+	clientClient pbclient.ClientServiceClient,
+) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	allAccounts, err := accountClient.GetAllAccounts(ctx, &pb.GetAllAccountsRequest{})
+	if err != nil {
+		log.Printf("sendLimitChangeNotification: GetAllAccounts error: %v", err)
+		return
+	}
+
+	var ownerID int64
+	currency := "RSD"
+	for _, acc := range allAccounts.Accounts {
+		if acc.Id == accountID {
+			ownerID = acc.OwnerId
+			if acc.CurrencyCode != "" {
+				currency = acc.CurrencyCode
+			}
+			break
+		}
+	}
+	if ownerID == 0 {
+		log.Printf("sendLimitChangeNotification: account %d not found in list", accountID)
+		return
+	}
+
+	clientResp, err := clientClient.GetClientById(ctx, &pbclient.GetClientByIdRequest{Id: ownerID})
+	if err != nil {
+		log.Printf("sendLimitChangeNotification: GetClientById(%d) error: %v", ownerID, err)
+		return
+	}
+	cl := clientResp.Client
+
+	if _, err := emailClient.SendLimitChangeEmail(ctx, &pbemail.SendLimitChangeEmailRequest{
+		Email:        cl.Email,
+		FirstName:    cl.FirstName,
+		DailyLimit:   dailyLimit,
+		MonthlyLimit: monthlyLimit,
+		Currency:     currency,
+	}); err != nil {
+		log.Printf("sendLimitChangeNotification: SendLimitChangeEmail error: %v", err)
+	}
+
+	if _, err := authClient.CreateNotification(ctx, &pbauth.CreateNotificationRequest{
+		UserId:   ownerID,
+		UserType: "CLIENT",
+		Title:    "Account Limits Updated",
+		Message:  fmt.Sprintf("Your account limits have been updated: daily %.2f %s, monthly %.2f %s", dailyLimit, currency, monthlyLimit, currency),
+		Type:     "LIMIT_CHANGE",
+	}); err != nil {
+		log.Printf("sendLimitChangeNotification: CreateNotification error: %v", err)
 	}
 }
 
