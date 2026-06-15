@@ -197,7 +197,10 @@ func TestLookupInterbankNegotiation_NumericIDNotFound_FallsBack(t *testing.T) {
 	// Primary: id=42 not found
 	mOTC.ExpectQuery("SELECT id, status FROM otc_negotiations WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
-	// Fallback: by creator routing + externalId — also not found
+	// Fallback 1: by creator routing + externalId — also not found
+	mOTC.ExpectQuery("SELECT id, status FROM otc_negotiations").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
+	// Fallback 2: by seller routing + partner_negotiation_id — also not found
 	mOTC.ExpectQuery("SELECT id, status FROM otc_negotiations").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 
@@ -212,6 +215,9 @@ func TestLookupInterbankNegotiation_NumericIDNotFound_FallsBack(t *testing.T) {
 func TestLookupInterbankNegotiation_NonNumericID_FallsBack(t *testing.T) {
 	s, mOTC, _, _, _, _, _ := newTestServer(t)
 	// Non-numeric externalId → skips local id query, goes straight to creator key fallback
+	mOTC.ExpectQuery("SELECT id, status FROM otc_negotiations").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
+	// Fallback 2: by seller routing + partner_negotiation_id — also not found
 	mOTC.ExpectQuery("SELECT id, status FROM otc_negotiations").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 
@@ -232,7 +238,7 @@ func TestConvertAmount_SameCurrency_NoQuery(t *testing.T) {
 
 func TestConvertAmount_DifferentCurrencies_DBError(t *testing.T) {
 	excDB, excMock, _ := sqlmock.New()
-	defer excDB.Close()
+	defer func() { _ = excDB.Close() }()
 	excMock.ExpectQuery("SELECT middle_rate FROM daily_exchange_rates").
 		WillReturnRows(sqlmock.NewRows([]string{"middle_rate"})) // empty → ErrNoRows
 	_, err := convertAmount(context.Background(), excDB, 100.0, 1, 2)

@@ -31,8 +31,13 @@ func newOtcServerWithExchange(t *testing.T) (*OtcServer, sqlmock.Sqlmock, sqlmoc
 	secDB, mSec := newDB()
 	excDB, mExc := newDB()
 	t.Cleanup(func() {
-		_ = db.Close(); _ = empDB.Close(); _ = cliDB.Close()
-		_ = accDB.Close(); _ = portDB.Close(); _ = secDB.Close(); _ = excDB.Close()
+		_ = db.Close()
+		_ = empDB.Close()
+		_ = cliDB.Close()
+		_ = accDB.Close()
+		_ = portDB.Close()
+		_ = secDB.Close()
+		_ = excDB.Close()
 	})
 	return &OtcServer{
 		DB: db, EmployeeDB: empDB, ClientDB: cliDB,

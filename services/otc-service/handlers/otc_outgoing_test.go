@@ -41,7 +41,8 @@ func TestExecuteInterbankAcceptOutgoing_UnknownBuyerRouting(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{
 			"buyer_account_number", "buyer_routing_number", "buyer_external_id",
 			"seller_id", "seller_type", "premium", "currency", "amount", "ticker",
-		}).AddRow("ACC-001", int32(999), "ext-1", int64(5), "CLIENT", 5.0, "RSD", int32(10), "AAPL"))
+			"settlement_date", "price_per_stock",
+		}).AddRow("ACC-001", int32(999), "ext-1", int64(5), "CLIENT", 5.0, "RSD", int32(10), "AAPL", "2099-12-31", 50.0))
 
 	err := s.executeInterbankAcceptOutgoing(context.Background(), 1)
 	require.Error(t, err)
@@ -65,7 +66,8 @@ func TestExecuteInterbankAcceptOutgoing_HTTPVoteNo(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{
 			"buyer_account_number", "buyer_routing_number", "buyer_external_id",
 			"seller_id", "seller_type", "premium", "currency", "amount", "ticker",
-		}).AddRow("ACC-001", int32(444), "ext-1", int64(5), "CLIENT", 5.0, "RSD", int32(10), "AAPL"))
+			"settlement_date", "price_per_stock",
+		}).AddRow("ACC-001", int32(444), "ext-1", int64(5), "CLIENT", 5.0, "RSD", int32(10), "AAPL", "2099-12-31", 50.0))
 
 	err := s.executeInterbankAcceptOutgoing(context.Background(), 1)
 	require.Error(t, err)
@@ -89,7 +91,8 @@ func TestExecuteInterbankAcceptOutgoing_TickerNotFound(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{
 			"buyer_account_number", "buyer_routing_number", "buyer_external_id",
 			"seller_id", "seller_type", "premium", "currency", "amount", "ticker",
-		}).AddRow("ACC-001", int32(444), "ext-1", int64(5), "CLIENT", 5.0, "RSD", int32(10), "AAPL"))
+			"settlement_date", "price_per_stock",
+		}).AddRow("ACC-001", int32(444), "ext-1", int64(5), "CLIENT", 5.0, "RSD", int32(10), "AAPL", "2099-12-31", 50.0))
 	// listingIDForTicker: not found
 	mSec.ExpectQuery("SELECT id FROM listing WHERE ticker").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}))
@@ -116,7 +119,8 @@ func TestExecuteInterbankAcceptOutgoing_InsufficientShares(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{
 			"buyer_account_number", "buyer_routing_number", "buyer_external_id",
 			"seller_id", "seller_type", "premium", "currency", "amount", "ticker",
-		}).AddRow("ACC-001", int32(444), "ext-1", int64(5), "CLIENT", 5.0, "RSD", int32(10), "AAPL"))
+			"settlement_date", "price_per_stock",
+		}).AddRow("ACC-001", int32(444), "ext-1", int64(5), "CLIENT", 5.0, "RSD", int32(10), "AAPL", "2099-12-31", 50.0))
 	mSec.ExpectQuery("SELECT id FROM listing WHERE ticker").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(99)))
 	// UPDATE returns 0 rows (no free shares)
