@@ -1,21 +1,23 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE employees (
-    id             BIGSERIAL PRIMARY KEY,
-    first_name     VARCHAR,
-    last_name      VARCHAR,
-    date_of_birth  DATE,
-    gender         VARCHAR,
-    email          VARCHAR UNIQUE,
-    phone_number   VARCHAR,
-    address        VARCHAR,
-    username       VARCHAR UNIQUE,
-    password       VARCHAR,
-    position       VARCHAR,
-    department     VARCHAR,
-    active         BOOLEAN,
-    permissions    TEXT[],
-    jmbg           VARCHAR(13) NOT NULL UNIQUE
+    id                    BIGSERIAL PRIMARY KEY,
+    first_name            VARCHAR,
+    last_name             VARCHAR,
+    date_of_birth         DATE,
+    gender                VARCHAR,
+    email                 VARCHAR UNIQUE,
+    phone_number          VARCHAR,
+    address               VARCHAR,
+    username              VARCHAR UNIQUE,
+    password              VARCHAR,
+    position              VARCHAR,
+    department            VARCHAR,
+    active                BOOLEAN,
+    permissions           TEXT[],
+    jmbg                  VARCHAR(13) NOT NULL UNIQUE,
+    failed_login_attempts INT NOT NULL DEFAULT 0,
+    account_locked_until  TIMESTAMPTZ
 );
 
 CREATE INDEX IF NOT EXISTS idx_employees_first_name ON employees (first_name);

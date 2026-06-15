@@ -36,3 +36,25 @@ CREATE TABLE IF NOT EXISTS push_tokens (
     client_id   BIGINT   PRIMARY KEY,
     token       VARCHAR  NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id          BIGSERIAL PRIMARY KEY,
+    user_id     BIGINT NOT NULL,
+    user_type   VARCHAR(10) NOT NULL CHECK (user_type IN ('EMPLOYEE', 'CLIENT')),
+    title       VARCHAR(200) NOT NULL,
+    message     TEXT NOT NULL,
+    type        VARCHAR(50) NOT NULL,
+    is_read     BOOLEAN NOT NULL DEFAULT false,
+    created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, user_type, is_read, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS totp_secrets (
+    id          BIGSERIAL PRIMARY KEY,
+    user_id     BIGINT NOT NULL,
+    user_type   VARCHAR(10) NOT NULL CHECK (user_type IN ('EMPLOYEE', 'CLIENT')),
+    secret      VARCHAR(64) NOT NULL,
+    is_active   BOOLEAN NOT NULL DEFAULT false,
+    created_at  TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (user_id, user_type)
+);
