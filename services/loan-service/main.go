@@ -7,6 +7,7 @@ import (
 
 	loandb "github.com/RAF-SI-2025/EXBanka-4-Backend/services/loan-service/db"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/loan-service/handlers"
+	pb_auth "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
 	pb_client "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
 	pb_email "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/loan"
@@ -49,6 +50,13 @@ func main() {
 	defer func() { _ = clientConn.Close() }()
 	clientClient := pb_client.NewClientServiceClient(clientConn)
 
+	authConn, err := grpc.NewClient(os.Getenv("AUTH_SERVICE_ADDR"), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect to auth-service: %v", err)
+	}
+	defer func() { _ = authConn.Close() }()
+	authClient := pb_auth.NewAuthServiceClient(authConn)
+
 	lis, err := net.Listen("tcp", grpcPort)
 	if err != nil {
 		log.Fatalf("failed to listen on %s: %v", grpcPort, err)
@@ -61,6 +69,7 @@ func main() {
 		ExchangeDB:   exchangeDB,
 		EmailClient:  emailClient,
 		ClientClient: clientClient,
+		AuthClient:   authClient,
 	}
 	pb.RegisterLoanServiceServer(srv, loanServer)
 

@@ -6,11 +6,15 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/big"
 	"time"
 
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/card-service/utils"
+	pb_auth "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/card"
+	pb_client "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
+	pb_email "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,8 +26,11 @@ const bankIIN = "26500"
 
 type CardServer struct {
 	pb.UnimplementedCardServiceServer
-	DB        *sql.DB // card_db
-	AccountDB *sql.DB // account_db (for cross-DB lookups)
+	DB           *sql.DB // card_db
+	AccountDB    *sql.DB // account_db (for cross-DB lookups)
+	EmailClient  pb_email.EmailServiceClient
+	AuthClient   pb_auth.AuthServiceClient
+	ClientClient pb_client.ClientServiceClient
 }
 
 // ── CreateCard ────────────────────────────────────────────────────────────────
@@ -233,7 +240,52 @@ func (s *CardServer) BlockCard(ctx context.Context, req *pb.BlockCardRequest) (*
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to block card: %v", err)
 	}
+
+	ownerID, _ := s.getAccountOwnerID(ctx, accountNumber)
+	go s.sendCardBlockedNotifications(ownerID, maskCardNumber(req.CardNumber))
+
 	return &pb.BlockCardResponse{}, nil
+}
+
+func (s *CardServer) sendCardBlockedNotifications(clientID int64, maskedCard string) {
+	if s.EmailClient == nil && s.AuthClient == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var email, firstName string
+	if s.ClientClient != nil {
+		resp, err := s.ClientClient.GetClientById(ctx, &pb_client.GetClientByIdRequest{Id: clientID})
+		if err == nil && resp.Client != nil {
+			email = resp.Client.Email
+			firstName = resp.Client.FirstName
+		}
+	}
+
+	if email != "" && s.EmailClient != nil {
+		_, err := s.EmailClient.SendCardBlockedEmail(ctx, &pb_email.SendCardBlockedEmailRequest{
+			Email:      email,
+			FirstName:  firstName,
+			CardNumber: maskedCard,
+		})
+		if err != nil {
+			log.Printf("failed to send card blocked email: %v", err)
+		}
+	}
+
+	if s.AuthClient != nil {
+		_, err := s.AuthClient.CreateNotification(ctx, &pb_auth.CreateNotificationRequest{
+			UserId:   clientID,
+			UserType: "CLIENT",
+			Title:    "Card Blocked",
+			Message:  fmt.Sprintf("Your card %s has been blocked.", maskedCard),
+			Type:     "CARD_BLOCKED",
+		})
+		if err != nil {
+			log.Printf("failed to create card blocked notification: %v", err)
+		}
+	}
 }
 
 // ── UnblockCard ───────────────────────────────────────────────────────────────

@@ -4,12 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"strings"
 	"time"
 
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/payment-service/interbank"
+	pb_auth "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
+	pb_email "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/payment"
 	"github.com/lib/pq"
 	"google.golang.org/grpc/codes"
@@ -18,10 +21,12 @@ import (
 
 type PaymentServer struct {
 	pb.UnimplementedPaymentServiceServer
-	DB         *sql.DB // payment_db
-	AccountDB  *sql.DB // account_db
-	ExchangeDB *sql.DB // exchange_db
-	ClientDB   *sql.DB // client_db
+	DB             *sql.DB // payment_db
+	AccountDB      *sql.DB // account_db
+	ExchangeDB     *sql.DB // exchange_db
+	ClientDB       *sql.DB // client_db
+	EmailClient    pb_email.EmailServiceClient
+	AuthClient     pb_auth.AuthServiceClient
 }
 
 func (s *PaymentServer) CreatePayment(ctx context.Context, req *pb.CreatePaymentRequest) (*pb.CreatePaymentResponse, error) {
@@ -253,6 +258,8 @@ func (s *PaymentServer) CreatePayment(ctx context.Context, req *pb.CreatePayment
 		return nil, status.Errorf(codes.Internal, "failed to persist payment: %v", err)
 	}
 
+	go s.sendPaymentNotifications(req.ClientId, req.FromAccount, req.RecipientAccount, finalAmount, fromCurrencyID)
+
 	return &pb.CreatePaymentResponse{
 		Id:            paymentID,
 		OrderNumber:   orderNumber,
@@ -264,6 +271,52 @@ func (s *PaymentServer) CreatePayment(ctx context.Context, req *pb.CreatePayment
 		Status:        "COMPLETED",
 		Timestamp:     now.Format(time.RFC3339),
 	}, nil
+}
+
+func (s *PaymentServer) sendPaymentNotifications(clientID int64, fromAccount, toAccount string, amount float64, currencyID int64) {
+	if s.EmailClient == nil && s.AuthClient == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var email, firstName string
+	_ = s.ClientDB.QueryRowContext(ctx,
+		`SELECT email, first_name FROM clients WHERE id=$1`, clientID,
+	).Scan(&email, &firstName)
+
+	var currency string
+	_ = s.ExchangeDB.QueryRowContext(ctx,
+		`SELECT code FROM currencies WHERE id=$1`, currencyID,
+	).Scan(&currency)
+
+	if email != "" && s.EmailClient != nil {
+		_, err := s.EmailClient.SendPaymentNotificationEmail(ctx, &pb_email.SendPaymentNotificationEmailRequest{
+			Email:         email,
+			FirstName:     firstName,
+			Direction:     "outgoing",
+			Amount:        amount,
+			Currency:      currency,
+			Counterparty:  toAccount,
+			AccountNumber: fromAccount,
+		})
+		if err != nil {
+			log.Printf("failed to send payment notification email: %v", err)
+		}
+	}
+
+	if s.AuthClient != nil {
+		_, err := s.AuthClient.CreateNotification(ctx, &pb_auth.CreateNotificationRequest{
+			UserId:   clientID,
+			UserType: "CLIENT",
+			Title:    "Payment Sent",
+			Message:  fmt.Sprintf("Payment of %.2f %s sent to %s", amount, currency, toAccount),
+			Type:     "PAYMENT",
+		})
+		if err != nil {
+			log.Printf("failed to create payment notification: %v", err)
+		}
+	}
 }
 
 func (s *PaymentServer) CreatePaymentRecipient(ctx context.Context, req *pb.CreatePaymentRecipientRequest) (*pb.CreatePaymentRecipientResponse, error) {
@@ -781,6 +834,8 @@ func (s *PaymentServer) CreateTransfer(ctx context.Context, req *pb.CreateTransf
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to persist transfer: %v", err)
 	}
+
+	go s.sendPaymentNotifications(req.ClientId, req.FromAccount, req.ToAccount, req.Amount, fromCurrencyID)
 
 	return &pb.CreateTransferResponse{
 		Id:            transferID,
