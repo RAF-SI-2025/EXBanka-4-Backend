@@ -42,12 +42,15 @@ func addLookupByLocalID(m sqlmock.Sqlmock, id int64, negStatus string) {
 		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}).AddRow(id, negStatus))
 }
 
-// addLookupNotFound adds mock expectations for a lookup that finds nothing (both paths return no rows).
+// addLookupNotFound adds mock expectations for a lookup that finds nothing (all three paths return no rows).
 func addLookupNotFound(m sqlmock.Sqlmock) {
 	// Primary: by local ID
 	m.ExpectQuery("SELECT id, status FROM otc_negotiations WHERE id").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
-	// Fallback: by creator key
+	// Fallback 1: by creator routing + creator_external_id
+	m.ExpectQuery("SELECT id, status FROM otc_negotiations").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
+	// Fallback 2: by seller routing + partner_negotiation_id
 	m.ExpectQuery("SELECT id, status FROM otc_negotiations").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 }
@@ -82,16 +85,16 @@ func TestCreateInterbankNegotiation_InvalidSellerID(t *testing.T) {
 	assert.Equal(t, codes.InvalidArgument, status.Code(err))
 }
 
-func TestCreateInterbankNegotiation_Idempotent(t *testing.T) {
+func TestCreateInterbankNegotiation_Happy(t *testing.T) {
 	s, mOTC, _, _, _, _, _ := newTestServer(t)
 
-	// idempotency check: lookup by creatorExtId="42" (numeric, so tries local ID first)
-	addLookupByLocalID(mOTC, 42, "PENDING_SELLER")
+	mOTC.ExpectQuery("INSERT INTO otc_negotiations").
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(42)))
 	addFetchInterbankRows(mOTC, 42, "PENDING_SELLER")
 
 	resp, err := s.CreateInterbankNegotiation(context.Background(), &pb.CreateInterbankNegotiationRequest{
 		Ticker: "AAPL", Amount: 10, SettlementDate: "2026-12-31",
-		SellerExternalId:  "7",
+		SellerExternalId:     "7",
 		CreatorRoutingNumber: 444, CreatorExternalId: "42",
 	})
 	require.NoError(t, err)
@@ -109,7 +112,7 @@ func TestCreateInterbankNegotiation_InsertFails(t *testing.T) {
 
 	_, err := s.CreateInterbankNegotiation(context.Background(), &pb.CreateInterbankNegotiationRequest{
 		Ticker: "AAPL", Amount: 10, SettlementDate: "2026-12-31",
-		SellerExternalId: "7",
+		SellerExternalId:     "7",
 		CreatorRoutingNumber: 444, CreatorExternalId: "9999",
 	})
 	require.Error(t, err)
@@ -243,7 +246,9 @@ func TestInterbankDeleteNegotiation_Success(t *testing.T) {
 
 func TestInterbankAcceptNegotiation_InvalidID(t *testing.T) {
 	s, mOTC, _, _, _, _, _ := newTestServer(t)
-	// non-numeric ExternalId: skip primary ID lookup, creator-key fallback returns not found
+	// non-numeric ExternalId: skip primary ID lookup, both fallbacks return not found
+	mOTC.ExpectQuery("SELECT id, status FROM otc_negotiations").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 	mOTC.ExpectQuery("SELECT id, status FROM otc_negotiations").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "status"}))
 
