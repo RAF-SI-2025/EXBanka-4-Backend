@@ -37,6 +37,21 @@ func (m *mockEmailClient) SendCardConfirmationEmail(_ context.Context, _ *pb_ema
 func (m *mockEmailClient) SendLoanLatePaymentEmail(_ context.Context, _ *pb_email.SendLoanLatePaymentEmailRequest, _ ...grpc.CallOption) (*pb_email.SendLoanLatePaymentEmailResponse, error) {
 	return &pb_email.SendLoanLatePaymentEmailResponse{}, m.err
 }
+func (m *mockEmailClient) SendAccountLockedEmail(_ context.Context, _ *pb_email.SendAccountLockedEmailRequest, _ ...grpc.CallOption) (*pb_email.SendAccountLockedEmailResponse, error) {
+	return &pb_email.SendAccountLockedEmailResponse{}, m.err
+}
+func (m *mockEmailClient) SendPaymentNotificationEmail(_ context.Context, _ *pb_email.SendPaymentNotificationEmailRequest, _ ...grpc.CallOption) (*pb_email.SendPaymentNotificationEmailResponse, error) {
+	return &pb_email.SendPaymentNotificationEmailResponse{}, m.err
+}
+func (m *mockEmailClient) SendCardBlockedEmail(_ context.Context, _ *pb_email.SendCardBlockedEmailRequest, _ ...grpc.CallOption) (*pb_email.SendCardBlockedEmailResponse, error) {
+	return &pb_email.SendCardBlockedEmailResponse{}, m.err
+}
+func (m *mockEmailClient) SendLoanApprovedEmail(_ context.Context, _ *pb_email.SendLoanApprovedEmailRequest, _ ...grpc.CallOption) (*pb_email.SendLoanApprovedEmailResponse, error) {
+	return &pb_email.SendLoanApprovedEmailResponse{}, m.err
+}
+func (m *mockEmailClient) SendLimitChangeEmail(_ context.Context, _ *pb_email.SendLimitChangeEmailRequest, _ ...grpc.CallOption) (*pb_email.SendLimitChangeEmailResponse, error) {
+	return &pb_email.SendLimitChangeEmailResponse{}, m.err
+}
 
 func newServer(t *testing.T) (*AccountServer, sqlmock.Sqlmock, sqlmock.Sqlmock, sqlmock.Sqlmock) {
 	t.Helper()

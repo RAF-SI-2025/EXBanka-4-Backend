@@ -78,6 +78,9 @@ func (m *mockEmpClient) GetActuaryPerformers(ctx context.Context, in *pb_emp.Get
 func (m *mockEmpClient) GetSupervisors(ctx context.Context, in *pb_emp.GetSupervisorsRequest, opts ...grpc.CallOption) (*pb_emp.GetSupervisorsResponse, error) {
 	return nil, nil
 }
+func (m *mockEmpClient) UpdateLoginAttempts(ctx context.Context, in *pb_emp.UpdateLoginAttemptsRequest, opts ...grpc.CallOption) (*pb_emp.UpdateLoginAttemptsResponse, error) {
+	return nil, nil
+}
 
 type mockLoanClient struct {
 	loans []*pb_loan.LoanSummary

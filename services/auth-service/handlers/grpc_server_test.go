@@ -149,6 +149,10 @@ func (m *mockEmployeeClient) GetSupervisors(ctx context.Context, in *pb_emp.GetS
 	return nil, fmt.Errorf("not implemented")
 }
 
+func (m *mockEmployeeClient) UpdateLoginAttempts(ctx context.Context, in *pb_emp.UpdateLoginAttemptsRequest, opts ...grpc.CallOption) (*pb_emp.UpdateLoginAttemptsResponse, error) {
+	return &pb_emp.UpdateLoginAttemptsResponse{}, nil
+}
+
 type mockEmailClient struct {
 	mock.Mock
 }
@@ -186,6 +190,26 @@ func (m *mockEmailClient) SendCardConfirmationEmail(ctx context.Context, in *pb_
 }
 func (m *mockEmailClient) SendLoanLatePaymentEmail(ctx context.Context, in *pb_email.SendLoanLatePaymentEmailRequest, opts ...grpc.CallOption) (*pb_email.SendLoanLatePaymentEmailResponse, error) {
 	return &pb_email.SendLoanLatePaymentEmailResponse{}, nil
+}
+
+func (m *mockEmailClient) SendAccountLockedEmail(ctx context.Context, in *pb_email.SendAccountLockedEmailRequest, opts ...grpc.CallOption) (*pb_email.SendAccountLockedEmailResponse, error) {
+	return &pb_email.SendAccountLockedEmailResponse{}, nil
+}
+
+func (m *mockEmailClient) SendPaymentNotificationEmail(ctx context.Context, in *pb_email.SendPaymentNotificationEmailRequest, opts ...grpc.CallOption) (*pb_email.SendPaymentNotificationEmailResponse, error) {
+	return &pb_email.SendPaymentNotificationEmailResponse{}, nil
+}
+
+func (m *mockEmailClient) SendCardBlockedEmail(ctx context.Context, in *pb_email.SendCardBlockedEmailRequest, opts ...grpc.CallOption) (*pb_email.SendCardBlockedEmailResponse, error) {
+	return &pb_email.SendCardBlockedEmailResponse{}, nil
+}
+
+func (m *mockEmailClient) SendLoanApprovedEmail(ctx context.Context, in *pb_email.SendLoanApprovedEmailRequest, opts ...grpc.CallOption) (*pb_email.SendLoanApprovedEmailResponse, error) {
+	return &pb_email.SendLoanApprovedEmailResponse{}, nil
+}
+
+func (m *mockEmailClient) SendLimitChangeEmail(ctx context.Context, in *pb_email.SendLimitChangeEmailRequest, opts ...grpc.CallOption) (*pb_email.SendLimitChangeEmailResponse, error) {
+	return &pb_email.SendLimitChangeEmailResponse{}, nil
 }
 
 type mockClientClient struct {
@@ -238,6 +262,10 @@ func (m *mockClientClient) ActivateClient(ctx context.Context, in *pb_client.Act
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*pb_client.ActivateClientResponse), args.Error(1)
+}
+
+func (m *mockClientClient) UpdateLoginAttempts(ctx context.Context, in *pb_client.UpdateLoginAttemptsRequest, opts ...grpc.CallOption) (*pb_client.UpdateLoginAttemptsResponse, error) {
+	return &pb_client.UpdateLoginAttemptsResponse{}, nil
 }
 
 // ---- helpers ----
@@ -677,7 +705,15 @@ func TestLogin_HappyPath(t *testing.T) {
 		}}, nil,
 	)
 
-	s := &AuthServer{EmployeeClient: empClient, EmailClient: &mockEmailClient{}}
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+	// No TOTP secret → ErrNoRows → proceed to token generation
+	dbMock.ExpectQuery("SELECT secret FROM totp_secrets").
+		WithArgs(int64(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"secret"}))
+
+	s := &AuthServer{EmployeeClient: empClient, EmailClient: &mockEmailClient{}, DB: db}
 	resp, err := s.Login(context.Background(), &pb_auth.LoginRequest{Email: "user@example.com", Password: "Abcdef12"})
 	require.NoError(t, err)
 	assert.NotEmpty(t, resp.AccessToken)
@@ -736,7 +772,15 @@ func TestClientLogin_HappyPath(t *testing.T) {
 		}}, nil,
 	)
 
-	s := &AuthServer{ClientClient: clientClient}
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+	// No TOTP secret → ErrNoRows → proceed to token generation
+	dbMock.ExpectQuery("SELECT secret FROM totp_secrets").
+		WithArgs(int64(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"secret"}))
+
+	s := &AuthServer{ClientClient: clientClient, DB: db}
 	resp, err := s.ClientLogin(context.Background(), &pb_auth.ClientLoginRequest{Email: "ana@example.com", Password: "Abcdef12", Source: "mobile"})
 	require.NoError(t, err)
 	assert.NotEmpty(t, resp.AccessToken)
@@ -1004,8 +1048,16 @@ func TestLogin_GetEmployeeByIdError(t *testing.T) {
 	)
 	empClient.On("GetEmployeeById", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Internal, "db down"))
 
-	s := &AuthServer{EmployeeClient: empClient, EmailClient: &mockEmailClient{}}
-	_, err := s.Login(context.Background(), &pb_auth.LoginRequest{Email: "user@example.com", Password: "Abcdef12"})
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+	// No TOTP secret → ErrNoRows → proceed to GetEmployeeById
+	dbMock.ExpectQuery("SELECT secret FROM totp_secrets").
+		WithArgs(int64(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"secret"}))
+
+	s := &AuthServer{EmployeeClient: empClient, EmailClient: &mockEmailClient{}, DB: db}
+	_, err = s.Login(context.Background(), &pb_auth.LoginRequest{Email: "user@example.com", Password: "Abcdef12"})
 	require.Error(t, err)
 	assert.Equal(t, codes.Internal, status.Code(err))
 }
@@ -1170,8 +1222,15 @@ func TestClientLogin_GetClientByIdError(t *testing.T) {
 	)
 	clientClient.On("GetClientById", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Internal, "db down"))
 
-	s := &AuthServer{ClientClient: clientClient}
-	_, err := s.ClientLogin(context.Background(), &pb_auth.ClientLoginRequest{Email: "ana@example.com", Password: "Abcdef12"})
+	db, dbMock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+	dbMock.ExpectQuery("SELECT secret FROM totp_secrets").
+		WithArgs(int64(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"secret"}))
+
+	s := &AuthServer{ClientClient: clientClient, DB: db}
+	_, err = s.ClientLogin(context.Background(), &pb_auth.ClientLoginRequest{Email: "ana@example.com", Password: "Abcdef12"})
 	require.Error(t, err)
 	assert.Equal(t, codes.Internal, status.Code(err))
 }
