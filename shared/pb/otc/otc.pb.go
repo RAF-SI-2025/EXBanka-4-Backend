@@ -1850,16 +1850,17 @@ func (x *InterbankCounterOfferRequest) GetSettlementDate() string {
 }
 
 type OtcInterbankPrepareRequest struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	IdemRoutingNumber string                 `protobuf:"bytes,1,opt,name=idem_routing_number,json=idemRoutingNumber,proto3" json:"idem_routing_number,omitempty"`
-	IdemKey           string                 `protobuf:"bytes,2,opt,name=idem_key,json=idemKey,proto3" json:"idem_key,omitempty"`
-	TxRoutingNumber   string                 `protobuf:"bytes,3,opt,name=tx_routing_number,json=txRoutingNumber,proto3" json:"tx_routing_number,omitempty"`
-	TxId              string                 `protobuf:"bytes,4,opt,name=tx_id,json=txId,proto3" json:"tx_id,omitempty"`
-	NegotiationId     int64                  `protobuf:"varint,5,opt,name=negotiation_id,json=negotiationId,proto3" json:"negotiation_id,omitempty"`
-	StockAmount       int32                  `protobuf:"varint,6,opt,name=stock_amount,json=stockAmount,proto3" json:"stock_amount,omitempty"`
-	IsAccept          bool                   `protobuf:"varint,7,opt,name=is_accept,json=isAccept,proto3" json:"is_accept,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	IdemRoutingNumber    string                 `protobuf:"bytes,1,opt,name=idem_routing_number,json=idemRoutingNumber,proto3" json:"idem_routing_number,omitempty"`
+	IdemKey              string                 `protobuf:"bytes,2,opt,name=idem_key,json=idemKey,proto3" json:"idem_key,omitempty"`
+	TxRoutingNumber      string                 `protobuf:"bytes,3,opt,name=tx_routing_number,json=txRoutingNumber,proto3" json:"tx_routing_number,omitempty"`
+	TxId                 string                 `protobuf:"bytes,4,opt,name=tx_id,json=txId,proto3" json:"tx_id,omitempty"`
+	NegotiationId        int64                  `protobuf:"varint,5,opt,name=negotiation_id,json=negotiationId,proto3" json:"negotiation_id,omitempty"`
+	StockAmount          int32                  `protobuf:"varint,6,opt,name=stock_amount,json=stockAmount,proto3" json:"stock_amount,omitempty"`
+	IsAccept             bool                   `protobuf:"varint,7,opt,name=is_accept,json=isAccept,proto3" json:"is_accept,omitempty"`
+	PartnerNegExternalId string                 `protobuf:"bytes,8,opt,name=partner_neg_external_id,json=partnerNegExternalId,proto3" json:"partner_neg_external_id,omitempty"` // raw string neg ID from partner bank (UUID or int string)
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *OtcInterbankPrepareRequest) Reset() {
@@ -1939,6 +1940,13 @@ func (x *OtcInterbankPrepareRequest) GetIsAccept() bool {
 		return x.IsAccept
 	}
 	return false
+}
+
+func (x *OtcInterbankPrepareRequest) GetPartnerNegExternalId() string {
+	if x != nil {
+		return x.PartnerNegExternalId
+	}
+	return ""
 }
 
 type OtcInterbankVoteResponse struct {
@@ -2231,7 +2239,7 @@ const file_otc_proto_rawDesc = "" +
 	"\x0eprice_per_unit\x18\x03 \x01(\x01R\fpricePerUnit\x12\x18\n" +
 	"\apremium\x18\x04 \x01(\x01R\apremium\x12\x16\n" +
 	"\x06amount\x18\x05 \x01(\x05R\x06amount\x12'\n" +
-	"\x0fsettlement_date\x18\x06 \x01(\tR\x0esettlementDate\"\x8f\x02\n" +
+	"\x0fsettlement_date\x18\x06 \x01(\tR\x0esettlementDate\"\xc6\x02\n" +
 	"\x1aOtcInterbankPrepareRequest\x12.\n" +
 	"\x13idem_routing_number\x18\x01 \x01(\tR\x11idemRoutingNumber\x12\x19\n" +
 	"\bidem_key\x18\x02 \x01(\tR\aidemKey\x12*\n" +
@@ -2239,7 +2247,8 @@ const file_otc_proto_rawDesc = "" +
 	"\x05tx_id\x18\x04 \x01(\tR\x04txId\x12%\n" +
 	"\x0enegotiation_id\x18\x05 \x01(\x03R\rnegotiationId\x12!\n" +
 	"\fstock_amount\x18\x06 \x01(\x05R\vstockAmount\x12\x1b\n" +
-	"\tis_accept\x18\a \x01(\bR\bisAccept\"F\n" +
+	"\tis_accept\x18\a \x01(\bR\bisAccept\x125\n" +
+	"\x17partner_neg_external_id\x18\b \x01(\tR\x14partnerNegExternalId\"F\n" +
 	"\x18OtcInterbankVoteResponse\x12\x12\n" +
 	"\x04vote\x18\x01 \x01(\tR\x04vote\x12\x16\n" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\"X\n" +

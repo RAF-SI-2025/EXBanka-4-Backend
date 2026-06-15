@@ -1638,10 +1638,15 @@ func (s *OtcServer) PrepareOtcInterbank(ctx context.Context, req *pb.OtcInterban
 		partnerRouting := os.Getenv("PARTNER_ROUTING_NUMBER")
 		if req.IdemRoutingNumber == partnerRouting {
 			partnerRoutingInt, _ := strconv.ParseInt(partnerRouting, 10, 64)
+			// Use the raw string ID when available (handles UUID IDs from partner bank).
+			partnerNegLookupID := req.PartnerNegExternalId
+			if partnerNegLookupID == "" {
+				partnerNegLookupID = fmt.Sprintf("%d", req.NegotiationId)
+			}
 			var localNegID int64
 			if lookupErr := s.DB.QueryRowContext(ctx,
 				`SELECT id FROM otc_negotiations WHERE partner_negotiation_id = $1 AND seller_routing_number = $2`,
-				req.NegotiationId, partnerRoutingInt,
+				partnerNegLookupID, partnerRoutingInt,
 			).Scan(&localNegID); lookupErr == sql.ErrNoRows {
 				s.insertOtcInterbankTx(ctx, req, req.NegotiationId, "NO")
 				return &pb.OtcInterbankVoteResponse{Vote: "NO", Reason: "OPTION_NEGOTIATION_NOT_FOUND"}, nil

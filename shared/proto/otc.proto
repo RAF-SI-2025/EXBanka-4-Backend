@@ -213,13 +213,14 @@ message InterbankCounterOfferRequest {
 }
 
 message OtcInterbankPrepareRequest {
-  string idem_routing_number = 1;
-  string idem_key            = 2;
-  string tx_routing_number   = 3;
-  string tx_id               = 4;
-  int64  negotiation_id      = 5;
-  int32  stock_amount        = 6;
-  bool   is_accept           = 7;
+  string idem_routing_number      = 1;
+  string idem_key                 = 2;
+  string tx_routing_number        = 3;
+  string tx_id                    = 4;
+  int64  negotiation_id           = 5;
+  int32  stock_amount             = 6;
+  bool   is_accept                = 7;
+  string partner_neg_external_id  = 8; // raw string neg ID from partner bank (UUID or int string)
 }
 
 message OtcInterbankVoteResponse {

@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -739,14 +740,15 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 	}
 	defer func() { _ = resp.Body.Close() }()
 
+	rawBody, _ := io.ReadAll(resp.Body)
 	var vote otcIbVoteResponse
-	if jsonErr := json.NewDecoder(resp.Body).Decode(&vote); jsonErr != nil || vote.Vote != "YES" {
+	if jsonErr := json.Unmarshal(rawBody, &vote); jsonErr != nil || vote.Vote != "YES" {
 		_, _ = otcSendInterbankRequest(ctx, bankURL, bank.APIKey, otcIbEnvelope{
 			IdempotenceKey: otcIbIdempotenceKey{RoutingNumber: ownRouting, LocallyGeneratedKey: otcGenerateUUID()},
 			MessageType:    "ROLLBACK_TX",
 			Message:        otcIbCommitMessage{TransactionID: txID},
 		})
-		return fmt.Errorf("buyer bank voted NO or decode error")
+		return fmt.Errorf("buyer bank voted NO (status=%d body=%s)", resp.StatusCode, string(rawBody))
 	}
 
 	// YES: reserve seller shares and create seller-side contract.

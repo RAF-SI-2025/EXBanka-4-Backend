@@ -323,7 +323,7 @@ func TestCounterOffer_Happy(t *testing.T) {
 	addFetchNegotiationRows(mainMock, empMock, clientMock, 1, 10, 20, "EMPLOYEE", "CLIENT", "PENDING_BUYER")
 	resp, err := s.CounterOffer(context.Background(), &pb.CounterOfferRequest{
 		NegotiationId: 1, CallerId: 10, CallerType: "EMPLOYEE",
-		Amount: 90, PricePerStock: 155.0, SettlementDate: "2026-06-15",
+		Amount: 90, PricePerStock: 155.0, SettlementDate: "2027-06-15",
 	})
 	require.NoError(t, err)
 	assert.Equal(t, "PENDING_BUYER", resp.Status)
@@ -1079,7 +1079,7 @@ func TestCounterOffer_UpdateFails(t *testing.T) {
 	mainMock.ExpectRollback()
 	_, err := s.CounterOffer(context.Background(), &pb.CounterOfferRequest{
 		NegotiationId: 1, CallerId: 10, CallerType: "EMPLOYEE",
-		Amount: 90, PricePerStock: 155.0, SettlementDate: "2026-06-15",
+		Amount: 90, PricePerStock: 155.0, SettlementDate: "2027-06-15",
 	})
 	assert.Equal(t, codes.Internal, status.Code(err))
 }
