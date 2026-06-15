@@ -8,6 +8,24 @@
 *.out
 __debug_bin*
 
+# Service binaries (compiled output)
+services/*/handlers/*-service
+services/api-gateway/api-gateway
+services/*/*/service
+
+# Coverage reports
+cov
+cov.html
+cover.html
+coverage.html
+coverage_report_nice.html
+*.cov
+cov_*
+otc_cover
+
+# Misrouted go module cache
+shared/pb/*/github.com/
+
 
 # Environment / secrets
 .env
