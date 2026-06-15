@@ -45,6 +45,9 @@ func (m *mockClientClient) GetClientCredentials(ctx context.Context, in *pb_clie
 func (m *mockClientClient) ActivateClient(ctx context.Context, in *pb_client.ActivateClientRequest, opts ...grpc.CallOption) (*pb_client.ActivateClientResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+func (m *mockClientClient) UpdateLoginAttempts(ctx context.Context, in *pb_client.UpdateLoginAttemptsRequest, opts ...grpc.CallOption) (*pb_client.UpdateLoginAttemptsResponse, error) {
+	return &pb_client.UpdateLoginAttemptsResponse{}, nil
+}
 
 type mockEmailClient struct{}
 
@@ -65,6 +68,21 @@ func (m *mockEmailClient) SendCardConfirmationEmail(ctx context.Context, in *pb_
 }
 func (m *mockEmailClient) SendLoanLatePaymentEmail(ctx context.Context, in *pb_email.SendLoanLatePaymentEmailRequest, opts ...grpc.CallOption) (*pb_email.SendLoanLatePaymentEmailResponse, error) {
 	return &pb_email.SendLoanLatePaymentEmailResponse{}, nil
+}
+func (m *mockEmailClient) SendAccountLockedEmail(ctx context.Context, in *pb_email.SendAccountLockedEmailRequest, opts ...grpc.CallOption) (*pb_email.SendAccountLockedEmailResponse, error) {
+	return &pb_email.SendAccountLockedEmailResponse{}, nil
+}
+func (m *mockEmailClient) SendPaymentNotificationEmail(ctx context.Context, in *pb_email.SendPaymentNotificationEmailRequest, opts ...grpc.CallOption) (*pb_email.SendPaymentNotificationEmailResponse, error) {
+	return &pb_email.SendPaymentNotificationEmailResponse{}, nil
+}
+func (m *mockEmailClient) SendCardBlockedEmail(ctx context.Context, in *pb_email.SendCardBlockedEmailRequest, opts ...grpc.CallOption) (*pb_email.SendCardBlockedEmailResponse, error) {
+	return &pb_email.SendCardBlockedEmailResponse{}, nil
+}
+func (m *mockEmailClient) SendLoanApprovedEmail(ctx context.Context, in *pb_email.SendLoanApprovedEmailRequest, opts ...grpc.CallOption) (*pb_email.SendLoanApprovedEmailResponse, error) {
+	return &pb_email.SendLoanApprovedEmailResponse{}, nil
+}
+func (m *mockEmailClient) SendLimitChangeEmail(ctx context.Context, in *pb_email.SendLimitChangeEmailRequest, opts ...grpc.CallOption) (*pb_email.SendLimitChangeEmailResponse, error) {
+	return &pb_email.SendLimitChangeEmailResponse{}, nil
 }
 
 // newLoanServer creates a LoanServer backed by sqlmock DBs for loan_db and account_db.

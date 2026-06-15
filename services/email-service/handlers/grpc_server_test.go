@@ -50,6 +50,31 @@ func (m *mockPublisher) PublishLoanLatePayment(msg queue.LoanLatePaymentMessage)
 	return args.Error(0)
 }
 
+func (m *mockPublisher) PublishAccountLocked(msg queue.AccountLockedMessage) error {
+	args := m.Called(msg)
+	return args.Error(0)
+}
+
+func (m *mockPublisher) PublishPaymentNotification(msg queue.PaymentNotificationMessage) error {
+	args := m.Called(msg)
+	return args.Error(0)
+}
+
+func (m *mockPublisher) PublishCardBlocked(msg queue.CardBlockedMessage) error {
+	args := m.Called(msg)
+	return args.Error(0)
+}
+
+func (m *mockPublisher) PublishLoanApproved(msg queue.LoanApprovedMessage) error {
+	args := m.Called(msg)
+	return args.Error(0)
+}
+
+func (m *mockPublisher) PublishLimitChange(msg queue.LimitChangeMessage) error {
+	args := m.Called(msg)
+	return args.Error(0)
+}
+
 // ---- SendActivationEmail tests ----
 
 func TestSendActivationEmail_InvalidEmail(t *testing.T) {
