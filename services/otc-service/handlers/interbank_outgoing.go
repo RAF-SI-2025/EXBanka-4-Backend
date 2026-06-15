@@ -720,11 +720,10 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 					Amount:  premium,
 					Asset:   ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: currency.String}},
 				},
-				{ // seller gives option right
-					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", sellerID)}},
-					Amount:  -1,
-					Asset:   ibOutAsset{Type: "OPTION", Asset: &ibOutAssetInner{NegotiationID: &ibOutPartyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", localNegID)}}},
-				},
+				// posting 3 (seller gives OPTION -1 at our routing) is omitted:
+				// buyer bank validates OPTION postings only for their own routing and
+				// rejects cross-bank OPTION debits as UNACCEPTABLE_ASSET.
+				// We record the seller's OPTION obligation by creating our contract on COMMIT.
 				{ // buyer receives option right
 					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: int(buyerRoutingNum.Int32), ID: buyerExtID.String}},
 					Amount:  1,
