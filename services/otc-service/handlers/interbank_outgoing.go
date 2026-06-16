@@ -745,7 +745,7 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 					Asset:   ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: currency.String}},
 				},
 				{ // posting 4: buyer (bank4) receives option right — triggers bank4's commitOptionPosting to create their mirror contract
-				  // NOTE: posting 3 (seller -1 OPTION at routing 888) is intentionally omitted — bank4 rejects OPTION postings for non-444 routing numbers.
+					// NOTE: posting 3 (seller -1 OPTION at routing 888) is intentionally omitted — bank4 rejects OPTION postings for non-444 routing numbers.
 					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: int(buyerRoutingNum.Int32), ID: buyerExtID.String}},
 					Amount:  1,
 					Asset: ibOutAsset{Type: "OPTION", Asset: &ibOutAssetInner{
