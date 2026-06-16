@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v7.34.0
-// source: otc.proto
+// source: shared/proto/otc.proto
 
 package otc
 
@@ -37,6 +37,7 @@ const (
 	OtcService_PrepareOtcInterbank_FullMethodName        = "/otc.OtcService/PrepareOtcInterbank"
 	OtcService_CommitOtcInterbank_FullMethodName         = "/otc.OtcService/CommitOtcInterbank"
 	OtcService_RollbackOtcInterbank_FullMethodName       = "/otc.OtcService/RollbackOtcInterbank"
+	OtcService_GetNegotiationHistory_FullMethodName      = "/otc.OtcService/GetNegotiationHistory"
 )
 
 // OtcServiceClient is the client API for OtcService service.
@@ -63,6 +64,8 @@ type OtcServiceClient interface {
 	PrepareOtcInterbank(ctx context.Context, in *OtcInterbankPrepareRequest, opts ...grpc.CallOption) (*OtcInterbankVoteResponse, error)
 	CommitOtcInterbank(ctx context.Context, in *OtcInterbankTxRequest, opts ...grpc.CallOption) (*OtcEmptyResponse, error)
 	RollbackOtcInterbank(ctx context.Context, in *OtcInterbankTxRequest, opts ...grpc.CallOption) (*OtcEmptyResponse, error)
+	// Negotiation history
+	GetNegotiationHistory(ctx context.Context, in *GetNegotiationHistoryRequest, opts ...grpc.CallOption) (*GetNegotiationHistoryResponse, error)
 }
 
 type otcServiceClient struct {
@@ -253,6 +256,16 @@ func (c *otcServiceClient) RollbackOtcInterbank(ctx context.Context, in *OtcInte
 	return out, nil
 }
 
+func (c *otcServiceClient) GetNegotiationHistory(ctx context.Context, in *GetNegotiationHistoryRequest, opts ...grpc.CallOption) (*GetNegotiationHistoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetNegotiationHistoryResponse)
+	err := c.cc.Invoke(ctx, OtcService_GetNegotiationHistory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OtcServiceServer is the server API for OtcService service.
 // All implementations must embed UnimplementedOtcServiceServer
 // for forward compatibility.
@@ -277,6 +290,8 @@ type OtcServiceServer interface {
 	PrepareOtcInterbank(context.Context, *OtcInterbankPrepareRequest) (*OtcInterbankVoteResponse, error)
 	CommitOtcInterbank(context.Context, *OtcInterbankTxRequest) (*OtcEmptyResponse, error)
 	RollbackOtcInterbank(context.Context, *OtcInterbankTxRequest) (*OtcEmptyResponse, error)
+	// Negotiation history
+	GetNegotiationHistory(context.Context, *GetNegotiationHistoryRequest) (*GetNegotiationHistoryResponse, error)
 	mustEmbedUnimplementedOtcServiceServer()
 }
 
@@ -340,6 +355,9 @@ func (UnimplementedOtcServiceServer) CommitOtcInterbank(context.Context, *OtcInt
 }
 func (UnimplementedOtcServiceServer) RollbackOtcInterbank(context.Context, *OtcInterbankTxRequest) (*OtcEmptyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RollbackOtcInterbank not implemented")
+}
+func (UnimplementedOtcServiceServer) GetNegotiationHistory(context.Context, *GetNegotiationHistoryRequest) (*GetNegotiationHistoryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetNegotiationHistory not implemented")
 }
 func (UnimplementedOtcServiceServer) mustEmbedUnimplementedOtcServiceServer() {}
 func (UnimplementedOtcServiceServer) testEmbeddedByValue()                    {}
@@ -686,6 +704,24 @@ func _OtcService_RollbackOtcInterbank_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OtcService_GetNegotiationHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetNegotiationHistoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OtcServiceServer).GetNegotiationHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OtcService_GetNegotiationHistory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OtcServiceServer).GetNegotiationHistory(ctx, req.(*GetNegotiationHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OtcService_ServiceDesc is the grpc.ServiceDesc for OtcService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -765,7 +801,11 @@ var OtcService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "RollbackOtcInterbank",
 			Handler:    _OtcService_RollbackOtcInterbank_Handler,
 		},
+		{
+			MethodName: "GetNegotiationHistory",
+			Handler:    _OtcService_GetNegotiationHistory_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "otc.proto",
+	Metadata: "shared/proto/otc.proto",
 }

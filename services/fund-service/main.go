@@ -12,6 +12,7 @@ import (
 	pb_exchange "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/exchange"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/fund"
 	pb_order "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/order"
+	pb_portfolio "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/portfolio"
 	pb_securities "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/securities"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -72,6 +73,13 @@ func main() {
 	defer func() { _ = securitiesConn.Close() }()
 	securitiesClient := pb_securities.NewSecuritiesServiceClient(securitiesConn)
 
+	portfolioConn, err := grpc.NewClient(os.Getenv("PORTFOLIO_SERVICE_ADDR"), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect to portfolio-service: %v", err)
+	}
+	defer func() { _ = portfolioConn.Close() }()
+	portfolioClient := pb_portfolio.NewPortfolioServiceClient(portfolioConn)
+
 	lis, err := net.Listen("tcp", grpcPort)
 	if err != nil {
 		log.Fatalf("failed to listen on %s: %v", grpcPort, err)
@@ -87,6 +95,7 @@ func main() {
 		OrderClient:      orderClient,
 		ExchangeClient:   exchangeClient,
 		SecuritiesClient: securitiesClient,
+		PortfolioClient:  portfolioClient,
 	})
 
 	sched := &scheduler.PerformanceScheduler{DB: fundDB, SecuritiesClient: securitiesClient, ExchangeClient: exchangeClient}

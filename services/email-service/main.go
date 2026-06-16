@@ -205,6 +205,21 @@ func main() {
 		log.Fatalf("failed to parse price alert email template: %v", err)
 	}
 
+	otcCounterOfferTmpl, err := template.ParseFiles("templates/otc_counter_offer.html")
+	if err != nil {
+		log.Fatalf("failed to parse otc counter offer email template: %v", err)
+	}
+
+	otcStatusChangeTmpl, err := template.ParseFiles("templates/otc_status_change.html")
+	if err != nil {
+		log.Fatalf("failed to parse otc status change email template: %v", err)
+	}
+
+	otcContractExpiryTmpl, err := template.ParseFiles("templates/otc_contract_expiry.html")
+	if err != nil {
+		log.Fatalf("failed to parse otc contract expiry email template: %v", err)
+	}
+
 	paymentNotifCh, err := conn.Channel()
 	if err != nil {
 		log.Fatalf("failed to open payment notification consume channel: %v", err)
@@ -252,6 +267,28 @@ func main() {
 
 	go queue.ConsumeOrderStatus(orderStatusCh, smtpCfg, orderStatusTmpl)
 	go queue.ConsumePriceAlert(priceAlertCh, smtpCfg, priceAlertTmpl)
+
+	otcCounterOfferCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to open otc counter offer consume channel: %v", err)
+	}
+	defer func() { _ = otcCounterOfferCh.Close() }()
+
+	otcStatusChangeCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to open otc status change consume channel: %v", err)
+	}
+	defer func() { _ = otcStatusChangeCh.Close() }()
+
+	otcContractExpiryCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to open otc contract expiry consume channel: %v", err)
+	}
+	defer func() { _ = otcContractExpiryCh.Close() }()
+
+	go queue.ConsumeOtcCounterOffer(otcCounterOfferCh, smtpCfg, otcCounterOfferTmpl)
+	go queue.ConsumeOtcStatusChange(otcStatusChangeCh, smtpCfg, otcStatusChangeTmpl)
+	go queue.ConsumeOtcContractExpiry(otcContractExpiryCh, smtpCfg, otcContractExpiryTmpl)
 
 	lis, err := net.Listen("tcp", ":50053")
 	if err != nil {

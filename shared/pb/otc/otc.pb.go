@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v7.34.0
-// source: otc.proto
+// source: shared/proto/otc.proto
 
 package otc
 
@@ -29,7 +29,7 @@ type PingRequest struct {
 
 func (x *PingRequest) Reset() {
 	*x = PingRequest{}
-	mi := &file_otc_proto_msgTypes[0]
+	mi := &file_shared_proto_otc_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -41,7 +41,7 @@ func (x *PingRequest) String() string {
 func (*PingRequest) ProtoMessage() {}
 
 func (x *PingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[0]
+	mi := &file_shared_proto_otc_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -54,7 +54,7 @@ func (x *PingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PingRequest.ProtoReflect.Descriptor instead.
 func (*PingRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{0}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{0}
 }
 
 type PingResponse struct {
@@ -66,7 +66,7 @@ type PingResponse struct {
 
 func (x *PingResponse) Reset() {
 	*x = PingResponse{}
-	mi := &file_otc_proto_msgTypes[1]
+	mi := &file_shared_proto_otc_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -78,7 +78,7 @@ func (x *PingResponse) String() string {
 func (*PingResponse) ProtoMessage() {}
 
 func (x *PingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[1]
+	mi := &file_shared_proto_otc_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -91,7 +91,7 @@ func (x *PingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PingResponse.ProtoReflect.Descriptor instead.
 func (*PingResponse) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{1}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *PingResponse) GetMessage() string {
@@ -121,7 +121,7 @@ type CreateNegotiationRequest struct {
 
 func (x *CreateNegotiationRequest) Reset() {
 	*x = CreateNegotiationRequest{}
-	mi := &file_otc_proto_msgTypes[2]
+	mi := &file_shared_proto_otc_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -133,7 +133,7 @@ func (x *CreateNegotiationRequest) String() string {
 func (*CreateNegotiationRequest) ProtoMessage() {}
 
 func (x *CreateNegotiationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[2]
+	mi := &file_shared_proto_otc_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -146,7 +146,7 @@ func (x *CreateNegotiationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateNegotiationRequest.ProtoReflect.Descriptor instead.
 func (*CreateNegotiationRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{2}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *CreateNegotiationRequest) GetBuyerId() int64 {
@@ -248,7 +248,7 @@ type CounterOfferRequest struct {
 
 func (x *CounterOfferRequest) Reset() {
 	*x = CounterOfferRequest{}
-	mi := &file_otc_proto_msgTypes[3]
+	mi := &file_shared_proto_otc_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -260,7 +260,7 @@ func (x *CounterOfferRequest) String() string {
 func (*CounterOfferRequest) ProtoMessage() {}
 
 func (x *CounterOfferRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[3]
+	mi := &file_shared_proto_otc_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -273,7 +273,7 @@ func (x *CounterOfferRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CounterOfferRequest.ProtoReflect.Descriptor instead.
 func (*CounterOfferRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{3}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CounterOfferRequest) GetNegotiationId() int64 {
@@ -337,7 +337,7 @@ type AcceptNegotiationRequest struct {
 
 func (x *AcceptNegotiationRequest) Reset() {
 	*x = AcceptNegotiationRequest{}
-	mi := &file_otc_proto_msgTypes[4]
+	mi := &file_shared_proto_otc_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -349,7 +349,7 @@ func (x *AcceptNegotiationRequest) String() string {
 func (*AcceptNegotiationRequest) ProtoMessage() {}
 
 func (x *AcceptNegotiationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[4]
+	mi := &file_shared_proto_otc_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -362,7 +362,7 @@ func (x *AcceptNegotiationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AcceptNegotiationRequest.ProtoReflect.Descriptor instead.
 func (*AcceptNegotiationRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{4}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AcceptNegotiationRequest) GetNegotiationId() int64 {
@@ -404,7 +404,7 @@ type RejectNegotiationRequest struct {
 
 func (x *RejectNegotiationRequest) Reset() {
 	*x = RejectNegotiationRequest{}
-	mi := &file_otc_proto_msgTypes[5]
+	mi := &file_shared_proto_otc_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -416,7 +416,7 @@ func (x *RejectNegotiationRequest) String() string {
 func (*RejectNegotiationRequest) ProtoMessage() {}
 
 func (x *RejectNegotiationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[5]
+	mi := &file_shared_proto_otc_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -429,7 +429,7 @@ func (x *RejectNegotiationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RejectNegotiationRequest.ProtoReflect.Descriptor instead.
 func (*RejectNegotiationRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{5}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *RejectNegotiationRequest) GetNegotiationId() int64 {
@@ -463,7 +463,7 @@ type ListNegotiationsRequest struct {
 
 func (x *ListNegotiationsRequest) Reset() {
 	*x = ListNegotiationsRequest{}
-	mi := &file_otc_proto_msgTypes[6]
+	mi := &file_shared_proto_otc_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -475,7 +475,7 @@ func (x *ListNegotiationsRequest) String() string {
 func (*ListNegotiationsRequest) ProtoMessage() {}
 
 func (x *ListNegotiationsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[6]
+	mi := &file_shared_proto_otc_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -488,7 +488,7 @@ func (x *ListNegotiationsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListNegotiationsRequest.ProtoReflect.Descriptor instead.
 func (*ListNegotiationsRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{6}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListNegotiationsRequest) GetCallerId() int64 {
@@ -514,7 +514,7 @@ type GetNegotiationRequest struct {
 
 func (x *GetNegotiationRequest) Reset() {
 	*x = GetNegotiationRequest{}
-	mi := &file_otc_proto_msgTypes[7]
+	mi := &file_shared_proto_otc_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -526,7 +526,7 @@ func (x *GetNegotiationRequest) String() string {
 func (*GetNegotiationRequest) ProtoMessage() {}
 
 func (x *GetNegotiationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[7]
+	mi := &file_shared_proto_otc_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -539,7 +539,7 @@ func (x *GetNegotiationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetNegotiationRequest.ProtoReflect.Descriptor instead.
 func (*GetNegotiationRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{7}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetNegotiationRequest) GetNegotiationId() int64 {
@@ -575,7 +575,7 @@ type NegotiationResponse struct {
 
 func (x *NegotiationResponse) Reset() {
 	*x = NegotiationResponse{}
-	mi := &file_otc_proto_msgTypes[8]
+	mi := &file_shared_proto_otc_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -587,7 +587,7 @@ func (x *NegotiationResponse) String() string {
 func (*NegotiationResponse) ProtoMessage() {}
 
 func (x *NegotiationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[8]
+	mi := &file_shared_proto_otc_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -600,7 +600,7 @@ func (x *NegotiationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NegotiationResponse.ProtoReflect.Descriptor instead.
 func (*NegotiationResponse) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{8}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *NegotiationResponse) GetId() int64 {
@@ -738,7 +738,7 @@ type ListNegotiationsResponse struct {
 
 func (x *ListNegotiationsResponse) Reset() {
 	*x = ListNegotiationsResponse{}
-	mi := &file_otc_proto_msgTypes[9]
+	mi := &file_shared_proto_otc_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -750,7 +750,7 @@ func (x *ListNegotiationsResponse) String() string {
 func (*ListNegotiationsResponse) ProtoMessage() {}
 
 func (x *ListNegotiationsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[9]
+	mi := &file_shared_proto_otc_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -763,7 +763,7 @@ func (x *ListNegotiationsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListNegotiationsResponse.ProtoReflect.Descriptor instead.
 func (*ListNegotiationsResponse) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{9}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListNegotiationsResponse) GetNegotiations() []*NegotiationResponse {
@@ -798,7 +798,7 @@ type ContractResponse struct {
 
 func (x *ContractResponse) Reset() {
 	*x = ContractResponse{}
-	mi := &file_otc_proto_msgTypes[10]
+	mi := &file_shared_proto_otc_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -810,7 +810,7 @@ func (x *ContractResponse) String() string {
 func (*ContractResponse) ProtoMessage() {}
 
 func (x *ContractResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[10]
+	mi := &file_shared_proto_otc_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -823,7 +823,7 @@ func (x *ContractResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContractResponse.ProtoReflect.Descriptor instead.
 func (*ContractResponse) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{10}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ContractResponse) GetId() int64 {
@@ -956,7 +956,7 @@ type ListContractsRequest struct {
 
 func (x *ListContractsRequest) Reset() {
 	*x = ListContractsRequest{}
-	mi := &file_otc_proto_msgTypes[11]
+	mi := &file_shared_proto_otc_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -968,7 +968,7 @@ func (x *ListContractsRequest) String() string {
 func (*ListContractsRequest) ProtoMessage() {}
 
 func (x *ListContractsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[11]
+	mi := &file_shared_proto_otc_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -981,7 +981,7 @@ func (x *ListContractsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListContractsRequest.ProtoReflect.Descriptor instead.
 func (*ListContractsRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{11}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ListContractsRequest) GetCallerId() int64 {
@@ -1014,7 +1014,7 @@ type ListContractsResponse struct {
 
 func (x *ListContractsResponse) Reset() {
 	*x = ListContractsResponse{}
-	mi := &file_otc_proto_msgTypes[12]
+	mi := &file_shared_proto_otc_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1026,7 +1026,7 @@ func (x *ListContractsResponse) String() string {
 func (*ListContractsResponse) ProtoMessage() {}
 
 func (x *ListContractsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[12]
+	mi := &file_shared_proto_otc_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1039,7 +1039,7 @@ func (x *ListContractsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListContractsResponse.ProtoReflect.Descriptor instead.
 func (*ListContractsResponse) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{12}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ListContractsResponse) GetContracts() []*ContractResponse {
@@ -1061,7 +1061,7 @@ type ExerciseContractRequest struct {
 
 func (x *ExerciseContractRequest) Reset() {
 	*x = ExerciseContractRequest{}
-	mi := &file_otc_proto_msgTypes[13]
+	mi := &file_shared_proto_otc_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1073,7 +1073,7 @@ func (x *ExerciseContractRequest) String() string {
 func (*ExerciseContractRequest) ProtoMessage() {}
 
 func (x *ExerciseContractRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[13]
+	mi := &file_shared_proto_otc_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1086,7 +1086,7 @@ func (x *ExerciseContractRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExerciseContractRequest.ProtoReflect.Descriptor instead.
 func (*ExerciseContractRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{13}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ExerciseContractRequest) GetContractId() int64 {
@@ -1128,7 +1128,7 @@ type ExerciseContractResponse struct {
 
 func (x *ExerciseContractResponse) Reset() {
 	*x = ExerciseContractResponse{}
-	mi := &file_otc_proto_msgTypes[14]
+	mi := &file_shared_proto_otc_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1140,7 +1140,7 @@ func (x *ExerciseContractResponse) String() string {
 func (*ExerciseContractResponse) ProtoMessage() {}
 
 func (x *ExerciseContractResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[14]
+	mi := &file_shared_proto_otc_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1153,7 +1153,7 @@ func (x *ExerciseContractResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExerciseContractResponse.ProtoReflect.Descriptor instead.
 func (*ExerciseContractResponse) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{14}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ExerciseContractResponse) GetStatus() string {
@@ -1187,7 +1187,7 @@ type GetMarketRequest struct {
 
 func (x *GetMarketRequest) Reset() {
 	*x = GetMarketRequest{}
-	mi := &file_otc_proto_msgTypes[15]
+	mi := &file_shared_proto_otc_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1199,7 +1199,7 @@ func (x *GetMarketRequest) String() string {
 func (*GetMarketRequest) ProtoMessage() {}
 
 func (x *GetMarketRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[15]
+	mi := &file_shared_proto_otc_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1212,7 +1212,7 @@ func (x *GetMarketRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMarketRequest.ProtoReflect.Descriptor instead.
 func (*GetMarketRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{15}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *GetMarketRequest) GetCallerId() int64 {
@@ -1247,7 +1247,7 @@ type MarketItem struct {
 
 func (x *MarketItem) Reset() {
 	*x = MarketItem{}
-	mi := &file_otc_proto_msgTypes[16]
+	mi := &file_shared_proto_otc_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1259,7 +1259,7 @@ func (x *MarketItem) String() string {
 func (*MarketItem) ProtoMessage() {}
 
 func (x *MarketItem) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[16]
+	mi := &file_shared_proto_otc_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1272,7 +1272,7 @@ func (x *MarketItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MarketItem.ProtoReflect.Descriptor instead.
 func (*MarketItem) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{16}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *MarketItem) GetTicker() string {
@@ -1354,7 +1354,7 @@ type GetMarketResponse struct {
 
 func (x *GetMarketResponse) Reset() {
 	*x = GetMarketResponse{}
-	mi := &file_otc_proto_msgTypes[17]
+	mi := &file_shared_proto_otc_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1366,7 +1366,7 @@ func (x *GetMarketResponse) String() string {
 func (*GetMarketResponse) ProtoMessage() {}
 
 func (x *GetMarketResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[17]
+	mi := &file_shared_proto_otc_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1379,7 +1379,7 @@ func (x *GetMarketResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMarketResponse.ProtoReflect.Descriptor instead.
 func (*GetMarketResponse) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{17}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GetMarketResponse) GetItems() []*MarketItem {
@@ -1397,7 +1397,7 @@ type OtcEmptyResponse struct {
 
 func (x *OtcEmptyResponse) Reset() {
 	*x = OtcEmptyResponse{}
-	mi := &file_otc_proto_msgTypes[18]
+	mi := &file_shared_proto_otc_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1409,7 +1409,7 @@ func (x *OtcEmptyResponse) String() string {
 func (*OtcEmptyResponse) ProtoMessage() {}
 
 func (x *OtcEmptyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[18]
+	mi := &file_shared_proto_otc_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1422,7 +1422,7 @@ func (x *OtcEmptyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OtcEmptyResponse.ProtoReflect.Descriptor instead.
 func (*OtcEmptyResponse) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{18}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{18}
 }
 
 type CreateInterbankNegotiationRequest struct {
@@ -1446,7 +1446,7 @@ type CreateInterbankNegotiationRequest struct {
 
 func (x *CreateInterbankNegotiationRequest) Reset() {
 	*x = CreateInterbankNegotiationRequest{}
-	mi := &file_otc_proto_msgTypes[19]
+	mi := &file_shared_proto_otc_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1458,7 +1458,7 @@ func (x *CreateInterbankNegotiationRequest) String() string {
 func (*CreateInterbankNegotiationRequest) ProtoMessage() {}
 
 func (x *CreateInterbankNegotiationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[19]
+	mi := &file_shared_proto_otc_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1471,7 +1471,7 @@ func (x *CreateInterbankNegotiationRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use CreateInterbankNegotiationRequest.ProtoReflect.Descriptor instead.
 func (*CreateInterbankNegotiationRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{19}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *CreateInterbankNegotiationRequest) GetTicker() string {
@@ -1587,7 +1587,7 @@ type InterbankNegotiationResponse struct {
 
 func (x *InterbankNegotiationResponse) Reset() {
 	*x = InterbankNegotiationResponse{}
-	mi := &file_otc_proto_msgTypes[20]
+	mi := &file_shared_proto_otc_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1599,7 +1599,7 @@ func (x *InterbankNegotiationResponse) String() string {
 func (*InterbankNegotiationResponse) ProtoMessage() {}
 
 func (x *InterbankNegotiationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[20]
+	mi := &file_shared_proto_otc_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1612,7 +1612,7 @@ func (x *InterbankNegotiationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InterbankNegotiationResponse.ProtoReflect.Descriptor instead.
 func (*InterbankNegotiationResponse) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{20}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *InterbankNegotiationResponse) GetLocalId() int64 {
@@ -1723,7 +1723,7 @@ type InterbankNegotiationIdRequest struct {
 
 func (x *InterbankNegotiationIdRequest) Reset() {
 	*x = InterbankNegotiationIdRequest{}
-	mi := &file_otc_proto_msgTypes[21]
+	mi := &file_shared_proto_otc_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1735,7 +1735,7 @@ func (x *InterbankNegotiationIdRequest) String() string {
 func (*InterbankNegotiationIdRequest) ProtoMessage() {}
 
 func (x *InterbankNegotiationIdRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[21]
+	mi := &file_shared_proto_otc_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1748,7 +1748,7 @@ func (x *InterbankNegotiationIdRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InterbankNegotiationIdRequest.ProtoReflect.Descriptor instead.
 func (*InterbankNegotiationIdRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{21}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *InterbankNegotiationIdRequest) GetRoutingNumber() int32 {
@@ -1779,7 +1779,7 @@ type InterbankCounterOfferRequest struct {
 
 func (x *InterbankCounterOfferRequest) Reset() {
 	*x = InterbankCounterOfferRequest{}
-	mi := &file_otc_proto_msgTypes[22]
+	mi := &file_shared_proto_otc_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1791,7 +1791,7 @@ func (x *InterbankCounterOfferRequest) String() string {
 func (*InterbankCounterOfferRequest) ProtoMessage() {}
 
 func (x *InterbankCounterOfferRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[22]
+	mi := &file_shared_proto_otc_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1804,7 +1804,7 @@ func (x *InterbankCounterOfferRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InterbankCounterOfferRequest.ProtoReflect.Descriptor instead.
 func (*InterbankCounterOfferRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{22}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *InterbankCounterOfferRequest) GetRoutingNumber() int32 {
@@ -1865,7 +1865,7 @@ type OtcInterbankPrepareRequest struct {
 
 func (x *OtcInterbankPrepareRequest) Reset() {
 	*x = OtcInterbankPrepareRequest{}
-	mi := &file_otc_proto_msgTypes[23]
+	mi := &file_shared_proto_otc_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1877,7 +1877,7 @@ func (x *OtcInterbankPrepareRequest) String() string {
 func (*OtcInterbankPrepareRequest) ProtoMessage() {}
 
 func (x *OtcInterbankPrepareRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[23]
+	mi := &file_shared_proto_otc_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1890,7 +1890,7 @@ func (x *OtcInterbankPrepareRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OtcInterbankPrepareRequest.ProtoReflect.Descriptor instead.
 func (*OtcInterbankPrepareRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{23}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *OtcInterbankPrepareRequest) GetIdemRoutingNumber() string {
@@ -1959,7 +1959,7 @@ type OtcInterbankVoteResponse struct {
 
 func (x *OtcInterbankVoteResponse) Reset() {
 	*x = OtcInterbankVoteResponse{}
-	mi := &file_otc_proto_msgTypes[24]
+	mi := &file_shared_proto_otc_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1971,7 +1971,7 @@ func (x *OtcInterbankVoteResponse) String() string {
 func (*OtcInterbankVoteResponse) ProtoMessage() {}
 
 func (x *OtcInterbankVoteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[24]
+	mi := &file_shared_proto_otc_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1984,7 +1984,7 @@ func (x *OtcInterbankVoteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OtcInterbankVoteResponse.ProtoReflect.Descriptor instead.
 func (*OtcInterbankVoteResponse) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{24}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *OtcInterbankVoteResponse) GetVote() string {
@@ -2011,7 +2011,7 @@ type OtcInterbankTxRequest struct {
 
 func (x *OtcInterbankTxRequest) Reset() {
 	*x = OtcInterbankTxRequest{}
-	mi := &file_otc_proto_msgTypes[25]
+	mi := &file_shared_proto_otc_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2023,7 +2023,7 @@ func (x *OtcInterbankTxRequest) String() string {
 func (*OtcInterbankTxRequest) ProtoMessage() {}
 
 func (x *OtcInterbankTxRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_otc_proto_msgTypes[25]
+	mi := &file_shared_proto_otc_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2036,7 +2036,7 @@ func (x *OtcInterbankTxRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OtcInterbankTxRequest.ProtoReflect.Descriptor instead.
 func (*OtcInterbankTxRequest) Descriptor() ([]byte, []int) {
-	return file_otc_proto_rawDescGZIP(), []int{25}
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *OtcInterbankTxRequest) GetTxRoutingNumber() string {
@@ -2053,11 +2053,263 @@ func (x *OtcInterbankTxRequest) GetTxId() string {
 	return ""
 }
 
-var File_otc_proto protoreflect.FileDescriptor
+type NegotiationHistoryEntry struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Id                int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Action            string                 `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`
+	ActorId           int64                  `protobuf:"varint,3,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	ActorType         string                 `protobuf:"bytes,4,opt,name=actor_type,json=actorType,proto3" json:"actor_type,omitempty"`
+	ActorName         string                 `protobuf:"bytes,5,opt,name=actor_name,json=actorName,proto3" json:"actor_name,omitempty"`
+	OldAmount         int32                  `protobuf:"varint,6,opt,name=old_amount,json=oldAmount,proto3" json:"old_amount,omitempty"`
+	NewAmount         int32                  `protobuf:"varint,7,opt,name=new_amount,json=newAmount,proto3" json:"new_amount,omitempty"`
+	OldPricePerStock  float64                `protobuf:"fixed64,8,opt,name=old_price_per_stock,json=oldPricePerStock,proto3" json:"old_price_per_stock,omitempty"`
+	NewPricePerStock  float64                `protobuf:"fixed64,9,opt,name=new_price_per_stock,json=newPricePerStock,proto3" json:"new_price_per_stock,omitempty"`
+	OldSettlementDate string                 `protobuf:"bytes,10,opt,name=old_settlement_date,json=oldSettlementDate,proto3" json:"old_settlement_date,omitempty"`
+	NewSettlementDate string                 `protobuf:"bytes,11,opt,name=new_settlement_date,json=newSettlementDate,proto3" json:"new_settlement_date,omitempty"`
+	OldPremium        float64                `protobuf:"fixed64,12,opt,name=old_premium,json=oldPremium,proto3" json:"old_premium,omitempty"`
+	NewPremium        float64                `protobuf:"fixed64,13,opt,name=new_premium,json=newPremium,proto3" json:"new_premium,omitempty"`
+	Timestamp         string                 `protobuf:"bytes,14,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
 
-const file_otc_proto_rawDesc = "" +
+func (x *NegotiationHistoryEntry) Reset() {
+	*x = NegotiationHistoryEntry{}
+	mi := &file_shared_proto_otc_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NegotiationHistoryEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NegotiationHistoryEntry) ProtoMessage() {}
+
+func (x *NegotiationHistoryEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_shared_proto_otc_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NegotiationHistoryEntry.ProtoReflect.Descriptor instead.
+func (*NegotiationHistoryEntry) Descriptor() ([]byte, []int) {
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *NegotiationHistoryEntry) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *NegotiationHistoryEntry) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *NegotiationHistoryEntry) GetActorId() int64 {
+	if x != nil {
+		return x.ActorId
+	}
+	return 0
+}
+
+func (x *NegotiationHistoryEntry) GetActorType() string {
+	if x != nil {
+		return x.ActorType
+	}
+	return ""
+}
+
+func (x *NegotiationHistoryEntry) GetActorName() string {
+	if x != nil {
+		return x.ActorName
+	}
+	return ""
+}
+
+func (x *NegotiationHistoryEntry) GetOldAmount() int32 {
+	if x != nil {
+		return x.OldAmount
+	}
+	return 0
+}
+
+func (x *NegotiationHistoryEntry) GetNewAmount() int32 {
+	if x != nil {
+		return x.NewAmount
+	}
+	return 0
+}
+
+func (x *NegotiationHistoryEntry) GetOldPricePerStock() float64 {
+	if x != nil {
+		return x.OldPricePerStock
+	}
+	return 0
+}
+
+func (x *NegotiationHistoryEntry) GetNewPricePerStock() float64 {
+	if x != nil {
+		return x.NewPricePerStock
+	}
+	return 0
+}
+
+func (x *NegotiationHistoryEntry) GetOldSettlementDate() string {
+	if x != nil {
+		return x.OldSettlementDate
+	}
+	return ""
+}
+
+func (x *NegotiationHistoryEntry) GetNewSettlementDate() string {
+	if x != nil {
+		return x.NewSettlementDate
+	}
+	return ""
+}
+
+func (x *NegotiationHistoryEntry) GetOldPremium() float64 {
+	if x != nil {
+		return x.OldPremium
+	}
+	return 0
+}
+
+func (x *NegotiationHistoryEntry) GetNewPremium() float64 {
+	if x != nil {
+		return x.NewPremium
+	}
+	return 0
+}
+
+func (x *NegotiationHistoryEntry) GetTimestamp() string {
+	if x != nil {
+		return x.Timestamp
+	}
+	return ""
+}
+
+type GetNegotiationHistoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	NegotiationId int64                  `protobuf:"varint,1,opt,name=negotiation_id,json=negotiationId,proto3" json:"negotiation_id,omitempty"`
+	CallerId      int64                  `protobuf:"varint,2,opt,name=caller_id,json=callerId,proto3" json:"caller_id,omitempty"`
+	CallerType    string                 `protobuf:"bytes,3,opt,name=caller_type,json=callerType,proto3" json:"caller_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetNegotiationHistoryRequest) Reset() {
+	*x = GetNegotiationHistoryRequest{}
+	mi := &file_shared_proto_otc_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetNegotiationHistoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetNegotiationHistoryRequest) ProtoMessage() {}
+
+func (x *GetNegotiationHistoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_shared_proto_otc_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetNegotiationHistoryRequest.ProtoReflect.Descriptor instead.
+func (*GetNegotiationHistoryRequest) Descriptor() ([]byte, []int) {
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *GetNegotiationHistoryRequest) GetNegotiationId() int64 {
+	if x != nil {
+		return x.NegotiationId
+	}
+	return 0
+}
+
+func (x *GetNegotiationHistoryRequest) GetCallerId() int64 {
+	if x != nil {
+		return x.CallerId
+	}
+	return 0
+}
+
+func (x *GetNegotiationHistoryRequest) GetCallerType() string {
+	if x != nil {
+		return x.CallerType
+	}
+	return ""
+}
+
+type GetNegotiationHistoryResponse struct {
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Entries       []*NegotiationHistoryEntry `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetNegotiationHistoryResponse) Reset() {
+	*x = GetNegotiationHistoryResponse{}
+	mi := &file_shared_proto_otc_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetNegotiationHistoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetNegotiationHistoryResponse) ProtoMessage() {}
+
+func (x *GetNegotiationHistoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_shared_proto_otc_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetNegotiationHistoryResponse.ProtoReflect.Descriptor instead.
+func (*GetNegotiationHistoryResponse) Descriptor() ([]byte, []int) {
+	return file_shared_proto_otc_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *GetNegotiationHistoryResponse) GetEntries() []*NegotiationHistoryEntry {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
+var File_shared_proto_otc_proto protoreflect.FileDescriptor
+
+const file_shared_proto_otc_proto_rawDesc = "" +
 	"\n" +
-	"\totc.proto\x12\x03otc\"\r\n" +
+	"\x16shared/proto/otc.proto\x12\x03otc\"\r\n" +
 	"\vPingRequest\"(\n" +
 	"\fPingResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\"\xab\x03\n" +
@@ -2254,7 +2506,36 @@ const file_otc_proto_rawDesc = "" +
 	"\x06reason\x18\x02 \x01(\tR\x06reason\"X\n" +
 	"\x15OtcInterbankTxRequest\x12*\n" +
 	"\x11tx_routing_number\x18\x01 \x01(\tR\x0ftxRoutingNumber\x12\x13\n" +
-	"\x05tx_id\x18\x02 \x01(\tR\x04txId2\x9c\v\n" +
+	"\x05tx_id\x18\x02 \x01(\tR\x04txId\"\xf6\x03\n" +
+	"\x17NegotiationHistoryEntry\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x16\n" +
+	"\x06action\x18\x02 \x01(\tR\x06action\x12\x19\n" +
+	"\bactor_id\x18\x03 \x01(\x03R\aactorId\x12\x1d\n" +
+	"\n" +
+	"actor_type\x18\x04 \x01(\tR\tactorType\x12\x1d\n" +
+	"\n" +
+	"actor_name\x18\x05 \x01(\tR\tactorName\x12\x1d\n" +
+	"\n" +
+	"old_amount\x18\x06 \x01(\x05R\toldAmount\x12\x1d\n" +
+	"\n" +
+	"new_amount\x18\a \x01(\x05R\tnewAmount\x12-\n" +
+	"\x13old_price_per_stock\x18\b \x01(\x01R\x10oldPricePerStock\x12-\n" +
+	"\x13new_price_per_stock\x18\t \x01(\x01R\x10newPricePerStock\x12.\n" +
+	"\x13old_settlement_date\x18\n" +
+	" \x01(\tR\x11oldSettlementDate\x12.\n" +
+	"\x13new_settlement_date\x18\v \x01(\tR\x11newSettlementDate\x12\x1f\n" +
+	"\vold_premium\x18\f \x01(\x01R\n" +
+	"oldPremium\x12\x1f\n" +
+	"\vnew_premium\x18\r \x01(\x01R\n" +
+	"newPremium\x12\x1c\n" +
+	"\ttimestamp\x18\x0e \x01(\tR\ttimestamp\"\x83\x01\n" +
+	"\x1cGetNegotiationHistoryRequest\x12%\n" +
+	"\x0enegotiation_id\x18\x01 \x01(\x03R\rnegotiationId\x12\x1b\n" +
+	"\tcaller_id\x18\x02 \x01(\x03R\bcallerId\x12\x1f\n" +
+	"\vcaller_type\x18\x03 \x01(\tR\n" +
+	"callerType\"W\n" +
+	"\x1dGetNegotiationHistoryResponse\x126\n" +
+	"\aentries\x18\x01 \x03(\v2\x1c.otc.NegotiationHistoryEntryR\aentries2\xfc\v\n" +
 	"\n" +
 	"OtcService\x12+\n" +
 	"\x04Ping\x12\x10.otc.PingRequest\x1a\x11.otc.PingResponse\x12L\n" +
@@ -2274,22 +2555,23 @@ const file_otc_proto_rawDesc = "" +
 	"\x1aInterbankAcceptNegotiation\x12\".otc.InterbankNegotiationIdRequest\x1a\x15.otc.OtcEmptyResponse\x12U\n" +
 	"\x13PrepareOtcInterbank\x12\x1f.otc.OtcInterbankPrepareRequest\x1a\x1d.otc.OtcInterbankVoteResponse\x12G\n" +
 	"\x12CommitOtcInterbank\x12\x1a.otc.OtcInterbankTxRequest\x1a\x15.otc.OtcEmptyResponse\x12I\n" +
-	"\x14RollbackOtcInterbank\x12\x1a.otc.OtcInterbankTxRequest\x1a\x15.otc.OtcEmptyResponseB8Z6github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/otcb\x06proto3"
+	"\x14RollbackOtcInterbank\x12\x1a.otc.OtcInterbankTxRequest\x1a\x15.otc.OtcEmptyResponse\x12^\n" +
+	"\x15GetNegotiationHistory\x12!.otc.GetNegotiationHistoryRequest\x1a\".otc.GetNegotiationHistoryResponseB8Z6github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/otcb\x06proto3"
 
 var (
-	file_otc_proto_rawDescOnce sync.Once
-	file_otc_proto_rawDescData []byte
+	file_shared_proto_otc_proto_rawDescOnce sync.Once
+	file_shared_proto_otc_proto_rawDescData []byte
 )
 
-func file_otc_proto_rawDescGZIP() []byte {
-	file_otc_proto_rawDescOnce.Do(func() {
-		file_otc_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_otc_proto_rawDesc), len(file_otc_proto_rawDesc)))
+func file_shared_proto_otc_proto_rawDescGZIP() []byte {
+	file_shared_proto_otc_proto_rawDescOnce.Do(func() {
+		file_shared_proto_otc_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_shared_proto_otc_proto_rawDesc), len(file_shared_proto_otc_proto_rawDesc)))
 	})
-	return file_otc_proto_rawDescData
+	return file_shared_proto_otc_proto_rawDescData
 }
 
-var file_otc_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
-var file_otc_proto_goTypes = []any{
+var file_shared_proto_otc_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_shared_proto_otc_proto_goTypes = []any{
 	(*PingRequest)(nil),                       // 0: otc.PingRequest
 	(*PingResponse)(nil),                      // 1: otc.PingResponse
 	(*CreateNegotiationRequest)(nil),          // 2: otc.CreateNegotiationRequest
@@ -2316,74 +2598,80 @@ var file_otc_proto_goTypes = []any{
 	(*OtcInterbankPrepareRequest)(nil),        // 23: otc.OtcInterbankPrepareRequest
 	(*OtcInterbankVoteResponse)(nil),          // 24: otc.OtcInterbankVoteResponse
 	(*OtcInterbankTxRequest)(nil),             // 25: otc.OtcInterbankTxRequest
+	(*NegotiationHistoryEntry)(nil),           // 26: otc.NegotiationHistoryEntry
+	(*GetNegotiationHistoryRequest)(nil),      // 27: otc.GetNegotiationHistoryRequest
+	(*GetNegotiationHistoryResponse)(nil),     // 28: otc.GetNegotiationHistoryResponse
 }
-var file_otc_proto_depIdxs = []int32{
+var file_shared_proto_otc_proto_depIdxs = []int32{
 	8,  // 0: otc.ListNegotiationsResponse.negotiations:type_name -> otc.NegotiationResponse
 	10, // 1: otc.ListContractsResponse.contracts:type_name -> otc.ContractResponse
 	16, // 2: otc.GetMarketResponse.items:type_name -> otc.MarketItem
-	0,  // 3: otc.OtcService.Ping:input_type -> otc.PingRequest
-	2,  // 4: otc.OtcService.CreateNegotiation:input_type -> otc.CreateNegotiationRequest
-	6,  // 5: otc.OtcService.ListNegotiations:input_type -> otc.ListNegotiationsRequest
-	7,  // 6: otc.OtcService.GetNegotiation:input_type -> otc.GetNegotiationRequest
-	3,  // 7: otc.OtcService.CounterOffer:input_type -> otc.CounterOfferRequest
-	4,  // 8: otc.OtcService.AcceptNegotiation:input_type -> otc.AcceptNegotiationRequest
-	5,  // 9: otc.OtcService.RejectNegotiation:input_type -> otc.RejectNegotiationRequest
-	11, // 10: otc.OtcService.ListContracts:input_type -> otc.ListContractsRequest
-	13, // 11: otc.OtcService.ExerciseContract:input_type -> otc.ExerciseContractRequest
-	15, // 12: otc.OtcService.GetMarket:input_type -> otc.GetMarketRequest
-	19, // 13: otc.OtcService.CreateInterbankNegotiation:input_type -> otc.CreateInterbankNegotiationRequest
-	22, // 14: otc.OtcService.InterbankCounterOffer:input_type -> otc.InterbankCounterOfferRequest
-	21, // 15: otc.OtcService.InterbankGetNegotiation:input_type -> otc.InterbankNegotiationIdRequest
-	21, // 16: otc.OtcService.InterbankDeleteNegotiation:input_type -> otc.InterbankNegotiationIdRequest
-	21, // 17: otc.OtcService.InterbankAcceptNegotiation:input_type -> otc.InterbankNegotiationIdRequest
-	23, // 18: otc.OtcService.PrepareOtcInterbank:input_type -> otc.OtcInterbankPrepareRequest
-	25, // 19: otc.OtcService.CommitOtcInterbank:input_type -> otc.OtcInterbankTxRequest
-	25, // 20: otc.OtcService.RollbackOtcInterbank:input_type -> otc.OtcInterbankTxRequest
-	1,  // 21: otc.OtcService.Ping:output_type -> otc.PingResponse
-	8,  // 22: otc.OtcService.CreateNegotiation:output_type -> otc.NegotiationResponse
-	9,  // 23: otc.OtcService.ListNegotiations:output_type -> otc.ListNegotiationsResponse
-	8,  // 24: otc.OtcService.GetNegotiation:output_type -> otc.NegotiationResponse
-	8,  // 25: otc.OtcService.CounterOffer:output_type -> otc.NegotiationResponse
-	8,  // 26: otc.OtcService.AcceptNegotiation:output_type -> otc.NegotiationResponse
-	8,  // 27: otc.OtcService.RejectNegotiation:output_type -> otc.NegotiationResponse
-	12, // 28: otc.OtcService.ListContracts:output_type -> otc.ListContractsResponse
-	14, // 29: otc.OtcService.ExerciseContract:output_type -> otc.ExerciseContractResponse
-	17, // 30: otc.OtcService.GetMarket:output_type -> otc.GetMarketResponse
-	20, // 31: otc.OtcService.CreateInterbankNegotiation:output_type -> otc.InterbankNegotiationResponse
-	20, // 32: otc.OtcService.InterbankCounterOffer:output_type -> otc.InterbankNegotiationResponse
-	20, // 33: otc.OtcService.InterbankGetNegotiation:output_type -> otc.InterbankNegotiationResponse
-	18, // 34: otc.OtcService.InterbankDeleteNegotiation:output_type -> otc.OtcEmptyResponse
-	18, // 35: otc.OtcService.InterbankAcceptNegotiation:output_type -> otc.OtcEmptyResponse
-	24, // 36: otc.OtcService.PrepareOtcInterbank:output_type -> otc.OtcInterbankVoteResponse
-	18, // 37: otc.OtcService.CommitOtcInterbank:output_type -> otc.OtcEmptyResponse
-	18, // 38: otc.OtcService.RollbackOtcInterbank:output_type -> otc.OtcEmptyResponse
-	21, // [21:39] is the sub-list for method output_type
-	3,  // [3:21] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	26, // 3: otc.GetNegotiationHistoryResponse.entries:type_name -> otc.NegotiationHistoryEntry
+	0,  // 4: otc.OtcService.Ping:input_type -> otc.PingRequest
+	2,  // 5: otc.OtcService.CreateNegotiation:input_type -> otc.CreateNegotiationRequest
+	6,  // 6: otc.OtcService.ListNegotiations:input_type -> otc.ListNegotiationsRequest
+	7,  // 7: otc.OtcService.GetNegotiation:input_type -> otc.GetNegotiationRequest
+	3,  // 8: otc.OtcService.CounterOffer:input_type -> otc.CounterOfferRequest
+	4,  // 9: otc.OtcService.AcceptNegotiation:input_type -> otc.AcceptNegotiationRequest
+	5,  // 10: otc.OtcService.RejectNegotiation:input_type -> otc.RejectNegotiationRequest
+	11, // 11: otc.OtcService.ListContracts:input_type -> otc.ListContractsRequest
+	13, // 12: otc.OtcService.ExerciseContract:input_type -> otc.ExerciseContractRequest
+	15, // 13: otc.OtcService.GetMarket:input_type -> otc.GetMarketRequest
+	19, // 14: otc.OtcService.CreateInterbankNegotiation:input_type -> otc.CreateInterbankNegotiationRequest
+	22, // 15: otc.OtcService.InterbankCounterOffer:input_type -> otc.InterbankCounterOfferRequest
+	21, // 16: otc.OtcService.InterbankGetNegotiation:input_type -> otc.InterbankNegotiationIdRequest
+	21, // 17: otc.OtcService.InterbankDeleteNegotiation:input_type -> otc.InterbankNegotiationIdRequest
+	21, // 18: otc.OtcService.InterbankAcceptNegotiation:input_type -> otc.InterbankNegotiationIdRequest
+	23, // 19: otc.OtcService.PrepareOtcInterbank:input_type -> otc.OtcInterbankPrepareRequest
+	25, // 20: otc.OtcService.CommitOtcInterbank:input_type -> otc.OtcInterbankTxRequest
+	25, // 21: otc.OtcService.RollbackOtcInterbank:input_type -> otc.OtcInterbankTxRequest
+	27, // 22: otc.OtcService.GetNegotiationHistory:input_type -> otc.GetNegotiationHistoryRequest
+	1,  // 23: otc.OtcService.Ping:output_type -> otc.PingResponse
+	8,  // 24: otc.OtcService.CreateNegotiation:output_type -> otc.NegotiationResponse
+	9,  // 25: otc.OtcService.ListNegotiations:output_type -> otc.ListNegotiationsResponse
+	8,  // 26: otc.OtcService.GetNegotiation:output_type -> otc.NegotiationResponse
+	8,  // 27: otc.OtcService.CounterOffer:output_type -> otc.NegotiationResponse
+	8,  // 28: otc.OtcService.AcceptNegotiation:output_type -> otc.NegotiationResponse
+	8,  // 29: otc.OtcService.RejectNegotiation:output_type -> otc.NegotiationResponse
+	12, // 30: otc.OtcService.ListContracts:output_type -> otc.ListContractsResponse
+	14, // 31: otc.OtcService.ExerciseContract:output_type -> otc.ExerciseContractResponse
+	17, // 32: otc.OtcService.GetMarket:output_type -> otc.GetMarketResponse
+	20, // 33: otc.OtcService.CreateInterbankNegotiation:output_type -> otc.InterbankNegotiationResponse
+	20, // 34: otc.OtcService.InterbankCounterOffer:output_type -> otc.InterbankNegotiationResponse
+	20, // 35: otc.OtcService.InterbankGetNegotiation:output_type -> otc.InterbankNegotiationResponse
+	18, // 36: otc.OtcService.InterbankDeleteNegotiation:output_type -> otc.OtcEmptyResponse
+	18, // 37: otc.OtcService.InterbankAcceptNegotiation:output_type -> otc.OtcEmptyResponse
+	24, // 38: otc.OtcService.PrepareOtcInterbank:output_type -> otc.OtcInterbankVoteResponse
+	18, // 39: otc.OtcService.CommitOtcInterbank:output_type -> otc.OtcEmptyResponse
+	18, // 40: otc.OtcService.RollbackOtcInterbank:output_type -> otc.OtcEmptyResponse
+	28, // 41: otc.OtcService.GetNegotiationHistory:output_type -> otc.GetNegotiationHistoryResponse
+	23, // [23:42] is the sub-list for method output_type
+	4,  // [4:23] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
-func init() { file_otc_proto_init() }
-func file_otc_proto_init() {
-	if File_otc_proto != nil {
+func init() { file_shared_proto_otc_proto_init() }
+func file_shared_proto_otc_proto_init() {
+	if File_shared_proto_otc_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_otc_proto_rawDesc), len(file_otc_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_shared_proto_otc_proto_rawDesc), len(file_shared_proto_otc_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   26,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_otc_proto_goTypes,
-		DependencyIndexes: file_otc_proto_depIdxs,
-		MessageInfos:      file_otc_proto_msgTypes,
+		GoTypes:           file_shared_proto_otc_proto_goTypes,
+		DependencyIndexes: file_shared_proto_otc_proto_depIdxs,
+		MessageInfos:      file_shared_proto_otc_proto_msgTypes,
 	}.Build()
-	File_otc_proto = out.File
-	file_otc_proto_goTypes = nil
-	file_otc_proto_depIdxs = nil
+	File_shared_proto_otc_proto = out.File
+	file_shared_proto_otc_proto_goTypes = nil
+	file_shared_proto_otc_proto_depIdxs = nil
 }

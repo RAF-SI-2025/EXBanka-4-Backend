@@ -19,6 +19,9 @@ const PaymentNotificationQueueName = "email.payment"
 const CardBlockedQueueName = "email.cardblocked"
 const LoanApprovedQueueName = "email.loanapproved"
 const LimitChangeQueueName = "email.limitchange"
+const OtcCounterOfferQueueName = "email.otc.counteroffer"
+const OtcStatusChangeQueueName = "email.otc.statuschange"
+const OtcContractExpiryQueueName = "email.otc.expiry"
 
 type ActivationMessage struct {
 	Email          string `json:"email"`
@@ -119,6 +122,35 @@ type LimitChangeMessage struct {
 	Currency     string  `json:"currency"`
 }
 
+type OtcCounterOfferMessage struct {
+	Email             string  `json:"email"`
+	FirstName         string  `json:"first_name"`
+	NegotiationId     int64   `json:"negotiation_id"`
+	Ticker            string  `json:"ticker"`
+	NewAmount         int32   `json:"new_amount"`
+	NewPricePerStock  float64 `json:"new_price_per_stock"`
+	NewPremium        float64 `json:"new_premium"`
+	NewSettlementDate string  `json:"new_settlement_date"`
+	CounterPartyName  string  `json:"counter_party_name"`
+}
+
+type OtcStatusChangeMessage struct {
+	Email         string `json:"email"`
+	FirstName     string `json:"first_name"`
+	NegotiationId int64  `json:"negotiation_id"`
+	Ticker        string `json:"ticker"`
+	Status        string `json:"status"`
+}
+
+type OtcContractExpiryMessage struct {
+	Email      string `json:"email"`
+	FirstName  string `json:"first_name"`
+	ContractId int64  `json:"contract_id"`
+	Ticker     string `json:"ticker"`
+	ExpiryDate string `json:"expiry_date"`
+	DaysLeft   int    `json:"days_left"`
+}
+
 type Channel interface {
 	QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool, args amqp.Table) (amqp.Queue, error)
 	Publish(exchange, key string, mandatory, immediate bool, msg amqp.Publishing) error
@@ -132,7 +164,8 @@ func NewProducer(ch Channel) (*Producer, error) {
 	queues := []string{QueueName, ResetQueueName, ConfirmQueueName, AccountCreatedQueueName,
 		CardConfirmationQueueName, LoanLatePaymentQueueName, AccountLockedQueueName,
 		PaymentNotificationQueueName, CardBlockedQueueName, LoanApprovedQueueName,
-		LimitChangeQueueName, OrderStatusQueueName, PriceAlertQueueName}
+		LimitChangeQueueName, OrderStatusQueueName, PriceAlertQueueName,
+		OtcCounterOfferQueueName, OtcStatusChangeQueueName, OtcContractExpiryQueueName}
 	for _, q := range queues {
 		if _, err := ch.QueueDeclare(q, true, false, false, false, nil); err != nil {
 			return nil, err

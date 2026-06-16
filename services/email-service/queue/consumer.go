@@ -529,6 +529,76 @@ func ConsumePriceAlert(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template
 	}
 }
 
+func ConsumeOtcCounterOffer(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	if _, err := ch.QueueDeclare(OtcCounterOfferQueueName, true, false, false, false, nil); err != nil {
+		log.Fatalf("failed to declare otc counter offer queue: %v", err)
+	}
+	msgs, err := ch.Consume(OtcCounterOfferQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start otc counter offer consumer: %v", err)
+	}
+	log.Println("OTC counter offer email consumer started")
+	for d := range msgs {
+		var msg OtcCounterOfferMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode otc counter offer message: %v", err)
+			_ = d.Ack(false)
+			continue
+		}
+		if err := sendTemplatedEmail(cfg, tmpl, "otc_counter_offer.html", msg, msg.Email, "OTC Counter-Offer Received — AnkaBanka"); err != nil {
+			log.Printf("failed to send otc counter offer email to %s: %v", msg.Email, err)
+		}
+		_ = d.Ack(false)
+	}
+}
+
+func ConsumeOtcStatusChange(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	if _, err := ch.QueueDeclare(OtcStatusChangeQueueName, true, false, false, false, nil); err != nil {
+		log.Fatalf("failed to declare otc status change queue: %v", err)
+	}
+	msgs, err := ch.Consume(OtcStatusChangeQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start otc status change consumer: %v", err)
+	}
+	log.Println("OTC status change email consumer started")
+	for d := range msgs {
+		var msg OtcStatusChangeMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode otc status change message: %v", err)
+			_ = d.Ack(false)
+			continue
+		}
+		subject := fmt.Sprintf("OTC Negotiation %s — AnkaBanka", msg.Status)
+		if err := sendTemplatedEmail(cfg, tmpl, "otc_status_change.html", msg, msg.Email, subject); err != nil {
+			log.Printf("failed to send otc status change email to %s: %v", msg.Email, err)
+		}
+		_ = d.Ack(false)
+	}
+}
+
+func ConsumeOtcContractExpiry(ch *amqp.Channel, cfg SMTPConfig, tmpl *template.Template) {
+	if _, err := ch.QueueDeclare(OtcContractExpiryQueueName, true, false, false, false, nil); err != nil {
+		log.Fatalf("failed to declare otc contract expiry queue: %v", err)
+	}
+	msgs, err := ch.Consume(OtcContractExpiryQueueName, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatalf("failed to start otc contract expiry consumer: %v", err)
+	}
+	log.Println("OTC contract expiry email consumer started")
+	for d := range msgs {
+		var msg OtcContractExpiryMessage
+		if err := json.Unmarshal(d.Body, &msg); err != nil {
+			log.Printf("failed to decode otc contract expiry message: %v", err)
+			_ = d.Ack(false)
+			continue
+		}
+		if err := sendTemplatedEmail(cfg, tmpl, "otc_contract_expiry.html", msg, msg.Email, "OTC Contract Expiring Soon — AnkaBanka"); err != nil {
+			log.Printf("failed to send otc contract expiry email to %s: %v", msg.Email, err)
+		}
+		_ = d.Ack(false)
+	}
+}
+
 func sendTemplatedEmail(cfg SMTPConfig, tmpl *template.Template, _ string, data interface{}, to, subject string) error {
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, data); err != nil {

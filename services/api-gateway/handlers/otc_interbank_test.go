@@ -99,6 +99,9 @@ func (m *mockOtcClient) CommitOtcInterbank(ctx context.Context, in *pb.OtcInterb
 func (m *mockOtcClient) RollbackOtcInterbank(ctx context.Context, in *pb.OtcInterbankTxRequest, opts ...grpc.CallOption) (*pb.OtcEmptyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "not mocked")
 }
+func (m *mockOtcClient) GetNegotiationHistory(_ context.Context, _ *pb.GetNegotiationHistoryRequest, _ ...grpc.CallOption) (*pb.GetNegotiationHistoryResponse, error) {
+	return &pb.GetNegotiationHistoryResponse{}, nil
+}
 
 // doOtcRequest fires a single POST request against the given handler on a fresh gin router.
 func doOtcRequest(t *testing.T, handler gin.HandlerFunc, method, _ string, body any, apiKey string) *httptest.ResponseRecorder {

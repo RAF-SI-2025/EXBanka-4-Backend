@@ -147,6 +147,12 @@ func (s *stubFundClient) GetFundPerformanceHistory(ctx context.Context, in *pb.G
 	}
 	return &pb.GetFundPerformanceResponse{}, nil
 }
+func (s *stubFundClient) GetAveragePerformance(ctx context.Context, in *pb.GetAveragePerformanceRequest, opts ...grpc.CallOption) (*pb.GetAveragePerformanceResponse, error) {
+	return &pb.GetAveragePerformanceResponse{}, nil
+}
+func (s *stubFundClient) ProcessFundDividend(ctx context.Context, in *pb.ProcessFundDividendRequest, opts ...grpc.CallOption) (*pb.ProcessFundDividendResponse, error) {
+	return &pb.ProcessFundDividendResponse{}, nil
+}
 
 // sampleFund returns a sample FundResponse.
 func sampleFund() *pb.FundResponse {

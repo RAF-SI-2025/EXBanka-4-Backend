@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"math"
 	"strings"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	pb_exchange "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/exchange"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/fund"
 	pb_order "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/order"
+	pb_portfolio "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/portfolio"
 	pb_securities "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/securities"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -25,6 +27,7 @@ type FundServer struct {
 	OrderClient      pb_order.OrderServiceClient
 	ExchangeClient   pb_exchange.ExchangeServiceClient
 	SecuritiesClient pb_securities.SecuritiesServiceClient
+	PortfolioClient  pb_portfolio.PortfolioServiceClient
 }
 
 func (s *FundServer) Ping(_ context.Context, _ *pb.PingRequest) (*pb.PingResponse, error) {
@@ -256,6 +259,7 @@ func (s *FundServer) fetchFundByID(ctx context.Context, id int64, includeAccount
 		f.AccountNumber = accountNumber
 	}
 
+	f.Stats = s.calculateFundStats(ctx, id)
 	return &f, nil
 }
 
@@ -966,4 +970,216 @@ func (s *FundServer) GetFundPerformanceHistory(ctx context.Context, req *pb.GetF
 		records = []*pb.PerformanceRecord{}
 	}
 	return &pb.GetFundPerformanceResponse{Records: records}, nil
+}
+
+func (s *FundServer) calculateFundStats(ctx context.Context, fundID int64) *pb.FundStats {
+	rows, err := s.DB.QueryContext(ctx,
+		`SELECT fund_value FROM fund_performance_history WHERE fund_id = $1 ORDER BY date ASC`, fundID)
+	if err != nil {
+		return &pb.FundStats{HasSufficientData: false}
+	}
+	defer func() { _ = rows.Close() }()
+
+	var vals []float64
+	for rows.Next() {
+		var v float64
+		if err := rows.Scan(&v); err == nil {
+			vals = append(vals, v)
+		}
+	}
+
+	if len(vals) < 30 || vals[0] == 0 {
+		return &pb.FundStats{HasSufficientData: false}
+	}
+
+	n := float64(len(vals) - 1)
+	annualReturn := math.Pow(vals[len(vals)-1]/vals[0], 365.0/n) - 1
+
+	var monthlyReturns []float64
+	for i := 30; i < len(vals); i += 30 {
+		if vals[i-30] != 0 {
+			monthlyReturns = append(monthlyReturns, (vals[i]-vals[i-30])/vals[i-30])
+		}
+	}
+
+	var volatility float64
+	if len(monthlyReturns) >= 2 {
+		mean := 0.0
+		for _, r := range monthlyReturns {
+			mean += r
+		}
+		mean /= float64(len(monthlyReturns))
+		variance := 0.0
+		for _, r := range monthlyReturns {
+			d := r - mean
+			variance += d * d
+		}
+		variance /= float64(len(monthlyReturns) - 1)
+		volatility = math.Sqrt(variance) * math.Sqrt(12)
+	}
+
+	rewardToVariability := 0.0
+	if volatility != 0 {
+		rewardToVariability = annualReturn / volatility
+	}
+
+	peak := vals[0]
+	maxDD := 0.0
+	for _, v := range vals {
+		if v > peak {
+			peak = v
+		}
+		if peak > 0 {
+			if dd := (peak - v) / peak; dd > maxDD {
+				maxDD = dd
+			}
+		}
+	}
+
+	return &pb.FundStats{
+		AnnualReturn:        annualReturn,
+		RewardToVariability: rewardToVariability,
+		MaxDrawdown:         maxDD,
+		Volatility:          volatility,
+		HasSufficientData:   true,
+	}
+}
+
+func (s *FundServer) GetAveragePerformance(ctx context.Context, req *pb.GetAveragePerformanceRequest) (*pb.GetAveragePerformanceResponse, error) {
+	rows, err := s.DB.QueryContext(ctx, `
+		SELECT TO_CHAR(date, 'YYYY-MM-DD'), AVG(fund_value)
+		FROM fund_performance_history fph
+		JOIN investment_funds f ON f.id = fph.fund_id
+		WHERE f.active = true AND date >= $1 AND date <= $2
+		GROUP BY date ORDER BY date ASC`, req.From, req.To)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to query average performance: %v", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var records []*pb.AveragePerformanceRecord
+	for rows.Next() {
+		var r pb.AveragePerformanceRecord
+		if err := rows.Scan(&r.Date, &r.AvgFundValue); err != nil {
+			return nil, status.Errorf(codes.Internal, "scan avg performance: %v", err)
+		}
+		records = append(records, &r)
+	}
+	if records == nil {
+		records = []*pb.AveragePerformanceRecord{}
+	}
+	return &pb.GetAveragePerformanceResponse{Records: records}, nil
+}
+
+func (s *FundServer) ProcessFundDividend(ctx context.Context, req *pb.ProcessFundDividendRequest) (*pb.ProcessFundDividendResponse, error) {
+	rows, err := s.DB.QueryContext(ctx,
+		`SELECT fund_id, quantity FROM fund_portfolio_positions WHERE listing_id = $1 AND quantity > 0`,
+		req.ListingId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to query fund positions: %v", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	type fundPos struct {
+		fundID   int64
+		quantity float64
+	}
+	var positions []fundPos
+	for rows.Next() {
+		var fp fundPos
+		if err := rows.Scan(&fp.fundID, &fp.quantity); err == nil {
+			positions = append(positions, fp)
+		}
+	}
+	_ = rows.Close()
+
+	var processed int64
+	for _, fp := range positions {
+		totalDividend := fp.quantity * req.Price * (req.DividendYield / 4.0)
+		if totalDividend <= 0 {
+			continue
+		}
+
+		newShares := totalDividend / req.Price
+		_, _ = s.DB.ExecContext(ctx,
+			`UPDATE fund_portfolio_positions SET quantity = quantity + $1 WHERE fund_id = $2 AND listing_id = $3`,
+			newShares, fp.fundID, req.ListingId)
+
+		var totalInvested float64
+		_ = s.DB.QueryRowContext(ctx,
+			`SELECT COALESCE(SUM(total_invested_amount), 0) FROM client_fund_positions WHERE fund_id = $1`,
+			fp.fundID,
+		).Scan(&totalInvested)
+		if totalInvested <= 0 {
+			processed++
+			continue
+		}
+
+		cliRows, err := s.DB.QueryContext(ctx,
+			`SELECT client_id, client_type, total_invested_amount FROM client_fund_positions WHERE fund_id = $1 AND total_invested_amount > 0`,
+			fp.fundID)
+		if err != nil {
+			continue
+		}
+
+		type cliPos struct {
+			clientID   int64
+			clientType string
+			invested   float64
+		}
+		var clients []cliPos
+		for cliRows.Next() {
+			var cp cliPos
+			if err := cliRows.Scan(&cp.clientID, &cp.clientType, &cp.invested); err == nil {
+				clients = append(clients, cp)
+			}
+		}
+		_ = cliRows.Close()
+
+		today := req.PaymentDate
+		for _, cp := range clients {
+			gross := totalDividend * (cp.invested / totalInvested)
+			var taxRSD, net float64
+			if cp.clientType == "CLIENT" {
+				taxRSD = gross * 0.15
+				net = gross * 0.85
+			} else {
+				net = gross
+			}
+
+			var accountID int64
+			_ = s.AccountDB.QueryRowContext(ctx, `
+				SELECT id FROM accounts
+				WHERE owner_id = $1
+				  AND currency_id = (SELECT id FROM currencies WHERE code = $2)
+				  AND account_type NOT IN ('BANK','STATE')
+				  AND status = 'ACTIVE'
+				ORDER BY id LIMIT 1`, cp.clientID, req.Currency,
+			).Scan(&accountID)
+
+			if accountID != 0 {
+				_, _ = s.AccountDB.ExecContext(ctx,
+					`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1 WHERE id = $2`,
+					net, accountID)
+			}
+
+			if s.PortfolioClient != nil {
+				_, _ = s.PortfolioClient.CreateDividendPayout(ctx, &pb_portfolio.CreateDividendPayoutRequest{
+					UserId:         cp.clientID,
+					UserType:       cp.clientType,
+					StockListingId: req.ListingId,
+					Quantity:       fp.quantity,
+					GrossAmount:    gross,
+					Currency:       req.Currency,
+					TaxRsd:         taxRSD,
+					NetAmount:      net,
+					AccountId:      accountID,
+					PaymentDate:    today,
+				})
+			}
+		}
+		processed++
+	}
+
+	return &pb.ProcessFundDividendResponse{FundsProcessed: processed}, nil
 }
