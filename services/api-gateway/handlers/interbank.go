@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"os"
 	"strconv"
 
 	pb_otc "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/otc"
@@ -71,8 +70,7 @@ type commitRollbackMessage struct {
 // Authenticated via X-Api-Key header matched against OWN_INTERBANK_API_KEY env var.
 func InterbankHandler(paymentClient pb.PaymentServiceClient, otcClient pb_otc.OtcServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		apiKey := os.Getenv("OWN_INTERBANK_API_KEY")
-		if apiKey == "" || c.GetHeader("X-Api-Key") != apiKey {
+		if !validateOtcInterbankKey(c) {
 			c.Status(http.StatusUnauthorized)
 			return
 		}

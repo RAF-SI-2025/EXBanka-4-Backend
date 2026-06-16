@@ -23,10 +23,22 @@ func gatewayOwnRoutingInt() int32 {
 	return n
 }
 
-// validateOtcInterbankKey rejects requests whose X-Api-Key does not match OWN_INTERBANK_API_KEY.
+// validateOtcInterbankKey accepts requests whose X-Api-Key matches either the key
+// we issued to partners (OWN_INTERBANK_API_KEY) or the key the partner issued to us
+// (PARTNER_API_KEY). The latter is needed because some partners send their own key
+// rather than the key we issued them.
 func validateOtcInterbankKey(c *gin.Context) bool {
-	key := os.Getenv("OWN_INTERBANK_API_KEY")
-	return key != "" && c.GetHeader("X-Api-Key") == key
+	incoming := c.GetHeader("X-Api-Key")
+	if incoming == "" {
+		return false
+	}
+	if ownKey := os.Getenv("OWN_INTERBANK_API_KEY"); ownKey != "" && incoming == ownKey {
+		return true
+	}
+	if partnerKey := os.Getenv("PARTNER_API_KEY"); partnerKey != "" && incoming == partnerKey {
+		return true
+	}
+	return false
 }
 
 // ── JSON shapes expected/returned by the /otc/interbank/* endpoints ──────────
