@@ -123,6 +123,9 @@ type Order struct {
 	IsMargin          bool                   `protobuf:"varint,18,opt,name=is_margin,json=isMargin,proto3" json:"is_margin,omitempty"`
 	AccountId         int64                  `protobuf:"varint,19,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
 	FundId            int64                  `protobuf:"varint,20,opt,name=fund_id,json=fundId,proto3" json:"fund_id,omitempty"`
+	CommissionPaid    float64                `protobuf:"fixed64,21,opt,name=commission_paid,json=commissionPaid,proto3" json:"commission_paid,omitempty"`
+	Ticker            string                 `protobuf:"bytes,22,opt,name=ticker,proto3" json:"ticker,omitempty"`
+	AssetType         string                 `protobuf:"bytes,23,opt,name=asset_type,json=assetType,proto3" json:"asset_type,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -295,6 +298,27 @@ func (x *Order) GetFundId() int64 {
 		return x.FundId
 	}
 	return 0
+}
+
+func (x *Order) GetCommissionPaid() float64 {
+	if x != nil {
+		return x.CommissionPaid
+	}
+	return 0
+}
+
+func (x *Order) GetTicker() string {
+	if x != nil {
+		return x.Ticker
+	}
+	return ""
+}
+
+func (x *Order) GetAssetType() string {
+	if x != nil {
+		return x.AssetType
+	}
+	return ""
 }
 
 type CreateOrderRequest struct {
@@ -491,8 +515,17 @@ func (x *CreateOrderResponse) GetApproximatePrice() float64 {
 
 type ListOrdersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`                   // ALL, PENDING, APPROVED, DECLINED, DONE — empty = ALL
-	AgentId       int64                  `protobuf:"varint,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"` // 0 = no filter
+	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`                      // ALL, PENDING, APPROVED, DECLINED, DONE — empty = ALL
+	AgentId       int64                  `protobuf:"varint,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`    // 0 = no filter
+	MyOrders      bool                   `protobuf:"varint,3,opt,name=my_orders,json=myOrders,proto3" json:"my_orders,omitempty"` // true = return caller's own orders only
+	CallerId      int64                  `protobuf:"varint,4,opt,name=caller_id,json=callerId,proto3" json:"caller_id,omitempty"`
+	CallerType    string                 `protobuf:"bytes,5,opt,name=caller_type,json=callerType,proto3" json:"caller_type,omitempty"` // "CLIENT" or "EMPLOYEE"
+	Direction     string                 `protobuf:"bytes,6,opt,name=direction,proto3" json:"direction,omitempty"`                     // "BUY", "SELL", "" = both
+	AssetType     string                 `protobuf:"bytes,7,opt,name=asset_type,json=assetType,proto3" json:"asset_type,omitempty"`    // "STOCK", "FOREX_PAIR", "FUTURES_CONTRACT", "" = all
+	FromDate      string                 `protobuf:"bytes,8,opt,name=from_date,json=fromDate,proto3" json:"from_date,omitempty"`       // ISO date YYYY-MM-DD
+	ToDate        string                 `protobuf:"bytes,9,opt,name=to_date,json=toDate,proto3" json:"to_date,omitempty"`             // ISO date YYYY-MM-DD
+	Page          int32                  `protobuf:"varint,10,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,11,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -537,6 +570,69 @@ func (x *ListOrdersRequest) GetStatus() string {
 func (x *ListOrdersRequest) GetAgentId() int64 {
 	if x != nil {
 		return x.AgentId
+	}
+	return 0
+}
+
+func (x *ListOrdersRequest) GetMyOrders() bool {
+	if x != nil {
+		return x.MyOrders
+	}
+	return false
+}
+
+func (x *ListOrdersRequest) GetCallerId() int64 {
+	if x != nil {
+		return x.CallerId
+	}
+	return 0
+}
+
+func (x *ListOrdersRequest) GetCallerType() string {
+	if x != nil {
+		return x.CallerType
+	}
+	return ""
+}
+
+func (x *ListOrdersRequest) GetDirection() string {
+	if x != nil {
+		return x.Direction
+	}
+	return ""
+}
+
+func (x *ListOrdersRequest) GetAssetType() string {
+	if x != nil {
+		return x.AssetType
+	}
+	return ""
+}
+
+func (x *ListOrdersRequest) GetFromDate() string {
+	if x != nil {
+		return x.FromDate
+	}
+	return ""
+}
+
+func (x *ListOrdersRequest) GetToDate() string {
+	if x != nil {
+		return x.ToDate
+	}
+	return ""
+}
+
+func (x *ListOrdersRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListOrdersRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
 	}
 	return 0
 }
@@ -1025,6 +1121,438 @@ func (*CancelOrderPortionsResponse) Descriptor() ([]byte, []int) {
 	return file_order_proto_rawDescGZIP(), []int{16}
 }
 
+type RecurringOrder struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,3,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	AssetId       int64                  `protobuf:"varint,4,opt,name=asset_id,json=assetId,proto3" json:"asset_id,omitempty"`
+	Direction     string                 `protobuf:"bytes,5,opt,name=direction,proto3" json:"direction,omitempty"`
+	Mode          string                 `protobuf:"bytes,6,opt,name=mode,proto3" json:"mode,omitempty"` // BY_QUANTITY or BY_AMOUNT
+	Value         float64                `protobuf:"fixed64,7,opt,name=value,proto3" json:"value,omitempty"`
+	AccountId     int64                  `protobuf:"varint,8,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	Cadence       string                 `protobuf:"bytes,9,opt,name=cadence,proto3" json:"cadence,omitempty"` // DAILY, WEEKLY, MONTHLY
+	NextRun       string                 `protobuf:"bytes,10,opt,name=next_run,json=nextRun,proto3" json:"next_run,omitempty"`
+	Active        bool                   `protobuf:"varint,11,opt,name=active,proto3" json:"active,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecurringOrder) Reset() {
+	*x = RecurringOrder{}
+	mi := &file_order_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecurringOrder) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecurringOrder) ProtoMessage() {}
+
+func (x *RecurringOrder) ProtoReflect() protoreflect.Message {
+	mi := &file_order_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecurringOrder.ProtoReflect.Descriptor instead.
+func (*RecurringOrder) Descriptor() ([]byte, []int) {
+	return file_order_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *RecurringOrder) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *RecurringOrder) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *RecurringOrder) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+func (x *RecurringOrder) GetAssetId() int64 {
+	if x != nil {
+		return x.AssetId
+	}
+	return 0
+}
+
+func (x *RecurringOrder) GetDirection() string {
+	if x != nil {
+		return x.Direction
+	}
+	return ""
+}
+
+func (x *RecurringOrder) GetMode() string {
+	if x != nil {
+		return x.Mode
+	}
+	return ""
+}
+
+func (x *RecurringOrder) GetValue() float64 {
+	if x != nil {
+		return x.Value
+	}
+	return 0
+}
+
+func (x *RecurringOrder) GetAccountId() int64 {
+	if x != nil {
+		return x.AccountId
+	}
+	return 0
+}
+
+func (x *RecurringOrder) GetCadence() string {
+	if x != nil {
+		return x.Cadence
+	}
+	return ""
+}
+
+func (x *RecurringOrder) GetNextRun() string {
+	if x != nil {
+		return x.NextRun
+	}
+	return ""
+}
+
+func (x *RecurringOrder) GetActive() bool {
+	if x != nil {
+		return x.Active
+	}
+	return false
+}
+
+func (x *RecurringOrder) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+type CreateRecurringOrderRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,2,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	AssetId       int64                  `protobuf:"varint,3,opt,name=asset_id,json=assetId,proto3" json:"asset_id,omitempty"`
+	Direction     string                 `protobuf:"bytes,4,opt,name=direction,proto3" json:"direction,omitempty"`
+	Mode          string                 `protobuf:"bytes,5,opt,name=mode,proto3" json:"mode,omitempty"`
+	Value         float64                `protobuf:"fixed64,6,opt,name=value,proto3" json:"value,omitempty"`
+	AccountId     int64                  `protobuf:"varint,7,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	Cadence       string                 `protobuf:"bytes,8,opt,name=cadence,proto3" json:"cadence,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateRecurringOrderRequest) Reset() {
+	*x = CreateRecurringOrderRequest{}
+	mi := &file_order_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateRecurringOrderRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateRecurringOrderRequest) ProtoMessage() {}
+
+func (x *CreateRecurringOrderRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_order_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateRecurringOrderRequest.ProtoReflect.Descriptor instead.
+func (*CreateRecurringOrderRequest) Descriptor() ([]byte, []int) {
+	return file_order_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *CreateRecurringOrderRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *CreateRecurringOrderRequest) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+func (x *CreateRecurringOrderRequest) GetAssetId() int64 {
+	if x != nil {
+		return x.AssetId
+	}
+	return 0
+}
+
+func (x *CreateRecurringOrderRequest) GetDirection() string {
+	if x != nil {
+		return x.Direction
+	}
+	return ""
+}
+
+func (x *CreateRecurringOrderRequest) GetMode() string {
+	if x != nil {
+		return x.Mode
+	}
+	return ""
+}
+
+func (x *CreateRecurringOrderRequest) GetValue() float64 {
+	if x != nil {
+		return x.Value
+	}
+	return 0
+}
+
+func (x *CreateRecurringOrderRequest) GetAccountId() int64 {
+	if x != nil {
+		return x.AccountId
+	}
+	return 0
+}
+
+func (x *CreateRecurringOrderRequest) GetCadence() string {
+	if x != nil {
+		return x.Cadence
+	}
+	return ""
+}
+
+type RecurringOrderResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Order         *RecurringOrder        `protobuf:"bytes,1,opt,name=order,proto3" json:"order,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecurringOrderResponse) Reset() {
+	*x = RecurringOrderResponse{}
+	mi := &file_order_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecurringOrderResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecurringOrderResponse) ProtoMessage() {}
+
+func (x *RecurringOrderResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_order_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecurringOrderResponse.ProtoReflect.Descriptor instead.
+func (*RecurringOrderResponse) Descriptor() ([]byte, []int) {
+	return file_order_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *RecurringOrderResponse) GetOrder() *RecurringOrder {
+	if x != nil {
+		return x.Order
+	}
+	return nil
+}
+
+type ListRecurringOrdersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,2,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRecurringOrdersRequest) Reset() {
+	*x = ListRecurringOrdersRequest{}
+	mi := &file_order_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRecurringOrdersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRecurringOrdersRequest) ProtoMessage() {}
+
+func (x *ListRecurringOrdersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_order_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRecurringOrdersRequest.ProtoReflect.Descriptor instead.
+func (*ListRecurringOrdersRequest) Descriptor() ([]byte, []int) {
+	return file_order_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *ListRecurringOrdersRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *ListRecurringOrdersRequest) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+type ListRecurringOrdersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Orders        []*RecurringOrder      `protobuf:"bytes,1,rep,name=orders,proto3" json:"orders,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListRecurringOrdersResponse) Reset() {
+	*x = ListRecurringOrdersResponse{}
+	mi := &file_order_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListRecurringOrdersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListRecurringOrdersResponse) ProtoMessage() {}
+
+func (x *ListRecurringOrdersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_order_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListRecurringOrdersResponse.ProtoReflect.Descriptor instead.
+func (*ListRecurringOrdersResponse) Descriptor() ([]byte, []int) {
+	return file_order_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ListRecurringOrdersResponse) GetOrders() []*RecurringOrder {
+	if x != nil {
+		return x.Orders
+	}
+	return nil
+}
+
+type RecurringOrderIdRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,3,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RecurringOrderIdRequest) Reset() {
+	*x = RecurringOrderIdRequest{}
+	mi := &file_order_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RecurringOrderIdRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RecurringOrderIdRequest) ProtoMessage() {}
+
+func (x *RecurringOrderIdRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_order_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RecurringOrderIdRequest.ProtoReflect.Descriptor instead.
+func (*RecurringOrderIdRequest) Descriptor() ([]byte, []int) {
+	return file_order_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *RecurringOrderIdRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *RecurringOrderIdRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *RecurringOrderIdRequest) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
 type GetActuaryProfitsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserIds       []int64                `protobuf:"varint,1,rep,packed,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"` // empty = all EMPLOYEE orders
@@ -1034,7 +1562,7 @@ type GetActuaryProfitsRequest struct {
 
 func (x *GetActuaryProfitsRequest) Reset() {
 	*x = GetActuaryProfitsRequest{}
-	mi := &file_order_proto_msgTypes[17]
+	mi := &file_order_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1046,7 +1574,7 @@ func (x *GetActuaryProfitsRequest) String() string {
 func (*GetActuaryProfitsRequest) ProtoMessage() {}
 
 func (x *GetActuaryProfitsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_order_proto_msgTypes[17]
+	mi := &file_order_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1059,7 +1587,7 @@ func (x *GetActuaryProfitsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActuaryProfitsRequest.ProtoReflect.Descriptor instead.
 func (*GetActuaryProfitsRequest) Descriptor() ([]byte, []int) {
-	return file_order_proto_rawDescGZIP(), []int{17}
+	return file_order_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *GetActuaryProfitsRequest) GetUserIds() []int64 {
@@ -1079,7 +1607,7 @@ type ActuaryProfit struct {
 
 func (x *ActuaryProfit) Reset() {
 	*x = ActuaryProfit{}
-	mi := &file_order_proto_msgTypes[18]
+	mi := &file_order_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1091,7 +1619,7 @@ func (x *ActuaryProfit) String() string {
 func (*ActuaryProfit) ProtoMessage() {}
 
 func (x *ActuaryProfit) ProtoReflect() protoreflect.Message {
-	mi := &file_order_proto_msgTypes[18]
+	mi := &file_order_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1104,7 +1632,7 @@ func (x *ActuaryProfit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActuaryProfit.ProtoReflect.Descriptor instead.
 func (*ActuaryProfit) Descriptor() ([]byte, []int) {
-	return file_order_proto_rawDescGZIP(), []int{18}
+	return file_order_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ActuaryProfit) GetUserId() int64 {
@@ -1130,7 +1658,7 @@ type GetActuaryProfitsResponse struct {
 
 func (x *GetActuaryProfitsResponse) Reset() {
 	*x = GetActuaryProfitsResponse{}
-	mi := &file_order_proto_msgTypes[19]
+	mi := &file_order_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1142,7 +1670,7 @@ func (x *GetActuaryProfitsResponse) String() string {
 func (*GetActuaryProfitsResponse) ProtoMessage() {}
 
 func (x *GetActuaryProfitsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_order_proto_msgTypes[19]
+	mi := &file_order_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1155,7 +1683,7 @@ func (x *GetActuaryProfitsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActuaryProfitsResponse.ProtoReflect.Descriptor instead.
 func (*GetActuaryProfitsResponse) Descriptor() ([]byte, []int) {
-	return file_order_proto_rawDescGZIP(), []int{19}
+	return file_order_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *GetActuaryProfitsResponse) GetProfits() []*ActuaryProfit {
@@ -1172,7 +1700,7 @@ const file_order_proto_rawDesc = "" +
 	"\vorder.proto\x12\x05order\"\r\n" +
 	"\vPingRequest\"(\n" +
 	"\fPingResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage\"\xea\x04\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"\xca\x05\n" +
 	"\x05Order\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x19\n" +
@@ -1200,7 +1728,11 @@ const file_order_proto_rawDesc = "" +
 	"\tis_margin\x18\x12 \x01(\bR\bisMargin\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\x13 \x01(\x03R\taccountId\x12\x17\n" +
-	"\afund_id\x18\x14 \x01(\x03R\x06fundId\"\xcb\x02\n" +
+	"\afund_id\x18\x14 \x01(\x03R\x06fundId\x12'\n" +
+	"\x0fcommission_paid\x18\x15 \x01(\x01R\x0ecommissionPaid\x12\x16\n" +
+	"\x06ticker\x18\x16 \x01(\tR\x06ticker\x12\x1d\n" +
+	"\n" +
+	"asset_type\x18\x17 \x01(\tR\tassetType\"\xcb\x02\n" +
 	"\x12CreateOrderRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1b\n" +
 	"\tuser_type\x18\x02 \x01(\tR\buserType\x12\x19\n" +
@@ -1222,10 +1754,22 @@ const file_order_proto_rawDesc = "" +
 	"\n" +
 	"order_type\x18\x02 \x01(\tR\torderType\x12\x16\n" +
 	"\x06status\x18\x03 \x01(\tR\x06status\x12+\n" +
-	"\x11approximate_price\x18\x04 \x01(\x01R\x10approximatePrice\"F\n" +
+	"\x11approximate_price\x18\x04 \x01(\x01R\x10approximatePrice\"\xc5\x02\n" +
 	"\x11ListOrdersRequest\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x19\n" +
-	"\bagent_id\x18\x02 \x01(\x03R\aagentId\":\n" +
+	"\bagent_id\x18\x02 \x01(\x03R\aagentId\x12\x1b\n" +
+	"\tmy_orders\x18\x03 \x01(\bR\bmyOrders\x12\x1b\n" +
+	"\tcaller_id\x18\x04 \x01(\x03R\bcallerId\x12\x1f\n" +
+	"\vcaller_type\x18\x05 \x01(\tR\n" +
+	"callerType\x12\x1c\n" +
+	"\tdirection\x18\x06 \x01(\tR\tdirection\x12\x1d\n" +
+	"\n" +
+	"asset_type\x18\a \x01(\tR\tassetType\x12\x1b\n" +
+	"\tfrom_date\x18\b \x01(\tR\bfromDate\x12\x17\n" +
+	"\ato_date\x18\t \x01(\tR\x06toDate\x12\x12\n" +
+	"\x04page\x18\n" +
+	" \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\v \x01(\x05R\bpageSize\":\n" +
 	"\x12ListOrdersResponse\x12$\n" +
 	"\x06orders\x18\x01 \x03(\v2\f.order.OrderR\x06orders\"%\n" +
 	"\x13GetOrderByIdRequest\x12\x0e\n" +
@@ -1247,7 +1791,44 @@ const file_order_proto_rawDesc = "" +
 	"\x1aCancelOrderPortionsRequest\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\x03R\aorderId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\x03R\x06userId\"\x1d\n" +
-	"\x1bCancelOrderPortionsResponse\"5\n" +
+	"\x1bCancelOrderPortionsResponse\"\xc4\x02\n" +
+	"\x0eRecurringOrder\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x03 \x01(\tR\buserType\x12\x19\n" +
+	"\basset_id\x18\x04 \x01(\x03R\aassetId\x12\x1c\n" +
+	"\tdirection\x18\x05 \x01(\tR\tdirection\x12\x12\n" +
+	"\x04mode\x18\x06 \x01(\tR\x04mode\x12\x14\n" +
+	"\x05value\x18\a \x01(\x01R\x05value\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\b \x01(\x03R\taccountId\x12\x18\n" +
+	"\acadence\x18\t \x01(\tR\acadence\x12\x19\n" +
+	"\bnext_run\x18\n" +
+	" \x01(\tR\anextRun\x12\x16\n" +
+	"\x06active\x18\v \x01(\bR\x06active\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\f \x01(\tR\tcreatedAt\"\xef\x01\n" +
+	"\x1bCreateRecurringOrderRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x02 \x01(\tR\buserType\x12\x19\n" +
+	"\basset_id\x18\x03 \x01(\x03R\aassetId\x12\x1c\n" +
+	"\tdirection\x18\x04 \x01(\tR\tdirection\x12\x12\n" +
+	"\x04mode\x18\x05 \x01(\tR\x04mode\x12\x14\n" +
+	"\x05value\x18\x06 \x01(\x01R\x05value\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\a \x01(\x03R\taccountId\x12\x18\n" +
+	"\acadence\x18\b \x01(\tR\acadence\"E\n" +
+	"\x16RecurringOrderResponse\x12+\n" +
+	"\x05order\x18\x01 \x01(\v2\x15.order.RecurringOrderR\x05order\"R\n" +
+	"\x1aListRecurringOrdersRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x02 \x01(\tR\buserType\"L\n" +
+	"\x1bListRecurringOrdersResponse\x12-\n" +
+	"\x06orders\x18\x01 \x03(\v2\x15.order.RecurringOrderR\x06orders\"_\n" +
+	"\x17RecurringOrderIdRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x03 \x01(\tR\buserType\"5\n" +
 	"\x18GetActuaryProfitsRequest\x12\x19\n" +
 	"\buser_ids\x18\x01 \x03(\x03R\auserIds\"G\n" +
 	"\rActuaryProfit\x12\x17\n" +
@@ -1255,7 +1836,7 @@ const file_order_proto_rawDesc = "" +
 	"\n" +
 	"profit_rsd\x18\x02 \x01(\x01R\tprofitRsd\"K\n" +
 	"\x19GetActuaryProfitsResponse\x12.\n" +
-	"\aprofits\x18\x01 \x03(\v2\x14.order.ActuaryProfitR\aprofits2\x9f\x05\n" +
+	"\aprofits\x18\x01 \x03(\v2\x14.order.ActuaryProfitR\aprofits2\xdc\b\n" +
 	"\fOrderService\x12/\n" +
 	"\x04Ping\x12\x12.order.PingRequest\x1a\x13.order.PingResponse\x12D\n" +
 	"\vCreateOrder\x12\x19.order.CreateOrderRequest\x1a\x1a.order.CreateOrderResponse\x12A\n" +
@@ -1266,7 +1847,12 @@ const file_order_proto_rawDesc = "" +
 	"\fDeclineOrder\x12\x1a.order.DeclineOrderRequest\x1a\x1b.order.DeclineOrderResponse\x12D\n" +
 	"\vCancelOrder\x12\x19.order.CancelOrderRequest\x1a\x1a.order.CancelOrderResponse\x12\\\n" +
 	"\x13CancelOrderPortions\x12!.order.CancelOrderPortionsRequest\x1a\".order.CancelOrderPortionsResponse\x12V\n" +
-	"\x11GetActuaryProfits\x12\x1f.order.GetActuaryProfitsRequest\x1a .order.GetActuaryProfitsResponseB:Z8github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/orderb\x06proto3"
+	"\x11GetActuaryProfits\x12\x1f.order.GetActuaryProfitsRequest\x1a .order.GetActuaryProfitsResponse\x12Y\n" +
+	"\x14CreateRecurringOrder\x12\".order.CreateRecurringOrderRequest\x1a\x1d.order.RecurringOrderResponse\x12\\\n" +
+	"\x13ListRecurringOrders\x12!.order.ListRecurringOrdersRequest\x1a\".order.ListRecurringOrdersResponse\x12T\n" +
+	"\x13PauseRecurringOrder\x12\x1e.order.RecurringOrderIdRequest\x1a\x1d.order.RecurringOrderResponse\x12U\n" +
+	"\x14ResumeRecurringOrder\x12\x1e.order.RecurringOrderIdRequest\x1a\x1d.order.RecurringOrderResponse\x12U\n" +
+	"\x14CancelRecurringOrder\x12\x1e.order.RecurringOrderIdRequest\x1a\x1d.order.RecurringOrderResponseB:Z8github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/orderb\x06proto3"
 
 var (
 	file_order_proto_rawDescOnce sync.Once
@@ -1280,7 +1866,7 @@ func file_order_proto_rawDescGZIP() []byte {
 	return file_order_proto_rawDescData
 }
 
-var file_order_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_order_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_order_proto_goTypes = []any{
 	(*PingRequest)(nil),                 // 0: order.PingRequest
 	(*PingResponse)(nil),                // 1: order.PingResponse
@@ -1299,37 +1885,55 @@ var file_order_proto_goTypes = []any{
 	(*CancelOrderResponse)(nil),         // 14: order.CancelOrderResponse
 	(*CancelOrderPortionsRequest)(nil),  // 15: order.CancelOrderPortionsRequest
 	(*CancelOrderPortionsResponse)(nil), // 16: order.CancelOrderPortionsResponse
-	(*GetActuaryProfitsRequest)(nil),    // 17: order.GetActuaryProfitsRequest
-	(*ActuaryProfit)(nil),               // 18: order.ActuaryProfit
-	(*GetActuaryProfitsResponse)(nil),   // 19: order.GetActuaryProfitsResponse
+	(*RecurringOrder)(nil),              // 17: order.RecurringOrder
+	(*CreateRecurringOrderRequest)(nil), // 18: order.CreateRecurringOrderRequest
+	(*RecurringOrderResponse)(nil),      // 19: order.RecurringOrderResponse
+	(*ListRecurringOrdersRequest)(nil),  // 20: order.ListRecurringOrdersRequest
+	(*ListRecurringOrdersResponse)(nil), // 21: order.ListRecurringOrdersResponse
+	(*RecurringOrderIdRequest)(nil),     // 22: order.RecurringOrderIdRequest
+	(*GetActuaryProfitsRequest)(nil),    // 23: order.GetActuaryProfitsRequest
+	(*ActuaryProfit)(nil),               // 24: order.ActuaryProfit
+	(*GetActuaryProfitsResponse)(nil),   // 25: order.GetActuaryProfitsResponse
 }
 var file_order_proto_depIdxs = []int32{
 	2,  // 0: order.ListOrdersResponse.orders:type_name -> order.Order
 	2,  // 1: order.GetOrderByIdResponse.order:type_name -> order.Order
-	18, // 2: order.GetActuaryProfitsResponse.profits:type_name -> order.ActuaryProfit
-	0,  // 3: order.OrderService.Ping:input_type -> order.PingRequest
-	3,  // 4: order.OrderService.CreateOrder:input_type -> order.CreateOrderRequest
-	5,  // 5: order.OrderService.ListOrders:input_type -> order.ListOrdersRequest
-	7,  // 6: order.OrderService.GetOrderById:input_type -> order.GetOrderByIdRequest
-	9,  // 7: order.OrderService.ApproveOrder:input_type -> order.ApproveOrderRequest
-	11, // 8: order.OrderService.DeclineOrder:input_type -> order.DeclineOrderRequest
-	13, // 9: order.OrderService.CancelOrder:input_type -> order.CancelOrderRequest
-	15, // 10: order.OrderService.CancelOrderPortions:input_type -> order.CancelOrderPortionsRequest
-	17, // 11: order.OrderService.GetActuaryProfits:input_type -> order.GetActuaryProfitsRequest
-	1,  // 12: order.OrderService.Ping:output_type -> order.PingResponse
-	4,  // 13: order.OrderService.CreateOrder:output_type -> order.CreateOrderResponse
-	6,  // 14: order.OrderService.ListOrders:output_type -> order.ListOrdersResponse
-	8,  // 15: order.OrderService.GetOrderById:output_type -> order.GetOrderByIdResponse
-	10, // 16: order.OrderService.ApproveOrder:output_type -> order.ApproveOrderResponse
-	12, // 17: order.OrderService.DeclineOrder:output_type -> order.DeclineOrderResponse
-	14, // 18: order.OrderService.CancelOrder:output_type -> order.CancelOrderResponse
-	16, // 19: order.OrderService.CancelOrderPortions:output_type -> order.CancelOrderPortionsResponse
-	19, // 20: order.OrderService.GetActuaryProfits:output_type -> order.GetActuaryProfitsResponse
-	12, // [12:21] is the sub-list for method output_type
-	3,  // [3:12] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	17, // 2: order.RecurringOrderResponse.order:type_name -> order.RecurringOrder
+	17, // 3: order.ListRecurringOrdersResponse.orders:type_name -> order.RecurringOrder
+	24, // 4: order.GetActuaryProfitsResponse.profits:type_name -> order.ActuaryProfit
+	0,  // 5: order.OrderService.Ping:input_type -> order.PingRequest
+	3,  // 6: order.OrderService.CreateOrder:input_type -> order.CreateOrderRequest
+	5,  // 7: order.OrderService.ListOrders:input_type -> order.ListOrdersRequest
+	7,  // 8: order.OrderService.GetOrderById:input_type -> order.GetOrderByIdRequest
+	9,  // 9: order.OrderService.ApproveOrder:input_type -> order.ApproveOrderRequest
+	11, // 10: order.OrderService.DeclineOrder:input_type -> order.DeclineOrderRequest
+	13, // 11: order.OrderService.CancelOrder:input_type -> order.CancelOrderRequest
+	15, // 12: order.OrderService.CancelOrderPortions:input_type -> order.CancelOrderPortionsRequest
+	23, // 13: order.OrderService.GetActuaryProfits:input_type -> order.GetActuaryProfitsRequest
+	18, // 14: order.OrderService.CreateRecurringOrder:input_type -> order.CreateRecurringOrderRequest
+	20, // 15: order.OrderService.ListRecurringOrders:input_type -> order.ListRecurringOrdersRequest
+	22, // 16: order.OrderService.PauseRecurringOrder:input_type -> order.RecurringOrderIdRequest
+	22, // 17: order.OrderService.ResumeRecurringOrder:input_type -> order.RecurringOrderIdRequest
+	22, // 18: order.OrderService.CancelRecurringOrder:input_type -> order.RecurringOrderIdRequest
+	1,  // 19: order.OrderService.Ping:output_type -> order.PingResponse
+	4,  // 20: order.OrderService.CreateOrder:output_type -> order.CreateOrderResponse
+	6,  // 21: order.OrderService.ListOrders:output_type -> order.ListOrdersResponse
+	8,  // 22: order.OrderService.GetOrderById:output_type -> order.GetOrderByIdResponse
+	10, // 23: order.OrderService.ApproveOrder:output_type -> order.ApproveOrderResponse
+	12, // 24: order.OrderService.DeclineOrder:output_type -> order.DeclineOrderResponse
+	14, // 25: order.OrderService.CancelOrder:output_type -> order.CancelOrderResponse
+	16, // 26: order.OrderService.CancelOrderPortions:output_type -> order.CancelOrderPortionsResponse
+	25, // 27: order.OrderService.GetActuaryProfits:output_type -> order.GetActuaryProfitsResponse
+	19, // 28: order.OrderService.CreateRecurringOrder:output_type -> order.RecurringOrderResponse
+	21, // 29: order.OrderService.ListRecurringOrders:output_type -> order.ListRecurringOrdersResponse
+	19, // 30: order.OrderService.PauseRecurringOrder:output_type -> order.RecurringOrderResponse
+	19, // 31: order.OrderService.ResumeRecurringOrder:output_type -> order.RecurringOrderResponse
+	19, // 32: order.OrderService.CancelRecurringOrder:output_type -> order.RecurringOrderResponse
+	19, // [19:33] is the sub-list for method output_type
+	5,  // [5:19] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_order_proto_init() }
@@ -1343,7 +1947,7 @@ func file_order_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_order_proto_rawDesc), len(file_order_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

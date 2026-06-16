@@ -10,13 +10,16 @@ import (
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/order-service/approval"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/order-service/execution"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/order-service/models"
+	orderqueue "github.com/RAF-SI-2025/EXBanka-4-Backend/services/order-service/queue"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/order-service/repository"
+	pb_client "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
 	pb_emp "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
 	pb_loan "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/loan"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/order"
 	pb_portfolio "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/portfolio"
 	pb_sec "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/securities"
 	"github.com/lib/pq"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	grpcstatus "google.golang.org/grpc/status"
@@ -33,6 +36,42 @@ type OrderServer struct {
 	LoanClient       pb_loan.LoanServiceClient
 	EmployeeClient   pb_emp.EmployeeServiceClient
 	PortfolioClient  pb_portfolio.PortfolioServiceClient
+	ClientClient     pb_client.ClientServiceClient
+	AmqpChannel      *amqp.Channel
+}
+
+// sendOrderNotif fetches user email and publishes an order status email notification.
+// Runs in a goroutine — errors are logged and swallowed.
+func (s *OrderServer) sendOrderNotif(ctx context.Context, orderID int64, userID int64, userType, ticker, direction, status string, quantity, filledQty int32, pricePerUnit float64) {
+	if s.AmqpChannel == nil {
+		return
+	}
+	var email, firstName string
+	if userType == "CLIENT" && s.ClientClient != nil {
+		if resp, err := s.ClientClient.GetClientById(ctx, &pb_client.GetClientByIdRequest{Id: userID}); err == nil && resp.Client != nil {
+			email = resp.Client.Email
+			firstName = resp.Client.FirstName
+		}
+	} else if s.EmployeeClient != nil {
+		if resp, err := s.EmployeeClient.GetEmployeeById(ctx, &pb_emp.GetEmployeeByIdRequest{Id: userID}); err == nil && resp.Employee != nil {
+			email = resp.Employee.Email
+			firstName = resp.Employee.FirstName
+		}
+	}
+	if email == "" {
+		return
+	}
+	_ = orderqueue.PublishOrderStatus(s.AmqpChannel, orderqueue.OrderStatusMessage{
+		Email:        email,
+		FirstName:    firstName,
+		OrderID:      orderID,
+		Ticker:       ticker,
+		Direction:    direction,
+		Status:       status,
+		Quantity:     quantity,
+		FilledQty:    filledQty,
+		PricePerUnit: pricePerUnit,
+	})
 }
 
 func (s *OrderServer) Ping(ctx context.Context, req *pb.PingRequest) (*pb.PingResponse, error) {
@@ -179,6 +218,15 @@ func (s *OrderServer) CreateOrder(ctx context.Context, req *pb.CreateOrderReques
 		}
 	}
 
+	// Non-blocking notification
+	go func() {
+		ticker := ""
+		if listingResp.Summary != nil {
+			ticker = listingResp.Summary.Ticker
+		}
+		s.sendOrderNotif(context.Background(), id, req.UserId, req.UserType, ticker, req.Direction, initialStatus, req.Quantity, 0, approxPrice)
+	}()
+
 	return &pb.CreateOrderResponse{
 		OrderId:          id,
 		OrderType:        orderType,
@@ -187,9 +235,17 @@ func (s *OrderServer) CreateOrder(ctx context.Context, req *pb.CreateOrderReques
 	}, nil
 }
 
-// ListOrders returns all orders visible to a supervisor, with optional filters.
+// ListOrders returns orders. When req.MyOrders is true, returns only the caller's own orders
+// with enriched ticker/asset_type data. Otherwise returns all EMPLOYEE orders for supervisors.
 func (s *OrderServer) ListOrders(ctx context.Context, req *pb.ListOrdersRequest) (*pb.ListOrdersResponse, error) {
-	orders, err := repository.ListOrders(ctx, s.DB, req.Status, req.AgentId)
+	var orders []models.Order
+	var err error
+	if req.MyOrders {
+		orders, err = repository.GetMyOrders(ctx, s.DB, s.SecuritiesDB, req.CallerId, req.CallerType,
+			req.Status, req.AssetType, req.Direction, req.FromDate, req.ToDate, req.Page, req.PageSize)
+	} else {
+		orders, err = repository.ListOrders(ctx, s.DB, req.Status, req.AgentId)
+	}
 	if err != nil {
 		return nil, grpcstatus.Errorf(codes.Internal, "failed to list orders: %v", err)
 	}
@@ -219,6 +275,13 @@ func (s *OrderServer) ApproveOrder(ctx context.Context, req *pb.ApproveOrderRequ
 		}
 		return nil, grpcstatus.Errorf(codes.Internal, "failed to approve order: %v", err)
 	}
+	if s.EmployeeClient != nil {
+		_, _ = s.EmployeeClient.LogAuditEvent(ctx, &pb_emp.AuditLogRequest{
+			ActorId: req.SupervisorId, ActorType: "EMPLOYEE",
+			Action: "ORDER_APPROVED", TargetId: req.OrderId, TargetType: "ORDER",
+		})
+	}
+	go s.notifyOrderByID(req.OrderId, "APPROVED")
 	return &pb.ApproveOrderResponse{}, nil
 }
 
@@ -233,6 +296,13 @@ func (s *OrderServer) DeclineOrder(ctx context.Context, req *pb.DeclineOrderRequ
 		}
 		return nil, grpcstatus.Errorf(codes.Internal, "failed to decline order: %v", err)
 	}
+	if s.EmployeeClient != nil {
+		_, _ = s.EmployeeClient.LogAuditEvent(ctx, &pb_emp.AuditLogRequest{
+			ActorId: req.SupervisorId, ActorType: "EMPLOYEE",
+			Action: "ORDER_DECLINED", TargetId: req.OrderId, TargetType: "ORDER",
+		})
+	}
+	go s.notifyOrderByID(req.OrderId, "DECLINED")
 	return &pb.DeclineOrderResponse{}, nil
 }
 
@@ -270,7 +340,20 @@ func (s *OrderServer) cancelOrderChecked(ctx context.Context, orderID, userID in
 	if err := repository.CancelOrder(ctx, s.DB, orderID); err != nil {
 		return grpcstatus.Errorf(codes.Internal, "failed to cancel order: %v", err)
 	}
+	go s.notifyOrderByID(orderID, "CANCELLED")
 	return nil
+}
+
+// notifyOrderByID fetches the order and sends an email notification with the given status.
+func (s *OrderServer) notifyOrderByID(orderID int64, status string) {
+	ctx := context.Background()
+	o, err := repository.GetOrderByID(ctx, s.DB, orderID)
+	if err != nil {
+		return
+	}
+	var ticker string
+	_ = s.SecuritiesDB.QueryRowContext(ctx, `SELECT ticker FROM listing WHERE id = $1`, o.AssetID).Scan(&ticker)
+	s.sendOrderNotif(ctx, orderID, o.UserID, o.UserType, ticker, o.Direction, status, o.Quantity, o.Quantity-o.RemainingPortions, o.PricePerUnit)
 }
 
 // determineOrderType infers MARKET/LIMIT/STOP/STOP_LIMIT from the presence of limit/stop values.
@@ -351,6 +434,9 @@ func orderToProto(o models.Order) *pb.Order {
 		IsMargin:          o.IsMargin,
 		AccountId:         o.AccountID,
 		FundId:            o.FundID,
+		CommissionPaid:    o.CommissionPaid,
+		Ticker:            o.Ticker,
+		AssetType:         o.AssetType,
 	}
 }
 

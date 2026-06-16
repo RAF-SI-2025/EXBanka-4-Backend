@@ -921,6 +921,7 @@ type UpdateEmployeeRequest struct {
 	Active        bool                   `protobuf:"varint,12,opt,name=active,proto3" json:"active,omitempty"`
 	Permissions   []string               `protobuf:"bytes,13,rep,name=permissions,proto3" json:"permissions,omitempty"`
 	Jmbg          string                 `protobuf:"bytes,14,opt,name=jmbg,proto3" json:"jmbg,omitempty"`
+	ActorId       int64                  `protobuf:"varint,15,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1051,6 +1052,13 @@ func (x *UpdateEmployeeRequest) GetJmbg() string {
 		return x.Jmbg
 	}
 	return ""
+}
+
+func (x *UpdateEmployeeRequest) GetActorId() int64 {
+	if x != nil {
+		return x.ActorId
+	}
+	return 0
 }
 
 type UpdateEmployeeResponse struct {
@@ -1593,6 +1601,7 @@ type SetAgentLimitRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	EmployeeId    int64                  `protobuf:"varint,1,opt,name=employee_id,json=employeeId,proto3" json:"employee_id,omitempty"`
 	LimitAmount   float64                `protobuf:"fixed64,2,opt,name=limit_amount,json=limitAmount,proto3" json:"limit_amount,omitempty"`
+	ActorId       int64                  `protobuf:"varint,3,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1641,6 +1650,13 @@ func (x *SetAgentLimitRequest) GetLimitAmount() float64 {
 	return 0
 }
 
+func (x *SetAgentLimitRequest) GetActorId() int64 {
+	if x != nil {
+		return x.ActorId
+	}
+	return 0
+}
+
 type SetAgentLimitResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -1680,6 +1696,7 @@ func (*SetAgentLimitResponse) Descriptor() ([]byte, []int) {
 type ResetAgentUsedLimitRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	EmployeeId    int64                  `protobuf:"varint,1,opt,name=employee_id,json=employeeId,proto3" json:"employee_id,omitempty"`
+	ActorId       int64                  `protobuf:"varint,2,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1717,6 +1734,13 @@ func (*ResetAgentUsedLimitRequest) Descriptor() ([]byte, []int) {
 func (x *ResetAgentUsedLimitRequest) GetEmployeeId() int64 {
 	if x != nil {
 		return x.EmployeeId
+	}
+	return 0
+}
+
+func (x *ResetAgentUsedLimitRequest) GetActorId() int64 {
+	if x != nil {
+		return x.ActorId
 	}
 	return 0
 }
@@ -2221,6 +2245,403 @@ func (x *GetActuaryPerformersResponse) GetPerformers() []*ActuaryPerformer {
 	return nil
 }
 
+// Audit log messages (BE-C3-05)
+type AuditLogRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ActorId       int64                  `protobuf:"varint,1,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	ActorType     string                 `protobuf:"bytes,2,opt,name=actor_type,json=actorType,proto3" json:"actor_type,omitempty"`
+	ActorName     string                 `protobuf:"bytes,3,opt,name=actor_name,json=actorName,proto3" json:"actor_name,omitempty"`
+	Action        string                 `protobuf:"bytes,4,opt,name=action,proto3" json:"action,omitempty"`
+	TargetId      int64                  `protobuf:"varint,5,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
+	TargetType    string                 `protobuf:"bytes,6,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"`
+	TargetName    string                 `protobuf:"bytes,7,opt,name=target_name,json=targetName,proto3" json:"target_name,omitempty"`
+	OldValue      string                 `protobuf:"bytes,8,opt,name=old_value,json=oldValue,proto3" json:"old_value,omitempty"`
+	NewValue      string                 `protobuf:"bytes,9,opt,name=new_value,json=newValue,proto3" json:"new_value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuditLogRequest) Reset() {
+	*x = AuditLogRequest{}
+	mi := &file_employee_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuditLogRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuditLogRequest) ProtoMessage() {}
+
+func (x *AuditLogRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_employee_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuditLogRequest.ProtoReflect.Descriptor instead.
+func (*AuditLogRequest) Descriptor() ([]byte, []int) {
+	return file_employee_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *AuditLogRequest) GetActorId() int64 {
+	if x != nil {
+		return x.ActorId
+	}
+	return 0
+}
+
+func (x *AuditLogRequest) GetActorType() string {
+	if x != nil {
+		return x.ActorType
+	}
+	return ""
+}
+
+func (x *AuditLogRequest) GetActorName() string {
+	if x != nil {
+		return x.ActorName
+	}
+	return ""
+}
+
+func (x *AuditLogRequest) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *AuditLogRequest) GetTargetId() int64 {
+	if x != nil {
+		return x.TargetId
+	}
+	return 0
+}
+
+func (x *AuditLogRequest) GetTargetType() string {
+	if x != nil {
+		return x.TargetType
+	}
+	return ""
+}
+
+func (x *AuditLogRequest) GetTargetName() string {
+	if x != nil {
+		return x.TargetName
+	}
+	return ""
+}
+
+func (x *AuditLogRequest) GetOldValue() string {
+	if x != nil {
+		return x.OldValue
+	}
+	return ""
+}
+
+func (x *AuditLogRequest) GetNewValue() string {
+	if x != nil {
+		return x.NewValue
+	}
+	return ""
+}
+
+type AuditLogResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuditLogResponse) Reset() {
+	*x = AuditLogResponse{}
+	mi := &file_employee_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuditLogResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuditLogResponse) ProtoMessage() {}
+
+func (x *AuditLogResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_employee_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuditLogResponse.ProtoReflect.Descriptor instead.
+func (*AuditLogResponse) Descriptor() ([]byte, []int) {
+	return file_employee_proto_rawDescGZIP(), []int{39}
+}
+
+type ListAuditLogsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Action        string                 `protobuf:"bytes,1,opt,name=action,proto3" json:"action,omitempty"`
+	ActorId       int64                  `protobuf:"varint,2,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	FromDate      string                 `protobuf:"bytes,3,opt,name=from_date,json=fromDate,proto3" json:"from_date,omitempty"`
+	ToDate        string                 `protobuf:"bytes,4,opt,name=to_date,json=toDate,proto3" json:"to_date,omitempty"`
+	Page          int32                  `protobuf:"varint,5,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,6,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAuditLogsRequest) Reset() {
+	*x = ListAuditLogsRequest{}
+	mi := &file_employee_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAuditLogsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAuditLogsRequest) ProtoMessage() {}
+
+func (x *ListAuditLogsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_employee_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAuditLogsRequest.ProtoReflect.Descriptor instead.
+func (*ListAuditLogsRequest) Descriptor() ([]byte, []int) {
+	return file_employee_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *ListAuditLogsRequest) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *ListAuditLogsRequest) GetActorId() int64 {
+	if x != nil {
+		return x.ActorId
+	}
+	return 0
+}
+
+func (x *ListAuditLogsRequest) GetFromDate() string {
+	if x != nil {
+		return x.FromDate
+	}
+	return ""
+}
+
+func (x *ListAuditLogsRequest) GetToDate() string {
+	if x != nil {
+		return x.ToDate
+	}
+	return ""
+}
+
+func (x *ListAuditLogsRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListAuditLogsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type AuditLogEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	ActorId       int64                  `protobuf:"varint,2,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	ActorType     string                 `protobuf:"bytes,3,opt,name=actor_type,json=actorType,proto3" json:"actor_type,omitempty"`
+	ActorName     string                 `protobuf:"bytes,4,opt,name=actor_name,json=actorName,proto3" json:"actor_name,omitempty"`
+	Action        string                 `protobuf:"bytes,5,opt,name=action,proto3" json:"action,omitempty"`
+	TargetId      int64                  `protobuf:"varint,6,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
+	TargetType    string                 `protobuf:"bytes,7,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"`
+	TargetName    string                 `protobuf:"bytes,8,opt,name=target_name,json=targetName,proto3" json:"target_name,omitempty"`
+	OldValue      string                 `protobuf:"bytes,9,opt,name=old_value,json=oldValue,proto3" json:"old_value,omitempty"`
+	NewValue      string                 `protobuf:"bytes,10,opt,name=new_value,json=newValue,proto3" json:"new_value,omitempty"`
+	Timestamp     string                 `protobuf:"bytes,11,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuditLogEntry) Reset() {
+	*x = AuditLogEntry{}
+	mi := &file_employee_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuditLogEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuditLogEntry) ProtoMessage() {}
+
+func (x *AuditLogEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_employee_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuditLogEntry.ProtoReflect.Descriptor instead.
+func (*AuditLogEntry) Descriptor() ([]byte, []int) {
+	return file_employee_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *AuditLogEntry) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *AuditLogEntry) GetActorId() int64 {
+	if x != nil {
+		return x.ActorId
+	}
+	return 0
+}
+
+func (x *AuditLogEntry) GetActorType() string {
+	if x != nil {
+		return x.ActorType
+	}
+	return ""
+}
+
+func (x *AuditLogEntry) GetActorName() string {
+	if x != nil {
+		return x.ActorName
+	}
+	return ""
+}
+
+func (x *AuditLogEntry) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *AuditLogEntry) GetTargetId() int64 {
+	if x != nil {
+		return x.TargetId
+	}
+	return 0
+}
+
+func (x *AuditLogEntry) GetTargetType() string {
+	if x != nil {
+		return x.TargetType
+	}
+	return ""
+}
+
+func (x *AuditLogEntry) GetTargetName() string {
+	if x != nil {
+		return x.TargetName
+	}
+	return ""
+}
+
+func (x *AuditLogEntry) GetOldValue() string {
+	if x != nil {
+		return x.OldValue
+	}
+	return ""
+}
+
+func (x *AuditLogEntry) GetNewValue() string {
+	if x != nil {
+		return x.NewValue
+	}
+	return ""
+}
+
+func (x *AuditLogEntry) GetTimestamp() string {
+	if x != nil {
+		return x.Timestamp
+	}
+	return ""
+}
+
+type ListAuditLogsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Entries       []*AuditLogEntry       `protobuf:"bytes,1,rep,name=entries,proto3" json:"entries,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAuditLogsResponse) Reset() {
+	*x = ListAuditLogsResponse{}
+	mi := &file_employee_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAuditLogsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAuditLogsResponse) ProtoMessage() {}
+
+func (x *ListAuditLogsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_employee_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAuditLogsResponse.ProtoReflect.Descriptor instead.
+func (*ListAuditLogsResponse) Descriptor() ([]byte, []int) {
+	return file_employee_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *ListAuditLogsResponse) GetEntries() []*AuditLogEntry {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
 var File_employee_proto protoreflect.FileDescriptor
 
 const file_employee_proto_rawDesc = "" +
@@ -2302,7 +2723,7 @@ const file_employee_proto_rawDesc = "" +
 	"\x16GetEmployeeByIdRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\"I\n" +
 	"\x17GetEmployeeByIdResponse\x12.\n" +
-	"\bemployee\x18\x01 \x01(\v2\x12.employee.EmployeeR\bemployee\"\x98\x03\n" +
+	"\bemployee\x18\x01 \x01(\v2\x12.employee.EmployeeR\bemployee\"\xb3\x03\n" +
 	"\x15UpdateEmployeeRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1d\n" +
 	"\n" +
@@ -2321,7 +2742,8 @@ const file_employee_proto_rawDesc = "" +
 	"department\x12\x16\n" +
 	"\x06active\x18\f \x01(\bR\x06active\x12 \n" +
 	"\vpermissions\x18\r \x03(\tR\vpermissions\x12\x12\n" +
-	"\x04jmbg\x18\x0e \x01(\tR\x04jmbg\"H\n" +
+	"\x04jmbg\x18\x0e \x01(\tR\x04jmbg\x12\x19\n" +
+	"\bactor_id\x18\x0f \x01(\x03R\aactorId\"H\n" +
 	"\x16UpdateEmployeeResponse\x12.\n" +
 	"\bemployee\x18\x01 \x01(\v2\x12.employee.EmployeeR\bemployee\"_\n" +
 	"\x17ActivateEmployeeRequest\x12\x1f\n" +
@@ -2360,15 +2782,17 @@ const file_employee_proto_rawDesc = "" +
 	"\tlast_name\x18\x03 \x01(\tR\blastName\x12\x1a\n" +
 	"\bposition\x18\x04 \x01(\tR\bposition\"K\n" +
 	"\x14GetActuariesResponse\x123\n" +
-	"\tactuaries\x18\x01 \x03(\v2\x15.employee.ActuaryInfoR\tactuaries\"Z\n" +
+	"\tactuaries\x18\x01 \x03(\v2\x15.employee.ActuaryInfoR\tactuaries\"u\n" +
 	"\x14SetAgentLimitRequest\x12\x1f\n" +
 	"\vemployee_id\x18\x01 \x01(\x03R\n" +
 	"employeeId\x12!\n" +
-	"\flimit_amount\x18\x02 \x01(\x01R\vlimitAmount\"\x17\n" +
-	"\x15SetAgentLimitResponse\"=\n" +
+	"\flimit_amount\x18\x02 \x01(\x01R\vlimitAmount\x12\x19\n" +
+	"\bactor_id\x18\x03 \x01(\x03R\aactorId\"\x17\n" +
+	"\x15SetAgentLimitResponse\"X\n" +
 	"\x1aResetAgentUsedLimitRequest\x12\x1f\n" +
 	"\vemployee_id\x18\x01 \x01(\x03R\n" +
-	"employeeId\"\x1d\n" +
+	"employeeId\x12\x19\n" +
+	"\bactor_id\x18\x02 \x01(\x03R\aactorId\"\x1d\n" +
 	"\x1bResetAgentUsedLimitResponse\"^\n" +
 	"\x16SetNeedApprovalRequest\x12\x1f\n" +
 	"\vemployee_id\x18\x01 \x01(\x03R\n" +
@@ -2398,7 +2822,48 @@ const file_employee_proto_rawDesc = "" +
 	"\x1cGetActuaryPerformersResponse\x12:\n" +
 	"\n" +
 	"performers\x18\x01 \x03(\v2\x1a.employee.ActuaryPerformerR\n" +
-	"performers2\xb4\f\n" +
+	"performers\"\x9b\x02\n" +
+	"\x0fAuditLogRequest\x12\x19\n" +
+	"\bactor_id\x18\x01 \x01(\x03R\aactorId\x12\x1d\n" +
+	"\n" +
+	"actor_type\x18\x02 \x01(\tR\tactorType\x12\x1d\n" +
+	"\n" +
+	"actor_name\x18\x03 \x01(\tR\tactorName\x12\x16\n" +
+	"\x06action\x18\x04 \x01(\tR\x06action\x12\x1b\n" +
+	"\ttarget_id\x18\x05 \x01(\x03R\btargetId\x12\x1f\n" +
+	"\vtarget_type\x18\x06 \x01(\tR\n" +
+	"targetType\x12\x1f\n" +
+	"\vtarget_name\x18\a \x01(\tR\n" +
+	"targetName\x12\x1b\n" +
+	"\told_value\x18\b \x01(\tR\boldValue\x12\x1b\n" +
+	"\tnew_value\x18\t \x01(\tR\bnewValue\"\x12\n" +
+	"\x10AuditLogResponse\"\xb0\x01\n" +
+	"\x14ListAuditLogsRequest\x12\x16\n" +
+	"\x06action\x18\x01 \x01(\tR\x06action\x12\x19\n" +
+	"\bactor_id\x18\x02 \x01(\x03R\aactorId\x12\x1b\n" +
+	"\tfrom_date\x18\x03 \x01(\tR\bfromDate\x12\x17\n" +
+	"\ato_date\x18\x04 \x01(\tR\x06toDate\x12\x12\n" +
+	"\x04page\x18\x05 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x06 \x01(\x05R\bpageSize\"\xc7\x02\n" +
+	"\rAuditLogEntry\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x19\n" +
+	"\bactor_id\x18\x02 \x01(\x03R\aactorId\x12\x1d\n" +
+	"\n" +
+	"actor_type\x18\x03 \x01(\tR\tactorType\x12\x1d\n" +
+	"\n" +
+	"actor_name\x18\x04 \x01(\tR\tactorName\x12\x16\n" +
+	"\x06action\x18\x05 \x01(\tR\x06action\x12\x1b\n" +
+	"\ttarget_id\x18\x06 \x01(\x03R\btargetId\x12\x1f\n" +
+	"\vtarget_type\x18\a \x01(\tR\n" +
+	"targetType\x12\x1f\n" +
+	"\vtarget_name\x18\b \x01(\tR\n" +
+	"targetName\x12\x1b\n" +
+	"\told_value\x18\t \x01(\tR\boldValue\x12\x1b\n" +
+	"\tnew_value\x18\n" +
+	" \x01(\tR\bnewValue\x12\x1c\n" +
+	"\ttimestamp\x18\v \x01(\tR\ttimestamp\"J\n" +
+	"\x15ListAuditLogsResponse\x121\n" +
+	"\aentries\x18\x01 \x03(\v2\x17.employee.AuditLogEntryR\aentries2\xce\r\n" +
 	"\x0fEmployeeService\x12V\n" +
 	"\x0fGetAllEmployees\x12 .employee.GetAllEmployeesRequest\x1a!.employee.GetAllEmployeesResponse\x12V\n" +
 	"\x0fSearchEmployees\x12 .employee.SearchEmployeesRequest\x1a!.employee.SearchEmployeesResponse\x12k\n" +
@@ -2416,7 +2881,9 @@ const file_employee_proto_rawDesc = "" +
 	"\x19ResetAllActuaryUsedLimits\x12*.employee.ResetAllActuaryUsedLimitsRequest\x1a+.employee.ResetAllActuaryUsedLimitsResponse\x12e\n" +
 	"\x14GetActuaryPerformers\x12%.employee.GetActuaryPerformersRequest\x1a&.employee.GetActuaryPerformersResponse\x12S\n" +
 	"\x0eGetSupervisors\x12\x1f.employee.GetSupervisorsRequest\x1a .employee.GetSupervisorsResponse\x12b\n" +
-	"\x13UpdateLoginAttempts\x12$.employee.UpdateLoginAttemptsRequest\x1a%.employee.UpdateLoginAttemptsResponseB=Z;github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employeeb\x06proto3"
+	"\x13UpdateLoginAttempts\x12$.employee.UpdateLoginAttemptsRequest\x1a%.employee.UpdateLoginAttemptsResponse\x12F\n" +
+	"\rLogAuditEvent\x12\x19.employee.AuditLogRequest\x1a\x1a.employee.AuditLogResponse\x12P\n" +
+	"\rListAuditLogs\x12\x1e.employee.ListAuditLogsRequest\x1a\x1f.employee.ListAuditLogsResponseB=Z;github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employeeb\x06proto3"
 
 var (
 	file_employee_proto_rawDescOnce sync.Once
@@ -2430,7 +2897,7 @@ func file_employee_proto_rawDescGZIP() []byte {
 	return file_employee_proto_rawDescData
 }
 
-var file_employee_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
+var file_employee_proto_msgTypes = make([]protoimpl.MessageInfo, 43)
 var file_employee_proto_goTypes = []any{
 	(*Employee)(nil),                          // 0: employee.Employee
 	(*GetAllEmployeesRequest)(nil),            // 1: employee.GetAllEmployeesRequest
@@ -2470,6 +2937,11 @@ var file_employee_proto_goTypes = []any{
 	(*ActuaryPerformer)(nil),                  // 35: employee.ActuaryPerformer
 	(*GetActuaryPerformersRequest)(nil),       // 36: employee.GetActuaryPerformersRequest
 	(*GetActuaryPerformersResponse)(nil),      // 37: employee.GetActuaryPerformersResponse
+	(*AuditLogRequest)(nil),                   // 38: employee.AuditLogRequest
+	(*AuditLogResponse)(nil),                  // 39: employee.AuditLogResponse
+	(*ListAuditLogsRequest)(nil),              // 40: employee.ListAuditLogsRequest
+	(*AuditLogEntry)(nil),                     // 41: employee.AuditLogEntry
+	(*ListAuditLogsResponse)(nil),             // 42: employee.ListAuditLogsResponse
 }
 var file_employee_proto_depIdxs = []int32{
 	0,  // 0: employee.GetAllEmployeesResponse.employees:type_name -> employee.Employee
@@ -2480,45 +2952,50 @@ var file_employee_proto_depIdxs = []int32{
 	21, // 5: employee.GetActuariesResponse.actuaries:type_name -> employee.ActuaryInfo
 	33, // 6: employee.GetSupervisorsResponse.supervisors:type_name -> employee.SupervisorInfo
 	35, // 7: employee.GetActuaryPerformersResponse.performers:type_name -> employee.ActuaryPerformer
-	1,  // 8: employee.EmployeeService.GetAllEmployees:input_type -> employee.GetAllEmployeesRequest
-	3,  // 9: employee.EmployeeService.SearchEmployees:input_type -> employee.SearchEmployeesRequest
-	5,  // 10: employee.EmployeeService.GetEmployeeCredentials:input_type -> employee.GetEmployeeCredentialsRequest
-	9,  // 11: employee.EmployeeService.CreateEmployee:input_type -> employee.CreateEmployeeRequest
-	11, // 12: employee.EmployeeService.GetEmployeeById:input_type -> employee.GetEmployeeByIdRequest
-	13, // 13: employee.EmployeeService.UpdateEmployee:input_type -> employee.UpdateEmployeeRequest
-	15, // 14: employee.EmployeeService.ActivateEmployee:input_type -> employee.ActivateEmployeeRequest
-	17, // 15: employee.EmployeeService.GetEmployeeByEmail:input_type -> employee.GetEmployeeByEmailRequest
-	19, // 16: employee.EmployeeService.UpdatePassword:input_type -> employee.UpdatePasswordRequest
-	22, // 17: employee.EmployeeService.GetActuaries:input_type -> employee.GetActuariesRequest
-	24, // 18: employee.EmployeeService.SetAgentLimit:input_type -> employee.SetAgentLimitRequest
-	26, // 19: employee.EmployeeService.ResetAgentUsedLimit:input_type -> employee.ResetAgentUsedLimitRequest
-	28, // 20: employee.EmployeeService.SetNeedApproval:input_type -> employee.SetNeedApprovalRequest
-	30, // 21: employee.EmployeeService.ResetAllActuaryUsedLimits:input_type -> employee.ResetAllActuaryUsedLimitsRequest
-	36, // 22: employee.EmployeeService.GetActuaryPerformers:input_type -> employee.GetActuaryPerformersRequest
-	32, // 23: employee.EmployeeService.GetSupervisors:input_type -> employee.GetSupervisorsRequest
-	7,  // 24: employee.EmployeeService.UpdateLoginAttempts:input_type -> employee.UpdateLoginAttemptsRequest
-	2,  // 25: employee.EmployeeService.GetAllEmployees:output_type -> employee.GetAllEmployeesResponse
-	4,  // 26: employee.EmployeeService.SearchEmployees:output_type -> employee.SearchEmployeesResponse
-	6,  // 27: employee.EmployeeService.GetEmployeeCredentials:output_type -> employee.GetEmployeeCredentialsResponse
-	10, // 28: employee.EmployeeService.CreateEmployee:output_type -> employee.CreateEmployeeResponse
-	12, // 29: employee.EmployeeService.GetEmployeeById:output_type -> employee.GetEmployeeByIdResponse
-	14, // 30: employee.EmployeeService.UpdateEmployee:output_type -> employee.UpdateEmployeeResponse
-	16, // 31: employee.EmployeeService.ActivateEmployee:output_type -> employee.ActivateEmployeeResponse
-	18, // 32: employee.EmployeeService.GetEmployeeByEmail:output_type -> employee.GetEmployeeByEmailResponse
-	20, // 33: employee.EmployeeService.UpdatePassword:output_type -> employee.UpdatePasswordResponse
-	23, // 34: employee.EmployeeService.GetActuaries:output_type -> employee.GetActuariesResponse
-	25, // 35: employee.EmployeeService.SetAgentLimit:output_type -> employee.SetAgentLimitResponse
-	27, // 36: employee.EmployeeService.ResetAgentUsedLimit:output_type -> employee.ResetAgentUsedLimitResponse
-	29, // 37: employee.EmployeeService.SetNeedApproval:output_type -> employee.SetNeedApprovalResponse
-	31, // 38: employee.EmployeeService.ResetAllActuaryUsedLimits:output_type -> employee.ResetAllActuaryUsedLimitsResponse
-	37, // 39: employee.EmployeeService.GetActuaryPerformers:output_type -> employee.GetActuaryPerformersResponse
-	34, // 40: employee.EmployeeService.GetSupervisors:output_type -> employee.GetSupervisorsResponse
-	8,  // 41: employee.EmployeeService.UpdateLoginAttempts:output_type -> employee.UpdateLoginAttemptsResponse
-	25, // [25:42] is the sub-list for method output_type
-	8,  // [8:25] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	41, // 8: employee.ListAuditLogsResponse.entries:type_name -> employee.AuditLogEntry
+	1,  // 9: employee.EmployeeService.GetAllEmployees:input_type -> employee.GetAllEmployeesRequest
+	3,  // 10: employee.EmployeeService.SearchEmployees:input_type -> employee.SearchEmployeesRequest
+	5,  // 11: employee.EmployeeService.GetEmployeeCredentials:input_type -> employee.GetEmployeeCredentialsRequest
+	9,  // 12: employee.EmployeeService.CreateEmployee:input_type -> employee.CreateEmployeeRequest
+	11, // 13: employee.EmployeeService.GetEmployeeById:input_type -> employee.GetEmployeeByIdRequest
+	13, // 14: employee.EmployeeService.UpdateEmployee:input_type -> employee.UpdateEmployeeRequest
+	15, // 15: employee.EmployeeService.ActivateEmployee:input_type -> employee.ActivateEmployeeRequest
+	17, // 16: employee.EmployeeService.GetEmployeeByEmail:input_type -> employee.GetEmployeeByEmailRequest
+	19, // 17: employee.EmployeeService.UpdatePassword:input_type -> employee.UpdatePasswordRequest
+	22, // 18: employee.EmployeeService.GetActuaries:input_type -> employee.GetActuariesRequest
+	24, // 19: employee.EmployeeService.SetAgentLimit:input_type -> employee.SetAgentLimitRequest
+	26, // 20: employee.EmployeeService.ResetAgentUsedLimit:input_type -> employee.ResetAgentUsedLimitRequest
+	28, // 21: employee.EmployeeService.SetNeedApproval:input_type -> employee.SetNeedApprovalRequest
+	30, // 22: employee.EmployeeService.ResetAllActuaryUsedLimits:input_type -> employee.ResetAllActuaryUsedLimitsRequest
+	36, // 23: employee.EmployeeService.GetActuaryPerformers:input_type -> employee.GetActuaryPerformersRequest
+	32, // 24: employee.EmployeeService.GetSupervisors:input_type -> employee.GetSupervisorsRequest
+	7,  // 25: employee.EmployeeService.UpdateLoginAttempts:input_type -> employee.UpdateLoginAttemptsRequest
+	38, // 26: employee.EmployeeService.LogAuditEvent:input_type -> employee.AuditLogRequest
+	40, // 27: employee.EmployeeService.ListAuditLogs:input_type -> employee.ListAuditLogsRequest
+	2,  // 28: employee.EmployeeService.GetAllEmployees:output_type -> employee.GetAllEmployeesResponse
+	4,  // 29: employee.EmployeeService.SearchEmployees:output_type -> employee.SearchEmployeesResponse
+	6,  // 30: employee.EmployeeService.GetEmployeeCredentials:output_type -> employee.GetEmployeeCredentialsResponse
+	10, // 31: employee.EmployeeService.CreateEmployee:output_type -> employee.CreateEmployeeResponse
+	12, // 32: employee.EmployeeService.GetEmployeeById:output_type -> employee.GetEmployeeByIdResponse
+	14, // 33: employee.EmployeeService.UpdateEmployee:output_type -> employee.UpdateEmployeeResponse
+	16, // 34: employee.EmployeeService.ActivateEmployee:output_type -> employee.ActivateEmployeeResponse
+	18, // 35: employee.EmployeeService.GetEmployeeByEmail:output_type -> employee.GetEmployeeByEmailResponse
+	20, // 36: employee.EmployeeService.UpdatePassword:output_type -> employee.UpdatePasswordResponse
+	23, // 37: employee.EmployeeService.GetActuaries:output_type -> employee.GetActuariesResponse
+	25, // 38: employee.EmployeeService.SetAgentLimit:output_type -> employee.SetAgentLimitResponse
+	27, // 39: employee.EmployeeService.ResetAgentUsedLimit:output_type -> employee.ResetAgentUsedLimitResponse
+	29, // 40: employee.EmployeeService.SetNeedApproval:output_type -> employee.SetNeedApprovalResponse
+	31, // 41: employee.EmployeeService.ResetAllActuaryUsedLimits:output_type -> employee.ResetAllActuaryUsedLimitsResponse
+	37, // 42: employee.EmployeeService.GetActuaryPerformers:output_type -> employee.GetActuaryPerformersResponse
+	34, // 43: employee.EmployeeService.GetSupervisors:output_type -> employee.GetSupervisorsResponse
+	8,  // 44: employee.EmployeeService.UpdateLoginAttempts:output_type -> employee.UpdateLoginAttemptsResponse
+	39, // 45: employee.EmployeeService.LogAuditEvent:output_type -> employee.AuditLogResponse
+	42, // 46: employee.EmployeeService.ListAuditLogs:output_type -> employee.ListAuditLogsResponse
+	28, // [28:47] is the sub-list for method output_type
+	9,  // [9:28] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_employee_proto_init() }
@@ -2532,7 +3009,7 @@ func file_employee_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_employee_proto_rawDesc), len(file_employee_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   38,
+			NumMessages:   43,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

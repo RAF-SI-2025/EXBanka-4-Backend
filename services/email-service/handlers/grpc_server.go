@@ -144,12 +144,12 @@ func (s *EmailServer) SendPaymentNotificationEmail(_ context.Context, req *pb.Se
 		return nil, status.Errorf(codes.InvalidArgument, "invalid email address: %v", err)
 	}
 	err := s.Producer.PublishPaymentNotification(queue.PaymentNotificationMessage{
-		Email:        req.Email,
-		FirstName:    req.FirstName,
-		Direction:    req.Direction,
-		Amount:       req.Amount,
-		Currency:     req.Currency,
-		Counterparty: req.Counterparty,
+		Email:         req.Email,
+		FirstName:     req.FirstName,
+		Direction:     req.Direction,
+		Amount:        req.Amount,
+		Currency:      req.Currency,
+		Counterparty:  req.Counterparty,
 		AccountNumber: req.AccountNumber,
 	})
 	if err != nil {

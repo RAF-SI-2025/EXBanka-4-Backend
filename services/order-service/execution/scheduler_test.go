@@ -79,7 +79,13 @@ func (m *mockEmpClient) GetSupervisors(ctx context.Context, in *pb_emp.GetSuperv
 	return nil, nil
 }
 func (m *mockEmpClient) UpdateLoginAttempts(ctx context.Context, in *pb_emp.UpdateLoginAttemptsRequest, opts ...grpc.CallOption) (*pb_emp.UpdateLoginAttemptsResponse, error) {
-	return nil, nil
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockEmpClient) LogAuditEvent(ctx context.Context, in *pb_emp.AuditLogRequest, opts ...grpc.CallOption) (*pb_emp.AuditLogResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockEmpClient) ListAuditLogs(ctx context.Context, in *pb_emp.ListAuditLogsRequest, opts ...grpc.CallOption) (*pb_emp.ListAuditLogsResponse, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 type mockLoanClient struct {
@@ -200,6 +206,15 @@ func (m *mockSecuritiesClient) GetListingById(ctx context.Context, in *pb_sec.Ge
 }
 func (m *mockSecuritiesClient) GetListingHistory(ctx context.Context, in *pb_sec.GetListingHistoryRequest, opts ...grpc.CallOption) (*pb_sec.GetListingHistoryResponse, error) {
 	return nil, nil
+}
+func (m *mockSecuritiesClient) CreatePriceAlert(ctx context.Context, in *pb_sec.CreatePriceAlertRequest, opts ...grpc.CallOption) (*pb_sec.CreatePriceAlertResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockSecuritiesClient) ListPriceAlerts(ctx context.Context, in *pb_sec.ListPriceAlertsRequest, opts ...grpc.CallOption) (*pb_sec.ListPriceAlertsResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockSecuritiesClient) DeletePriceAlert(ctx context.Context, in *pb_sec.DeletePriceAlertRequest, opts ...grpc.CallOption) (*pb_sec.DeletePriceAlertResponse, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 func (m *mockExchangeClient) ConvertAmount(ctx context.Context, in *pb_exchange.ConvertAmountRequest, opts ...grpc.CallOption) (*pb_exchange.ConvertAmountResponse, error) {
 	return nil, nil
@@ -1177,6 +1192,33 @@ func (m *mockPortfolioClient) CollectTax(ctx context.Context, in *pb_portfolio.C
 }
 func (m *mockPortfolioClient) CollectTaxForUser(ctx context.Context, in *pb_portfolio.CollectTaxForUserRequest, opts ...grpc.CallOption) (*pb_portfolio.CollectTaxForUserResponse, error) {
 	return nil, nil
+}
+func (m *mockPortfolioClient) CreateWatchlist(ctx context.Context, in *pb_portfolio.CreateWatchlistRequest, opts ...grpc.CallOption) (*pb_portfolio.WatchlistResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockPortfolioClient) ListWatchlists(ctx context.Context, in *pb_portfolio.ListWatchlistsRequest, opts ...grpc.CallOption) (*pb_portfolio.ListWatchlistsResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockPortfolioClient) DeleteWatchlist(ctx context.Context, in *pb_portfolio.DeleteWatchlistRequest, opts ...grpc.CallOption) (*pb_portfolio.DeleteWatchlistResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockPortfolioClient) AddWatchlistItem(ctx context.Context, in *pb_portfolio.AddWatchlistItemRequest, opts ...grpc.CallOption) (*pb_portfolio.WatchlistItemResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockPortfolioClient) RemoveWatchlistItem(ctx context.Context, in *pb_portfolio.RemoveWatchlistItemRequest, opts ...grpc.CallOption) (*pb_portfolio.RemoveWatchlistItemResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockPortfolioClient) GetWatchlistItems(ctx context.Context, in *pb_portfolio.GetWatchlistItemsRequest, opts ...grpc.CallOption) (*pb_portfolio.GetWatchlistItemsResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockPortfolioClient) CreateDividendPayout(ctx context.Context, in *pb_portfolio.CreateDividendPayoutRequest, opts ...grpc.CallOption) (*pb_portfolio.DividendPayoutResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockPortfolioClient) GetDividendHistory(ctx context.Context, in *pb_portfolio.GetDividendHistoryRequest, opts ...grpc.CallOption) (*pb_portfolio.GetDividendHistoryResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockPortfolioClient) GetHoldersByListing(ctx context.Context, in *pb_portfolio.GetHoldersByListingRequest, opts ...grpc.CallOption) (*pb_portfolio.GetHoldersByListingResponse, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 // ── executeOrder: full happy-path loop (1 portion, no fund/portfolio) ────────

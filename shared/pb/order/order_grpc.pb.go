@@ -19,15 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	OrderService_Ping_FullMethodName                = "/order.OrderService/Ping"
-	OrderService_CreateOrder_FullMethodName         = "/order.OrderService/CreateOrder"
-	OrderService_ListOrders_FullMethodName          = "/order.OrderService/ListOrders"
-	OrderService_GetOrderById_FullMethodName        = "/order.OrderService/GetOrderById"
-	OrderService_ApproveOrder_FullMethodName        = "/order.OrderService/ApproveOrder"
-	OrderService_DeclineOrder_FullMethodName        = "/order.OrderService/DeclineOrder"
-	OrderService_CancelOrder_FullMethodName         = "/order.OrderService/CancelOrder"
-	OrderService_CancelOrderPortions_FullMethodName = "/order.OrderService/CancelOrderPortions"
-	OrderService_GetActuaryProfits_FullMethodName   = "/order.OrderService/GetActuaryProfits"
+	OrderService_Ping_FullMethodName                 = "/order.OrderService/Ping"
+	OrderService_CreateOrder_FullMethodName          = "/order.OrderService/CreateOrder"
+	OrderService_ListOrders_FullMethodName           = "/order.OrderService/ListOrders"
+	OrderService_GetOrderById_FullMethodName         = "/order.OrderService/GetOrderById"
+	OrderService_ApproveOrder_FullMethodName         = "/order.OrderService/ApproveOrder"
+	OrderService_DeclineOrder_FullMethodName         = "/order.OrderService/DeclineOrder"
+	OrderService_CancelOrder_FullMethodName          = "/order.OrderService/CancelOrder"
+	OrderService_CancelOrderPortions_FullMethodName  = "/order.OrderService/CancelOrderPortions"
+	OrderService_GetActuaryProfits_FullMethodName    = "/order.OrderService/GetActuaryProfits"
+	OrderService_CreateRecurringOrder_FullMethodName = "/order.OrderService/CreateRecurringOrder"
+	OrderService_ListRecurringOrders_FullMethodName  = "/order.OrderService/ListRecurringOrders"
+	OrderService_PauseRecurringOrder_FullMethodName  = "/order.OrderService/PauseRecurringOrder"
+	OrderService_ResumeRecurringOrder_FullMethodName = "/order.OrderService/ResumeRecurringOrder"
+	OrderService_CancelRecurringOrder_FullMethodName = "/order.OrderService/CancelRecurringOrder"
 )
 
 // OrderServiceClient is the client API for OrderService service.
@@ -43,6 +48,12 @@ type OrderServiceClient interface {
 	CancelOrder(ctx context.Context, in *CancelOrderRequest, opts ...grpc.CallOption) (*CancelOrderResponse, error)
 	CancelOrderPortions(ctx context.Context, in *CancelOrderPortionsRequest, opts ...grpc.CallOption) (*CancelOrderPortionsResponse, error)
 	GetActuaryProfits(ctx context.Context, in *GetActuaryProfitsRequest, opts ...grpc.CallOption) (*GetActuaryProfitsResponse, error)
+	// Recurring orders (BE-C3-06)
+	CreateRecurringOrder(ctx context.Context, in *CreateRecurringOrderRequest, opts ...grpc.CallOption) (*RecurringOrderResponse, error)
+	ListRecurringOrders(ctx context.Context, in *ListRecurringOrdersRequest, opts ...grpc.CallOption) (*ListRecurringOrdersResponse, error)
+	PauseRecurringOrder(ctx context.Context, in *RecurringOrderIdRequest, opts ...grpc.CallOption) (*RecurringOrderResponse, error)
+	ResumeRecurringOrder(ctx context.Context, in *RecurringOrderIdRequest, opts ...grpc.CallOption) (*RecurringOrderResponse, error)
+	CancelRecurringOrder(ctx context.Context, in *RecurringOrderIdRequest, opts ...grpc.CallOption) (*RecurringOrderResponse, error)
 }
 
 type orderServiceClient struct {
@@ -143,6 +154,56 @@ func (c *orderServiceClient) GetActuaryProfits(ctx context.Context, in *GetActua
 	return out, nil
 }
 
+func (c *orderServiceClient) CreateRecurringOrder(ctx context.Context, in *CreateRecurringOrderRequest, opts ...grpc.CallOption) (*RecurringOrderResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecurringOrderResponse)
+	err := c.cc.Invoke(ctx, OrderService_CreateRecurringOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) ListRecurringOrders(ctx context.Context, in *ListRecurringOrdersRequest, opts ...grpc.CallOption) (*ListRecurringOrdersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListRecurringOrdersResponse)
+	err := c.cc.Invoke(ctx, OrderService_ListRecurringOrders_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) PauseRecurringOrder(ctx context.Context, in *RecurringOrderIdRequest, opts ...grpc.CallOption) (*RecurringOrderResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecurringOrderResponse)
+	err := c.cc.Invoke(ctx, OrderService_PauseRecurringOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) ResumeRecurringOrder(ctx context.Context, in *RecurringOrderIdRequest, opts ...grpc.CallOption) (*RecurringOrderResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecurringOrderResponse)
+	err := c.cc.Invoke(ctx, OrderService_ResumeRecurringOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) CancelRecurringOrder(ctx context.Context, in *RecurringOrderIdRequest, opts ...grpc.CallOption) (*RecurringOrderResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecurringOrderResponse)
+	err := c.cc.Invoke(ctx, OrderService_CancelRecurringOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrderServiceServer is the server API for OrderService service.
 // All implementations must embed UnimplementedOrderServiceServer
 // for forward compatibility.
@@ -156,6 +217,12 @@ type OrderServiceServer interface {
 	CancelOrder(context.Context, *CancelOrderRequest) (*CancelOrderResponse, error)
 	CancelOrderPortions(context.Context, *CancelOrderPortionsRequest) (*CancelOrderPortionsResponse, error)
 	GetActuaryProfits(context.Context, *GetActuaryProfitsRequest) (*GetActuaryProfitsResponse, error)
+	// Recurring orders (BE-C3-06)
+	CreateRecurringOrder(context.Context, *CreateRecurringOrderRequest) (*RecurringOrderResponse, error)
+	ListRecurringOrders(context.Context, *ListRecurringOrdersRequest) (*ListRecurringOrdersResponse, error)
+	PauseRecurringOrder(context.Context, *RecurringOrderIdRequest) (*RecurringOrderResponse, error)
+	ResumeRecurringOrder(context.Context, *RecurringOrderIdRequest) (*RecurringOrderResponse, error)
+	CancelRecurringOrder(context.Context, *RecurringOrderIdRequest) (*RecurringOrderResponse, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }
 
@@ -192,6 +259,21 @@ func (UnimplementedOrderServiceServer) CancelOrderPortions(context.Context, *Can
 }
 func (UnimplementedOrderServiceServer) GetActuaryProfits(context.Context, *GetActuaryProfitsRequest) (*GetActuaryProfitsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetActuaryProfits not implemented")
+}
+func (UnimplementedOrderServiceServer) CreateRecurringOrder(context.Context, *CreateRecurringOrderRequest) (*RecurringOrderResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateRecurringOrder not implemented")
+}
+func (UnimplementedOrderServiceServer) ListRecurringOrders(context.Context, *ListRecurringOrdersRequest) (*ListRecurringOrdersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListRecurringOrders not implemented")
+}
+func (UnimplementedOrderServiceServer) PauseRecurringOrder(context.Context, *RecurringOrderIdRequest) (*RecurringOrderResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PauseRecurringOrder not implemented")
+}
+func (UnimplementedOrderServiceServer) ResumeRecurringOrder(context.Context, *RecurringOrderIdRequest) (*RecurringOrderResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResumeRecurringOrder not implemented")
+}
+func (UnimplementedOrderServiceServer) CancelRecurringOrder(context.Context, *RecurringOrderIdRequest) (*RecurringOrderResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CancelRecurringOrder not implemented")
 }
 func (UnimplementedOrderServiceServer) mustEmbedUnimplementedOrderServiceServer() {}
 func (UnimplementedOrderServiceServer) testEmbeddedByValue()                      {}
@@ -376,6 +458,96 @@ func _OrderService_GetActuaryProfits_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrderService_CreateRecurringOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateRecurringOrderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).CreateRecurringOrder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_CreateRecurringOrder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).CreateRecurringOrder(ctx, req.(*CreateRecurringOrderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_ListRecurringOrders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRecurringOrdersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).ListRecurringOrders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_ListRecurringOrders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).ListRecurringOrders(ctx, req.(*ListRecurringOrdersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_PauseRecurringOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecurringOrderIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).PauseRecurringOrder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_PauseRecurringOrder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).PauseRecurringOrder(ctx, req.(*RecurringOrderIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_ResumeRecurringOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecurringOrderIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).ResumeRecurringOrder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_ResumeRecurringOrder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).ResumeRecurringOrder(ctx, req.(*RecurringOrderIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_CancelRecurringOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecurringOrderIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).CancelRecurringOrder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_CancelRecurringOrder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).CancelRecurringOrder(ctx, req.(*RecurringOrderIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrderService_ServiceDesc is the grpc.ServiceDesc for OrderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -418,6 +590,26 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetActuaryProfits",
 			Handler:    _OrderService_GetActuaryProfits_Handler,
+		},
+		{
+			MethodName: "CreateRecurringOrder",
+			Handler:    _OrderService_CreateRecurringOrder_Handler,
+		},
+		{
+			MethodName: "ListRecurringOrders",
+			Handler:    _OrderService_ListRecurringOrders_Handler,
+		},
+		{
+			MethodName: "PauseRecurringOrder",
+			Handler:    _OrderService_PauseRecurringOrder_Handler,
+		},
+		{
+			MethodName: "ResumeRecurringOrder",
+			Handler:    _OrderService_ResumeRecurringOrder_Handler,
+		},
+		{
+			MethodName: "CancelRecurringOrder",
+			Handler:    _OrderService_CancelRecurringOrder_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

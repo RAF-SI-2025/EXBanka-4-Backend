@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/middleware"
+	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,11 +28,11 @@ func ListNotifications(client pb.AuthServiceClient) gin.HandlerFunc {
 		defer cancel()
 
 		resp, err := client.ListNotifications(ctx, &pb.ListNotificationsRequest{
-			UserId:    userID,
-			UserType:  userType,
+			UserId:     userID,
+			UserType:   userType,
 			UnreadOnly: unreadOnly,
-			Page:      int32(page),
-			PageSize:  int32(pageSize),
+			Page:       int32(page),
+			PageSize:   int32(pageSize),
 		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch notifications"})

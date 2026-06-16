@@ -5,12 +5,17 @@ import (
 	"log"
 	"math/rand"
 	"time"
+
+	pb_client "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
+	pb_emp "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 // StartPriceSimulation launches a background goroutine that ticks every minute.
 // When test mode is enabled it applies a small random price fluctuation (±1%) to
 // every listing so the UI reflects a live-looking market during development.
-func StartPriceSimulation(db *sql.DB) {
+// Price alert notifications are also sent when simulated prices cross alert thresholds.
+func StartPriceSimulation(db *sql.DB, amqpCh *amqp.Channel, empClient pb_emp.EmployeeServiceClient, cliClient pb_client.ClientServiceClient) {
 	ticker := time.NewTicker(1 * time.Minute)
 	go func() {
 		for range ticker.C {
@@ -22,7 +27,7 @@ func StartPriceSimulation(db *sql.DB) {
 			if !enabled {
 				continue
 			}
-			if err := simulatePrices(db); err != nil {
+			if err := simulatePrices(db, amqpCh, empClient, cliClient); err != nil {
 				log.Printf("price_simulation: %v", err)
 			}
 		}
@@ -36,7 +41,7 @@ func isTestModeEnabled(db *sql.DB) (bool, error) {
 	return enabled, err
 }
 
-func simulatePrices(db *sql.DB) error {
+func simulatePrices(db *sql.DB, amqpCh *amqp.Channel, empClient pb_emp.EmployeeServiceClient, cliClient pb_client.ClientServiceClient) error {
 	rows, err := db.Query(`SELECT id, price, ask, bid, change FROM listing`)
 	if err != nil {
 		return err
@@ -91,7 +96,14 @@ func simulatePrices(db *sql.DB) error {
 			l.id, newPrice, newAsk, newBid, newChange, time.Now())
 		if err != nil {
 			log.Printf("price_simulation: update listing %d: %v", l.id, err)
+			continue
 		}
+
+		var changePercent float64
+		if l.price > 0 {
+			changePercent = (newPrice - l.price) / l.price * 100
+		}
+		go checkPriceAlerts(db, l.id, newPrice, changePercent, amqpCh, empClient, cliClient)
 	}
 
 	log.Printf("price_simulation: updated %d listings", len(listings))

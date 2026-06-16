@@ -260,4 +260,48 @@ service SecuritiesService {
   rpc GetListings           (GetListingsRequest)           returns (GetListingsResponse);
   rpc GetListingById        (GetListingByIdRequest)        returns (GetListingByIdResponse);
   rpc GetListingHistory     (GetListingHistoryRequest)     returns (GetListingHistoryResponse);
+
+  // Price Alerts (BE-C3-02)
+  rpc CreatePriceAlert(CreatePriceAlertRequest) returns (CreatePriceAlertResponse);
+  rpc ListPriceAlerts(ListPriceAlertsRequest)   returns (ListPriceAlertsResponse);
+  rpc DeletePriceAlert(DeletePriceAlertRequest) returns (DeletePriceAlertResponse);
 }
+
+// ── PriceAlert messages (BE-C3-02) ───────────────────────────────────────────
+
+message PriceAlert {
+  int64  id                = 1;
+  int64  user_id           = 2;
+  string user_type         = 3;
+  int64  listing_id        = 4;
+  string condition         = 5; // ABOVE, BELOW, CHANGE_PCT_UP, CHANGE_PCT_DOWN
+  double threshold         = 6;
+  string notification_type = 7; // EMAIL, IN_APP, BOTH
+  bool   is_active         = 8;
+  string triggered_at      = 9;
+  string created_at        = 10;
+  string ticker            = 11;
+}
+
+message CreatePriceAlertRequest {
+  int64  user_id           = 1;
+  string user_type         = 2;
+  int64  listing_id        = 3;
+  string condition         = 4;
+  double threshold         = 5;
+  string notification_type = 6;
+}
+message CreatePriceAlertResponse { PriceAlert alert = 1; }
+
+message ListPriceAlertsRequest {
+  int64  user_id   = 1;
+  string user_type = 2;
+}
+message ListPriceAlertsResponse { repeated PriceAlert alerts = 1; }
+
+message DeletePriceAlertRequest {
+  int64  id        = 1;
+  int64  user_id   = 2;
+  string user_type = 3;
+}
+message DeletePriceAlertResponse {}

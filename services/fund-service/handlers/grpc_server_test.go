@@ -89,6 +89,21 @@ func (m *mockOrderClient) CancelOrderPortions(ctx context.Context, in *pb_order.
 func (m *mockOrderClient) GetActuaryProfits(ctx context.Context, in *pb_order.GetActuaryProfitsRequest, opts ...grpc.CallOption) (*pb_order.GetActuaryProfitsResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+func (m *mockOrderClient) CreateRecurringOrder(ctx context.Context, in *pb_order.CreateRecurringOrderRequest, opts ...grpc.CallOption) (*pb_order.RecurringOrderResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockOrderClient) ListRecurringOrders(ctx context.Context, in *pb_order.ListRecurringOrdersRequest, opts ...grpc.CallOption) (*pb_order.ListRecurringOrdersResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockOrderClient) PauseRecurringOrder(ctx context.Context, in *pb_order.RecurringOrderIdRequest, opts ...grpc.CallOption) (*pb_order.RecurringOrderResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockOrderClient) ResumeRecurringOrder(ctx context.Context, in *pb_order.RecurringOrderIdRequest, opts ...grpc.CallOption) (*pb_order.RecurringOrderResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (m *mockOrderClient) CancelRecurringOrder(ctx context.Context, in *pb_order.RecurringOrderIdRequest, opts ...grpc.CallOption) (*pb_order.RecurringOrderResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
 
 // ---- helpers ----
 

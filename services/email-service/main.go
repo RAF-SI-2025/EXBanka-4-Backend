@@ -34,8 +34,8 @@ func main() {
 	smtpCfg := queue.SMTPConfig{
 		Host:     mustEnv("SMTP_HOST"),
 		Port:     smtpPort,
-		User:     mustEnv("SMTP_USER"),
-		Password: mustEnv("SMTP_PASSWORD"),
+		User:     os.Getenv("SMTP_USER"),
+		Password: os.Getenv("SMTP_PASSWORD"),
 		From:     mustEnv("FROM_EMAIL"),
 	}
 
@@ -195,6 +195,16 @@ func main() {
 		log.Fatalf("failed to parse limit change email template: %v", err)
 	}
 
+	orderStatusTmpl, err := template.ParseFiles("templates/order_status.html")
+	if err != nil {
+		log.Fatalf("failed to parse order status email template: %v", err)
+	}
+
+	priceAlertTmpl, err := template.ParseFiles("templates/price_alert.html")
+	if err != nil {
+		log.Fatalf("failed to parse price alert email template: %v", err)
+	}
+
 	paymentNotifCh, err := conn.Channel()
 	if err != nil {
 		log.Fatalf("failed to open payment notification consume channel: %v", err)
@@ -227,6 +237,21 @@ func main() {
 	go queue.ConsumeCardBlocked(cardBlockedCh, smtpCfg, cardBlockedTmpl)
 	go queue.ConsumeLoanApproved(loanApprovedCh, smtpCfg, loanApprovedTmpl)
 	go queue.ConsumeLimitChange(limitChangeCh, smtpCfg, limitChangeTmpl)
+
+	orderStatusCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to open order status consume channel: %v", err)
+	}
+	defer func() { _ = orderStatusCh.Close() }()
+
+	priceAlertCh, err := conn.Channel()
+	if err != nil {
+		log.Fatalf("failed to open price alert consume channel: %v", err)
+	}
+	defer func() { _ = priceAlertCh.Close() }()
+
+	go queue.ConsumeOrderStatus(orderStatusCh, smtpCfg, orderStatusTmpl)
+	go queue.ConsumePriceAlert(priceAlertCh, smtpCfg, priceAlertTmpl)
 
 	lis, err := net.Listen("tcp", ":50053")
 	if err != nil {

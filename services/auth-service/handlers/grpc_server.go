@@ -1082,9 +1082,9 @@ func (s *AuthServer) GenerateTOTPSecret(ctx context.Context, req *pb_auth.Genera
 	}
 
 	return &pb_auth.GenerateTOTPResponse{
-		Secret:      key.Secret(),
-		OtpauthUri:  key.URL(),
-		QrCodePng:   base64.StdEncoding.EncodeToString(png),
+		Secret:     key.Secret(),
+		OtpauthUri: key.URL(),
+		QrCodePng:  base64.StdEncoding.EncodeToString(png),
 	}, nil
 }
 

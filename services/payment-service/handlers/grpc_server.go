@@ -21,12 +21,12 @@ import (
 
 type PaymentServer struct {
 	pb.UnimplementedPaymentServiceServer
-	DB             *sql.DB // payment_db
-	AccountDB      *sql.DB // account_db
-	ExchangeDB     *sql.DB // exchange_db
-	ClientDB       *sql.DB // client_db
-	EmailClient    pb_email.EmailServiceClient
-	AuthClient     pb_auth.AuthServiceClient
+	DB          *sql.DB // payment_db
+	AccountDB   *sql.DB // account_db
+	ExchangeDB  *sql.DB // exchange_db
+	ClientDB    *sql.DB // client_db
+	EmailClient pb_email.EmailServiceClient
+	AuthClient  pb_auth.AuthServiceClient
 }
 
 func (s *PaymentServer) CreatePayment(ctx context.Context, req *pb.CreatePaymentRequest) (*pb.CreatePaymentResponse, error) {

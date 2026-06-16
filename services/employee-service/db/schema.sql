@@ -70,6 +70,23 @@ CREATE TABLE IF NOT EXISTS actuary_info (
     need_approval BOOLEAN NOT NULL DEFAULT false
 );
 
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id          BIGSERIAL PRIMARY KEY,
+    actor_id    BIGINT NOT NULL,
+    actor_type  VARCHAR(20) NOT NULL,
+    actor_name  VARCHAR(200),
+    action      VARCHAR(50) NOT NULL,
+    target_id   BIGINT,
+    target_type VARCHAR(20),
+    target_name VARCHAR(200),
+    old_value   TEXT,
+    new_value   TEXT,
+    timestamp   TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_audit_logs_actor ON audit_logs(actor_id, timestamp DESC);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action, timestamp DESC);
+CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp DESC);
+
 -- Seed actuary_info for agents only. Supervisors are identified by absence of a row here.
 INSERT INTO actuary_info (employee_id, limit_amount, used_limit, need_approval)
 SELECT id, 100000, 0, false

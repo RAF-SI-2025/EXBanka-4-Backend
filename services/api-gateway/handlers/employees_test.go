@@ -125,6 +125,15 @@ func (s *stubEmpClient) GetActuaryPerformers(ctx context.Context, in *pb.GetActu
 func (s *stubEmpClient) GetSupervisors(ctx context.Context, in *pb.GetSupervisorsRequest, opts ...grpc.CallOption) (*pb.GetSupervisorsResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+func (s *stubEmpClient) UpdateLoginAttempts(ctx context.Context, in *pb.UpdateLoginAttemptsRequest, opts ...grpc.CallOption) (*pb.UpdateLoginAttemptsResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubEmpClient) LogAuditEvent(ctx context.Context, in *pb.AuditLogRequest, opts ...grpc.CallOption) (*pb.AuditLogResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubEmpClient) ListAuditLogs(ctx context.Context, in *pb.ListAuditLogsRequest, opts ...grpc.CallOption) (*pb.ListAuditLogsResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
 
 // ---- stub auth client ----
 
@@ -257,6 +266,36 @@ func (s *stubAuthClient) GetPushToken(ctx context.Context, in *authpb.GetPushTok
 func (s *stubAuthClient) Logout(ctx context.Context, in *authpb.LogoutRequest, opts ...grpc.CallOption) (*authpb.LogoutResponse, error) {
 	return &authpb.LogoutResponse{}, nil
 }
+func (s *stubAuthClient) GenerateTOTPSecret(ctx context.Context, in *authpb.GenerateTOTPRequest, opts ...grpc.CallOption) (*authpb.GenerateTOTPResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubAuthClient) VerifyTOTP(ctx context.Context, in *authpb.VerifyTOTPRequest, opts ...grpc.CallOption) (*authpb.VerifyTOTPResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubAuthClient) EnableTOTP(ctx context.Context, in *authpb.EnableTOTPRequest, opts ...grpc.CallOption) (*authpb.EnableTOTPResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubAuthClient) ValidateTOTPLogin(ctx context.Context, in *authpb.ValidateTOTPLoginRequest, opts ...grpc.CallOption) (*authpb.ValidateTOTPLoginResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubAuthClient) DisableTOTP(ctx context.Context, in *authpb.DisableTOTPRequest, opts ...grpc.CallOption) (*authpb.DisableTOTPResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubAuthClient) CreateNotification(ctx context.Context, in *authpb.CreateNotificationRequest, opts ...grpc.CallOption) (*authpb.CreateNotificationResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubAuthClient) ListNotifications(ctx context.Context, in *authpb.ListNotificationsRequest, opts ...grpc.CallOption) (*authpb.ListNotificationsResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubAuthClient) MarkNotificationRead(ctx context.Context, in *authpb.MarkNotificationReadRequest, opts ...grpc.CallOption) (*authpb.MarkNotificationReadResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubAuthClient) MarkAllRead(ctx context.Context, in *authpb.MarkAllReadRequest, opts ...grpc.CallOption) (*authpb.MarkAllReadResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubAuthClient) GetUnreadCount(ctx context.Context, in *authpb.GetUnreadCountRequest, opts ...grpc.CallOption) (*authpb.GetUnreadCountResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
 
 // ---- stub email client ----
 
@@ -283,6 +322,21 @@ func (s *stubEmailClient) SendCardConfirmationEmail(ctx context.Context, in *ema
 	return nil, fmt.Errorf("not implemented")
 }
 func (s *stubEmailClient) SendLoanLatePaymentEmail(ctx context.Context, in *emailpb.SendLoanLatePaymentEmailRequest, opts ...grpc.CallOption) (*emailpb.SendLoanLatePaymentEmailResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubEmailClient) SendAccountLockedEmail(ctx context.Context, in *emailpb.SendAccountLockedEmailRequest, opts ...grpc.CallOption) (*emailpb.SendAccountLockedEmailResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubEmailClient) SendPaymentNotificationEmail(ctx context.Context, in *emailpb.SendPaymentNotificationEmailRequest, opts ...grpc.CallOption) (*emailpb.SendPaymentNotificationEmailResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubEmailClient) SendCardBlockedEmail(ctx context.Context, in *emailpb.SendCardBlockedEmailRequest, opts ...grpc.CallOption) (*emailpb.SendCardBlockedEmailResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubEmailClient) SendLoanApprovedEmail(ctx context.Context, in *emailpb.SendLoanApprovedEmailRequest, opts ...grpc.CallOption) (*emailpb.SendLoanApprovedEmailResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubEmailClient) SendLimitChangeEmail(ctx context.Context, in *emailpb.SendLimitChangeEmailRequest, opts ...grpc.CallOption) (*emailpb.SendLimitChangeEmailResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 

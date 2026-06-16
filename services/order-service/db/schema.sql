@@ -23,8 +23,25 @@ CREATE TABLE orders (
     is_aon             BOOLEAN         NOT NULL DEFAULT FALSE,
     is_margin          BOOLEAN         NOT NULL DEFAULT FALSE,
     account_id         BIGINT          NOT NULL,
-    fund_id            BIGINT          NOT NULL DEFAULT 0
+    fund_id            BIGINT          NOT NULL DEFAULT 0,
+    commission_paid    NUMERIC(20,6)   NOT NULL DEFAULT 0
 );
+
+CREATE TABLE recurring_orders (
+    id         BIGSERIAL PRIMARY KEY,
+    user_id    BIGINT NOT NULL,
+    user_type  VARCHAR(10) NOT NULL CHECK (user_type IN ('EMPLOYEE', 'CLIENT')),
+    asset_id   BIGINT NOT NULL,
+    direction  VARCHAR(10) NOT NULL CHECK (direction IN ('BUY', 'SELL')),
+    mode       VARCHAR(20) NOT NULL CHECK (mode IN ('BY_QUANTITY', 'BY_AMOUNT')),
+    value      NUMERIC(20,6) NOT NULL CHECK (value > 0),
+    account_id BIGINT NOT NULL,
+    cadence    VARCHAR(10) NOT NULL CHECK (cadence IN ('DAILY', 'WEEKLY', 'MONTHLY')),
+    next_run   TIMESTAMPTZ NOT NULL,
+    active     BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_recurring_orders_active ON recurring_orders(next_run) WHERE active = true;
 
 CREATE TABLE order_portions (
     id        BIGSERIAL PRIMARY KEY,
