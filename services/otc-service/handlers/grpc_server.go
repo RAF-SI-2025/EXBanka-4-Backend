@@ -934,20 +934,16 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 		return nil, status.Error(codes.InvalidArgument, "Contract settlement date has passed")
 	}
 
-	listingID, err := listingIDForTicker(ctx, s.SecuritiesDB, ticker)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "ticker not found: %v", err)
-	}
-
 	// Cross-bank exercise: seller is on partner bank — delegate to 2PC flow.
 	// (otc_saga row is NOT created for cross-bank; 2PC has its own tracking)
+	// Resolve listing ID after the cross-bank check: the stock may be listed only at the partner bank.
 	if sellerType == "INTERBANK" {
 		resp, rerr := s.exerciseCrossBank(ctx, req, tx, sellerID, buyerID, buyerType,
 			amount, strikePrice, currency, ticker, settlementDate)
 		if rerr == nil && buyerType != "EMPLOYEE" {
 			var mktPrice float64
 			if qErr := s.SecuritiesDB.QueryRowContext(ctx,
-				`SELECT price FROM listing WHERE id = $1`, listingID).Scan(&mktPrice); qErr == nil {
+				`SELECT price FROM listing WHERE ticker = $1`, ticker).Scan(&mktPrice); qErr == nil {
 				profit := (mktPrice-strikePrice)*float64(amount) - premium
 				if profit > 0 {
 					t := time.Now()
@@ -956,6 +952,11 @@ func (s *OtcServer) ExerciseContract(ctx context.Context, req *pb.ExerciseContra
 			}
 		}
 		return resp, rerr
+	}
+
+	listingID, err := listingIDForTicker(ctx, s.SecuritiesDB, ticker)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "ticker not found: %v", err)
 	}
 
 	totalCost := strikePrice * float64(amount)
@@ -1600,10 +1601,11 @@ func (s *OtcServer) InterbankCounterOffer(ctx context.Context, req *pb.Interbank
 		return nil, status.Errorf(codes.FailedPrecondition, "negotiation is in terminal state: %s", currentStatus)
 	}
 
-	// Outbound negs have seller_routing_number set (bank4 is seller); inbound negs do not.
-	var sellerRoutingNum sql.NullInt32
-	_ = s.DB.QueryRowContext(ctx, `SELECT seller_routing_number FROM otc_negotiations WHERE id = $1`, localID).Scan(&sellerRoutingNum)
-	isOutbound := sellerRoutingNum.Valid && sellerRoutingNum.Int32 != 0
+	// Outbound: bank4 is seller (seller_type='INTERBANK'). Inbound: bank4 is buyer (buyer_type='INTERBANK').
+	// Don't use seller_routing_number — partner banks include our routing number there, making it non-zero for inbound too.
+	var sellerType string
+	_ = s.DB.QueryRowContext(ctx, `SELECT seller_type FROM otc_negotiations WHERE id = $1`, localID).Scan(&sellerType)
+	isOutbound := sellerType == "INTERBANK"
 
 	// For outbound: bank4 is seller and counter-offers on PENDING_SELLER; sets to PENDING_BUYER (our turn).
 	// For inbound: bank4 is buyer and counter-offers on PENDING_BUYER; sets to PENDING_SELLER (our turn).
