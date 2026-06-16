@@ -355,7 +355,17 @@ func (s *OtcServer) exerciseCrossBank(
 		totalCostToPay, buyerAccountID)
 
 	// Step 4: Add shares to buyer's portfolio.
+	// The stock may be listed only at the partner bank; upsert a placeholder listing so the portfolio entry is valid.
 	listingID, _ := listingIDForTicker(ctx, s.SecuritiesDB, ticker)
+	if listingID == 0 {
+		_ = s.SecuritiesDB.QueryRowContext(ctx, `
+			INSERT INTO listing (ticker, name, exchange_id, price, type)
+			SELECT $1, $1, id, $2, 'STOCK'
+			FROM stock_exchanges LIMIT 1
+			ON CONFLICT (ticker) DO UPDATE SET ticker = EXCLUDED.ticker
+			RETURNING id`, ticker, strikePrice,
+		).Scan(&listingID)
+	}
 	_, _ = s.PortfolioDB.ExecContext(ctx, `
 		INSERT INTO portfolio_entry (user_id, user_type, listing_id, amount, buy_price, account_id)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -735,6 +745,7 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 					Asset:   ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: currency.String}},
 				},
 				{ // posting 4: buyer (bank4) receives option right — triggers bank4's commitOptionPosting to create their mirror contract
+				  // NOTE: posting 3 (seller -1 OPTION at routing 888) is intentionally omitted — bank4 rejects OPTION postings for non-444 routing numbers.
 					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: int(buyerRoutingNum.Int32), ID: buyerExtID.String}},
 					Amount:  1,
 					Asset: ibOutAsset{Type: "OPTION", Asset: &ibOutAssetInner{
