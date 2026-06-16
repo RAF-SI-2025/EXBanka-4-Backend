@@ -1161,6 +1161,12 @@ func (m *mockFundClient) GetFundPortfolio(ctx context.Context, in *pb_fund.GetFu
 func (m *mockFundClient) GetFundPerformanceHistory(ctx context.Context, in *pb_fund.GetFundPerformanceRequest, opts ...grpc.CallOption) (*pb_fund.GetFundPerformanceResponse, error) {
 	return nil, nil
 }
+func (m *mockFundClient) GetAveragePerformance(ctx context.Context, in *pb_fund.GetAveragePerformanceRequest, opts ...grpc.CallOption) (*pb_fund.GetAveragePerformanceResponse, error) {
+	return nil, nil
+}
+func (m *mockFundClient) ProcessFundDividend(ctx context.Context, in *pb_fund.ProcessFundDividendRequest, opts ...grpc.CallOption) (*pb_fund.ProcessFundDividendResponse, error) {
+	return nil, nil
+}
 
 type mockPortfolioClient struct {
 	updateHoldingErr error

@@ -17,7 +17,7 @@ import (
 )
 
 func fundToJSON(f *pb.FundResponse) gin.H {
-	return gin.H{
+	h := gin.H{
 		"id":                  f.Id,
 		"name":                f.Name,
 		"description":         f.Description,
@@ -32,6 +32,16 @@ func fundToJSON(f *pb.FundResponse) gin.H {
 		"active":              f.Active,
 		"accountId":           f.AccountId,
 	}
+	if f.Stats != nil {
+		h["stats"] = gin.H{
+			"annualReturn":        f.Stats.AnnualReturn,
+			"rewardToVariability": f.Stats.RewardToVariability,
+			"maxDrawdown":         f.Stats.MaxDrawdown,
+			"volatility":          f.Stats.Volatility,
+			"hasSufficientData":   f.Stats.HasSufficientData,
+		}
+	}
+	return h
 }
 
 func mapFundError(c *gin.Context, err error) {
@@ -802,6 +812,32 @@ func GetFundPerformanceHistory(client pb.FundServiceClient) gin.HandlerFunc {
 		out := make([]record, len(resp.Records))
 		for i, r := range resp.Records {
 			out[i] = record{Date: r.Date, FundValue: r.FundValue, Profit: r.Profit}
+		}
+		c.JSON(http.StatusOK, out)
+	}
+}
+
+func GetAveragePerformance(fundClient pb.FundServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+		defer cancel()
+
+		resp, err := fundClient.GetAveragePerformance(ctx, &pb.GetAveragePerformanceRequest{
+			From: c.Query("from"),
+			To:   c.Query("to"),
+		})
+		if err != nil {
+			mapFundError(c, err)
+			return
+		}
+
+		type avgRecord struct {
+			Date         string  `json:"date"`
+			AvgFundValue float64 `json:"avgFundValue"`
+		}
+		out := make([]avgRecord, len(resp.Records))
+		for i, r := range resp.Records {
+			out[i] = avgRecord{Date: r.Date, AvgFundValue: r.AvgFundValue}
 		}
 		c.JSON(http.StatusOK, out)
 	}

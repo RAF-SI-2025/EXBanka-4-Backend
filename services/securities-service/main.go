@@ -16,6 +16,7 @@ import (
 	pb_client "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
 	pb_emp "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
 	pb_ex "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/exchange"
+	pb_fund "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/fund"
 	pb_portfolio "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/portfolio"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/securities"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -139,7 +140,13 @@ func main() {
 	scheduler.ScheduleEOD(securitiesDB, os.Getenv("EMPLOYEE_SERVICE_ADDR"))
 
 	// Quarterly dividend payouts.
-	scheduler.StartDividendScheduler(securitiesDB, accountDB, portfolioClient, exchangeClient)
+	var fundClient pb_fund.FundServiceClient
+	if addr := os.Getenv("FUND_SERVICE_ADDR"); addr != "" {
+		if conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials())); err == nil {
+			fundClient = pb_fund.NewFundServiceClient(conn)
+		}
+	}
+	scheduler.StartDividendScheduler(securitiesDB, accountDB, portfolioClient, exchangeClient, fundClient)
 
 	// Simulate market price fluctuations every minute when test mode is enabled.
 	scheduler.StartPriceSimulation(securitiesDB, amqpCh, empClient, cliClient)

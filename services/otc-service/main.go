@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	amqp "github.com/rabbitmq/amqp091-go"
+
 	otcdb "github.com/RAF-SI-2025/EXBanka-4-Backend/services/otc-service/db"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/otc-service/handlers"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/otc"
@@ -57,6 +59,29 @@ func main() {
 	}
 	defer func() { _ = exchangeDB.Close() }()
 
+	var amqpCh *amqp.Channel
+	if amqpURL := os.Getenv("RABBITMQ_URL"); amqpURL != "" {
+		var amqpConn *amqp.Connection
+		for i := 0; i < 10; i++ {
+			amqpConn, err = amqp.Dial(amqpURL)
+			if err == nil {
+				break
+			}
+			log.Printf("AMQP connect attempt %d failed: %v", i+1, err)
+			time.Sleep(2 * time.Second)
+		}
+		if amqpConn != nil {
+			defer func() { _ = amqpConn.Close() }()
+			if ch, chErr := amqpConn.Channel(); chErr == nil {
+				defer func() { _ = ch.Close() }()
+				for _, q := range []string{"email.otc.counteroffer", "email.otc.statuschange", "email.otc.expiry"} {
+					_, _ = ch.QueueDeclare(q, true, false, false, false, nil)
+				}
+				amqpCh = ch
+			}
+		}
+	}
+
 	lis, err := net.Listen("tcp", grpcPort)
 	if err != nil {
 		log.Fatalf("failed to listen on %s: %v", grpcPort, err)
@@ -71,6 +96,7 @@ func main() {
 		PortfolioDB:  portfolioDB,
 		SecuritiesDB: securitiesDB,
 		ExchangeDB:   exchangeDB,
+		AmqpChannel:  amqpCh,
 	}
 	pb.RegisterOtcServiceServer(srv, srvImpl)
 
@@ -83,6 +109,19 @@ func main() {
 		srvImpl.ExpireContracts()
 		for range time.Tick(time.Hour) {
 			srvImpl.ExpireContracts()
+		}
+	}()
+
+	// Daily expiry warning emails at 09:00.
+	go func() {
+		for {
+			now := time.Now()
+			next09 := time.Date(now.Year(), now.Month(), now.Day(), 9, 0, 0, 0, now.Location())
+			if !now.Before(next09) {
+				next09 = next09.Add(24 * time.Hour)
+			}
+			time.Sleep(time.Until(next09))
+			srvImpl.SendExpiryWarnings()
 		}
 	}()
 

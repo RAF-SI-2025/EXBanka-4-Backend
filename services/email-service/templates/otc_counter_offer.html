@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>OTC Counter-Offer</title></head>
+<body style="font-family:Arial,sans-serif;color:#333;">
+  <h2>OTC Counter-Offer Received</h2>
+  <p>Dear {{.FirstName}},</p>
+  <p>You have received a counter-offer on OTC negotiation <strong>#{{.NegotiationId}}</strong> for <strong>{{.Ticker}}</strong>.</p>
+  <table style="border-collapse:collapse;margin:16px 0;">
+    <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Amount:</td><td>{{.NewAmount}}</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Price per stock:</td><td>{{.NewPricePerStock}}</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Premium:</td><td>{{.NewPremium}}</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Settlement date:</td><td>{{.NewSettlementDate}}</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">From:</td><td>{{.CounterPartyName}}</td></tr>
+  </table>
+  <p>Please log in to AnkaBanka to review and respond.</p>
+  <p>Best regards,<br/>AnkaBanka Team</p>
+</body>
+</html>

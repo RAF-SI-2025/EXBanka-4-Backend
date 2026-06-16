@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v7.34.0
-// source: fund.proto
+// source: shared/proto/fund.proto
 
 package fund
 
@@ -35,6 +35,8 @@ const (
 	FundService_UpdateFundHolding_FullMethodName         = "/fund.FundService/UpdateFundHolding"
 	FundService_GetFundPortfolio_FullMethodName          = "/fund.FundService/GetFundPortfolio"
 	FundService_GetFundPerformanceHistory_FullMethodName = "/fund.FundService/GetFundPerformanceHistory"
+	FundService_GetAveragePerformance_FullMethodName     = "/fund.FundService/GetAveragePerformance"
+	FundService_ProcessFundDividend_FullMethodName       = "/fund.FundService/ProcessFundDividend"
 )
 
 // FundServiceClient is the client API for FundService service.
@@ -57,6 +59,8 @@ type FundServiceClient interface {
 	UpdateFundHolding(ctx context.Context, in *UpdateFundHoldingRequest, opts ...grpc.CallOption) (*UpdateFundHoldingResponse, error)
 	GetFundPortfolio(ctx context.Context, in *GetFundPortfolioRequest, opts ...grpc.CallOption) (*GetFundPortfolioResponse, error)
 	GetFundPerformanceHistory(ctx context.Context, in *GetFundPerformanceRequest, opts ...grpc.CallOption) (*GetFundPerformanceResponse, error)
+	GetAveragePerformance(ctx context.Context, in *GetAveragePerformanceRequest, opts ...grpc.CallOption) (*GetAveragePerformanceResponse, error)
+	ProcessFundDividend(ctx context.Context, in *ProcessFundDividendRequest, opts ...grpc.CallOption) (*ProcessFundDividendResponse, error)
 }
 
 type fundServiceClient struct {
@@ -227,6 +231,26 @@ func (c *fundServiceClient) GetFundPerformanceHistory(ctx context.Context, in *G
 	return out, nil
 }
 
+func (c *fundServiceClient) GetAveragePerformance(ctx context.Context, in *GetAveragePerformanceRequest, opts ...grpc.CallOption) (*GetAveragePerformanceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAveragePerformanceResponse)
+	err := c.cc.Invoke(ctx, FundService_GetAveragePerformance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fundServiceClient) ProcessFundDividend(ctx context.Context, in *ProcessFundDividendRequest, opts ...grpc.CallOption) (*ProcessFundDividendResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ProcessFundDividendResponse)
+	err := c.cc.Invoke(ctx, FundService_ProcessFundDividend_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FundServiceServer is the server API for FundService service.
 // All implementations must embed UnimplementedFundServiceServer
 // for forward compatibility.
@@ -247,6 +271,8 @@ type FundServiceServer interface {
 	UpdateFundHolding(context.Context, *UpdateFundHoldingRequest) (*UpdateFundHoldingResponse, error)
 	GetFundPortfolio(context.Context, *GetFundPortfolioRequest) (*GetFundPortfolioResponse, error)
 	GetFundPerformanceHistory(context.Context, *GetFundPerformanceRequest) (*GetFundPerformanceResponse, error)
+	GetAveragePerformance(context.Context, *GetAveragePerformanceRequest) (*GetAveragePerformanceResponse, error)
+	ProcessFundDividend(context.Context, *ProcessFundDividendRequest) (*ProcessFundDividendResponse, error)
 	mustEmbedUnimplementedFundServiceServer()
 }
 
@@ -304,6 +330,12 @@ func (UnimplementedFundServiceServer) GetFundPortfolio(context.Context, *GetFund
 }
 func (UnimplementedFundServiceServer) GetFundPerformanceHistory(context.Context, *GetFundPerformanceRequest) (*GetFundPerformanceResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetFundPerformanceHistory not implemented")
+}
+func (UnimplementedFundServiceServer) GetAveragePerformance(context.Context, *GetAveragePerformanceRequest) (*GetAveragePerformanceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAveragePerformance not implemented")
+}
+func (UnimplementedFundServiceServer) ProcessFundDividend(context.Context, *ProcessFundDividendRequest) (*ProcessFundDividendResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ProcessFundDividend not implemented")
 }
 func (UnimplementedFundServiceServer) mustEmbedUnimplementedFundServiceServer() {}
 func (UnimplementedFundServiceServer) testEmbeddedByValue()                     {}
@@ -614,6 +646,42 @@ func _FundService_GetFundPerformanceHistory_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _FundService_GetAveragePerformance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAveragePerformanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FundServiceServer).GetAveragePerformance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FundService_GetAveragePerformance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FundServiceServer).GetAveragePerformance(ctx, req.(*GetAveragePerformanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _FundService_ProcessFundDividend_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProcessFundDividendRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FundServiceServer).ProcessFundDividend(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FundService_ProcessFundDividend_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FundServiceServer).ProcessFundDividend(ctx, req.(*ProcessFundDividendRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // FundService_ServiceDesc is the grpc.ServiceDesc for FundService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -685,7 +753,15 @@ var FundService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "GetFundPerformanceHistory",
 			Handler:    _FundService_GetFundPerformanceHistory_Handler,
 		},
+		{
+			MethodName: "GetAveragePerformance",
+			Handler:    _FundService_GetAveragePerformance_Handler,
+		},
+		{
+			MethodName: "ProcessFundDividend",
+			Handler:    _FundService_ProcessFundDividend_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "fund.proto",
+	Metadata: "shared/proto/fund.proto",
 }

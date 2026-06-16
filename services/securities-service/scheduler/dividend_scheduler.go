@@ -7,6 +7,7 @@ import (
 	"time"
 
 	pb_ex "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/exchange"
+	pb_fund "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/fund"
 	pb_portfolio "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/portfolio"
 )
 
@@ -15,14 +16,16 @@ import (
 func StartDividendScheduler(db *sql.DB, accountDB *sql.DB,
 	portfolioClient pb_portfolio.PortfolioServiceClient,
 	exchangeClient pb_ex.ExchangeServiceClient,
+	fundClient pb_fund.FundServiceClient,
 ) {
-	scheduleDividendNext(db, accountDB, portfolioClient, exchangeClient)
+	scheduleDividendNext(db, accountDB, portfolioClient, exchangeClient, fundClient)
 	log.Println("dividend-scheduler: scheduled daily at 09:00")
 }
 
 func scheduleDividendNext(db *sql.DB, accountDB *sql.DB,
 	portfolioClient pb_portfolio.PortfolioServiceClient,
 	exchangeClient pb_ex.ExchangeServiceClient,
+	fundClient pb_fund.FundServiceClient,
 ) {
 	now := time.Now()
 	next := time.Date(now.Year(), now.Month(), now.Day(), 9, 0, 0, 0, now.Location())
@@ -31,9 +34,9 @@ func scheduleDividendNext(db *sql.DB, accountDB *sql.DB,
 	}
 	time.AfterFunc(time.Until(next), func() {
 		if isLastWorkdayOfQuarter(time.Now()) {
-			processDividends(db, accountDB, portfolioClient, exchangeClient)
+			processDividends(db, accountDB, portfolioClient, exchangeClient, fundClient)
 		}
-		scheduleDividendNext(db, accountDB, portfolioClient, exchangeClient)
+		scheduleDividendNext(db, accountDB, portfolioClient, exchangeClient, fundClient)
 	})
 }
 
@@ -59,6 +62,7 @@ func isLastWorkdayOfQuarter(t time.Time) bool {
 func processDividends(db *sql.DB, accountDB *sql.DB,
 	portfolioClient pb_portfolio.PortfolioServiceClient,
 	exchangeClient pb_ex.ExchangeServiceClient,
+	fundClient pb_fund.FundServiceClient,
 ) {
 	ctx := context.Background()
 	log.Println("dividend-scheduler: processing quarterly dividends")
@@ -170,6 +174,16 @@ func processDividends(db *sql.DB, accountDB *sql.DB,
 			if err != nil {
 				log.Printf("dividend-scheduler: CreateDividendPayout user %d listing %d: %v", h.UserId, s.listingID, err)
 			}
+		}
+
+		if fundClient != nil {
+			_, _ = fundClient.ProcessFundDividend(ctx, &pb_fund.ProcessFundDividendRequest{
+				ListingId:     s.listingID,
+				Price:         s.price,
+				DividendYield: s.dividendYield,
+				Currency:      s.currency,
+				PaymentDate:   today,
+			})
 		}
 	}
 	log.Println("dividend-scheduler: quarterly dividends processed")

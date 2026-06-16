@@ -582,3 +582,58 @@ func GetPublicStock(client pb.OtcServiceClient) gin.HandlerFunc {
 		c.JSON(http.StatusOK, result)
 	}
 }
+
+func historyEntryToJSON(e *pb.NegotiationHistoryEntry) gin.H {
+	return gin.H{
+		"id":                e.Id,
+		"action":            e.Action,
+		"actorId":           e.ActorId,
+		"actorType":         e.ActorType,
+		"actorName":         e.ActorName,
+		"oldAmount":         e.OldAmount,
+		"newAmount":         e.NewAmount,
+		"oldPricePerStock":  e.OldPricePerStock,
+		"newPricePerStock":  e.NewPricePerStock,
+		"oldSettlementDate": e.OldSettlementDate,
+		"newSettlementDate": e.NewSettlementDate,
+		"oldPremium":        e.OldPremium,
+		"newPremium":        e.NewPremium,
+		"timestamp":         e.Timestamp,
+	}
+}
+
+func GetNegotiationHistory(client pb.OtcServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		callerID, err := middleware.GetUserIDFromToken(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
+		}
+		callerType := middleware.GetCallerRoleFromToken(c)
+
+		negID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid negotiation id"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
+		defer cancel()
+
+		resp, err := client.GetNegotiationHistory(ctx, &pb.GetNegotiationHistoryRequest{
+			NegotiationId: negID,
+			CallerId:      callerID,
+			CallerType:    callerType,
+		})
+		if err != nil {
+			mapOtcError(c, err)
+			return
+		}
+
+		entries := make([]gin.H, len(resp.Entries))
+		for i, e := range resp.Entries {
+			entries[i] = historyEntryToJSON(e)
+		}
+		c.JSON(http.StatusOK, entries)
+	}
+}

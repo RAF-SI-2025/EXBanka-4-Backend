@@ -23,6 +23,8 @@ service OtcService {
   rpc PrepareOtcInterbank(OtcInterbankPrepareRequest) returns (OtcInterbankVoteResponse);
   rpc CommitOtcInterbank(OtcInterbankTxRequest)       returns (OtcEmptyResponse);
   rpc RollbackOtcInterbank(OtcInterbankTxRequest)     returns (OtcEmptyResponse);
+  // Negotiation history
+  rpc GetNegotiationHistory(GetNegotiationHistoryRequest) returns (GetNegotiationHistoryResponse);
 }
 
 message PingRequest {}
@@ -231,4 +233,33 @@ message OtcInterbankVoteResponse {
 message OtcInterbankTxRequest {
   string tx_routing_number = 1;
   string tx_id             = 2;
+}
+
+// ── Negotiation history messages ─────────────────────────────────────────────
+
+message NegotiationHistoryEntry {
+  int64  id                  = 1;
+  string action              = 2;
+  int64  actor_id            = 3;
+  string actor_type          = 4;
+  string actor_name          = 5;
+  int32  old_amount          = 6;
+  int32  new_amount          = 7;
+  double old_price_per_stock = 8;
+  double new_price_per_stock = 9;
+  string old_settlement_date = 10;
+  string new_settlement_date = 11;
+  double old_premium         = 12;
+  double new_premium         = 13;
+  string timestamp           = 14;
+}
+
+message GetNegotiationHistoryRequest {
+  int64  negotiation_id = 1;
+  int64  caller_id      = 2;
+  string caller_type    = 3;
+}
+
+message GetNegotiationHistoryResponse {
+  repeated NegotiationHistoryEntry entries = 1;
 }

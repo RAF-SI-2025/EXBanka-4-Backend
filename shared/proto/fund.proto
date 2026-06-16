@@ -19,6 +19,8 @@ service FundService {
   rpc UpdateFundHolding(UpdateFundHoldingRequest) returns (UpdateFundHoldingResponse);
   rpc GetFundPortfolio(GetFundPortfolioRequest) returns (GetFundPortfolioResponse);
   rpc GetFundPerformanceHistory(GetFundPerformanceRequest) returns (GetFundPerformanceResponse);
+  rpc GetAveragePerformance(GetAveragePerformanceRequest) returns (GetAveragePerformanceResponse);
+  rpc ProcessFundDividend(ProcessFundDividendRequest) returns (ProcessFundDividendResponse);
 }
 
 message PingRequest {}
@@ -54,20 +56,29 @@ message GetFundRequest {
   int64 id = 1;
 }
 
+message FundStats {
+  double annual_return         = 1;
+  double reward_to_variability = 2;
+  double max_drawdown          = 3;
+  double volatility            = 4;
+  bool   has_sufficient_data   = 5;
+}
+
 message FundResponse {
-  int64  id                   = 1;
-  string name                 = 2;
-  string description          = 3;
-  double minimum_contribution = 4;
-  int64  manager_id           = 5;
-  string manager_name         = 6;
-  double liquid_assets        = 7;
-  double fund_value           = 8;
-  double profit               = 9;
-  string account_number       = 10;
-  string created_at           = 11;
-  bool   active               = 12;
-  int64  account_id           = 13;
+  int64     id                   = 1;
+  string    name                 = 2;
+  string    description          = 3;
+  double    minimum_contribution = 4;
+  int64     manager_id           = 5;
+  string    manager_name         = 6;
+  double    liquid_assets        = 7;
+  double    fund_value           = 8;
+  double    profit               = 9;
+  string    account_number       = 10;
+  string    created_at           = 11;
+  bool      active               = 12;
+  int64     account_id           = 13;
+  FundStats stats                = 14;
 }
 
 message ListFundsResponse {
@@ -184,6 +195,33 @@ message GetFundPerformanceRequest {
 }
 message GetFundPerformanceResponse {
   repeated PerformanceRecord records = 1;
+}
+
+// ── GetAveragePerformance ─────────────────────────────────────────────────────
+
+message GetAveragePerformanceRequest {
+  string from = 1; // "YYYY-MM-DD"
+  string to   = 2;
+}
+message AveragePerformanceRecord {
+  string date          = 1;
+  double avg_fund_value = 2;
+}
+message GetAveragePerformanceResponse {
+  repeated AveragePerformanceRecord records = 1;
+}
+
+// ── ProcessFundDividend ───────────────────────────────────────────────────────
+
+message ProcessFundDividendRequest {
+  int64  listing_id     = 1;
+  double price          = 2;
+  double dividend_yield = 3;
+  string currency       = 4;
+  string payment_date   = 5;
+}
+message ProcessFundDividendResponse {
+  int64 funds_processed = 1;
 }
 
 // ── UpdateFundHolding ─────────────────────────────────────────────────────────
