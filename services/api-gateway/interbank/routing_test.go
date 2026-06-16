@@ -38,14 +38,13 @@ func TestResolveBankByRoutingNumber_Partner(t *testing.T) {
 	t.Setenv("PARTNER_BANK_NAME", "Banka 4")
 	t.Setenv("PARTNER_BANK_URL", "https://banka-4.example.com")
 	t.Setenv("PARTNER_API_KEY", "their-key")
-	t.Setenv("OWN_INTERBANK_API_KEY", "our-key")
 
 	info, err := ResolveBankByRoutingNumber("444")
 	require.NoError(t, err)
 	assert.Equal(t, "444", info.RoutingNumber)
 	assert.Equal(t, "Banka 4", info.BankName)
 	assert.Equal(t, "https://banka-4.example.com", info.BankURL)
-	assert.Equal(t, "our-key", info.APIKey)
+	assert.Equal(t, "their-key", info.APIKey)
 }
 
 func TestResolveBankByRoutingNumber_Unknown(t *testing.T) {
