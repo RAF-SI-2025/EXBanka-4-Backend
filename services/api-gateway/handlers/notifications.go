@@ -59,7 +59,7 @@ func GetUnreadCount(client pb.AuthServiceClient) gin.HandlerFunc {
 			UserType: userType,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get unread count"})
+			c.JSON(http.StatusOK, gin.H{"count": int64(0)})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"count": resp.Count})
