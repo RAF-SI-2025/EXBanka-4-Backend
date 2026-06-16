@@ -829,6 +829,122 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 	return nil
 }
 
+// forwardBuyerCounterOfferToPartner sends PUT /negotiations/{sellerRn}/{partnerNegID} to the seller's bank
+// (used when we are the buyer and submit a counter-offer on an outbound interbank negotiation).
+func (s *OtcServer) forwardBuyerCounterOfferToPartner(ctx context.Context, negID int64, amount int32, pricePerStock, premium float64, settlementDate string) error {
+	type partyID struct {
+		RoutingNumber int    `json:"routingNumber"`
+		ID            string `json:"id"`
+	}
+	type money struct {
+		Currency string  `json:"currency"`
+		Amount   float64 `json:"amount"`
+	}
+	type stock struct {
+		Ticker string `json:"ticker"`
+	}
+	type putBody struct {
+		Stock              stock   `json:"stock"`
+		SettlementDate     string  `json:"settlementDate"`
+		PricePerUnit       money   `json:"pricePerUnit"`
+		Premium            money   `json:"premium"`
+		BuyerID            partyID `json:"buyerId"`
+		SellerID           partyID `json:"sellerId"`
+		Amount             int32   `json:"amount"`
+		LastModifiedBy     partyID `json:"lastModifiedBy"`
+		BuyerAccountNumber string  `json:"buyerAccountNumber"`
+	}
+
+	var ticker, currency string
+	var sellerExtID, buyerAcctNum sql.NullString
+	var sellerRoutingNum sql.NullInt32
+	var partnerNegID sql.NullString
+	var buyerID int64
+	err := s.DB.QueryRowContext(ctx, `
+		SELECT ticker, currency, seller_routing_number, seller_external_id,
+		       buyer_id, buyer_account_number, partner_negotiation_id
+		FROM otc_negotiations WHERE id = $1`, negID,
+	).Scan(&ticker, &currency, &sellerRoutingNum, &sellerExtID, &buyerID, &buyerAcctNum, &partnerNegID)
+	if err != nil {
+		return fmt.Errorf("load negotiation: %w", err)
+	}
+	if !sellerRoutingNum.Valid {
+		return fmt.Errorf("no seller routing number stored for negotiation %d", negID)
+	}
+	if !partnerNegID.Valid || partnerNegID.String == "" {
+		return fmt.Errorf("no partner_negotiation_id stored for negotiation %d", negID)
+	}
+
+	bank, err := otcInterbank.ResolveBankByRoutingNumber(fmt.Sprintf("%d", sellerRoutingNum.Int32))
+	if err != nil {
+		return fmt.Errorf("resolve seller bank: %w", err)
+	}
+
+	ownRouting := otcOwnRoutingInt()
+	b := putBody{
+		Stock:              stock{Ticker: ticker},
+		SettlementDate:     settlementDate,
+		PricePerUnit:       money{Currency: currency, Amount: pricePerStock},
+		Premium:            money{Currency: currency, Amount: premium},
+		BuyerID:            partyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", buyerID)},
+		SellerID:           partyID{RoutingNumber: int(sellerRoutingNum.Int32), ID: sellerExtID.String},
+		Amount:             amount,
+		LastModifiedBy:     partyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", buyerID)},
+		BuyerAccountNumber: buyerAcctNum.String,
+	}
+	data, _ := json.Marshal(b)
+	url := fmt.Sprintf("%s/negotiations/%d/%s", bank.BankURL, sellerRoutingNum.Int32, partnerNegID.String)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(data))
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("X-Api-Key", bank.APIKey)
+	resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("http call: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("partner returned status %d", resp.StatusCode)
+	}
+	return nil
+}
+
+// notifyOutboundRejection sends DELETE /negotiations/{sellerRn}/{partnerNegID} to the seller's bank
+// (used when we are the buyer and reject an outbound interbank negotiation).
+func (s *OtcServer) notifyOutboundRejection(ctx context.Context, negID int64) error {
+	var sellerRoutingNum sql.NullInt32
+	var partnerNegID sql.NullString
+	err := s.DB.QueryRowContext(ctx,
+		`SELECT seller_routing_number, partner_negotiation_id FROM otc_negotiations WHERE id = $1`, negID,
+	).Scan(&sellerRoutingNum, &partnerNegID)
+	if err != nil || !sellerRoutingNum.Valid || !partnerNegID.Valid || partnerNegID.String == "" {
+		return fmt.Errorf("load seller routing / partner neg id: %w", err)
+	}
+
+	bank, err := otcInterbank.ResolveBankByRoutingNumber(fmt.Sprintf("%d", sellerRoutingNum.Int32))
+	if err != nil {
+		return fmt.Errorf("resolve seller bank: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/negotiations/%d/%s", bank.BankURL, sellerRoutingNum.Int32, partnerNegID.String)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
+	httpReq.Header.Set("X-Api-Key", bank.APIKey)
+	resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("http call: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
+		return fmt.Errorf("partner returned status %d", resp.StatusCode)
+	}
+	return nil
+}
+
 // executeInterbankAcceptBuyerSide coordinates the 2PC when we are the buyer and bank4 (seller)
 // has accepted. Bank4 called our /accept endpoint (AcceptAsLocal); we form the NEW_TX, send it
 // to bank4, debit our buyer's account on YES, create our buyer-side contract, and send COMMIT.

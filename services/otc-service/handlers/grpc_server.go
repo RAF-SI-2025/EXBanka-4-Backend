@@ -492,8 +492,14 @@ func (s *OtcServer) CounterOffer(ctx context.Context, req *pb.CounterOfferReques
 	}()
 
 	if buyerType == "INTERBANK" {
+		// Inbound: we are seller, bank4 is buyer — notify buyer's bank of our counter.
 		if fwdErr := s.forwardSellerCounterOfferToPartner(ctx, req.NegotiationId, req.Amount, req.PricePerStock, req.Premium, req.SettlementDate); fwdErr != nil {
 			log.Printf("warn: forwardSellerCounterOfferToPartner(%d): %v", req.NegotiationId, fwdErr)
+		}
+	} else if sellerType == "INTERBANK" && isBuyer {
+		// Outbound: we are buyer, bank4 is seller — notify seller's bank of our counter.
+		if fwdErr := s.forwardBuyerCounterOfferToPartner(ctx, req.NegotiationId, req.Amount, req.PricePerStock, req.Premium, req.SettlementDate); fwdErr != nil {
+			log.Printf("warn: forwardBuyerCounterOfferToPartner(%d): %v", req.NegotiationId, fwdErr)
 		}
 	}
 
@@ -809,8 +815,14 @@ func (s *OtcServer) RejectNegotiation(ctx context.Context, req *pb.RejectNegotia
 	}()
 
 	if buyerType == "INTERBANK" {
+		// Inbound: we are seller, bank4 is buyer — notify buyer's bank of rejection.
 		if fwdErr := s.notifyPartnerRejection(ctx, req.NegotiationId); fwdErr != nil {
 			log.Printf("warn: notifyPartnerRejection(%d): %v", req.NegotiationId, fwdErr)
+		}
+	} else if sellerType == "INTERBANK" {
+		// Outbound: we are buyer, bank4 is seller — notify seller's bank of rejection.
+		if fwdErr := s.notifyOutboundRejection(ctx, req.NegotiationId); fwdErr != nil {
+			log.Printf("warn: notifyOutboundRejection(%d): %v", req.NegotiationId, fwdErr)
 		}
 	}
 
@@ -1587,9 +1599,19 @@ func (s *OtcServer) InterbankCounterOffer(ctx context.Context, req *pb.Interbank
 	if currentStatus != "PENDING_BUYER" && currentStatus != "PENDING_SELLER" {
 		return nil, status.Errorf(codes.FailedPrecondition, "negotiation is in terminal state: %s", currentStatus)
 	}
-	// The partner bank is always the buyer for incoming negotiations.
-	// Counter-offer is only allowed when it is the buyer's turn.
-	if currentStatus != "PENDING_BUYER" {
+
+	// Outbound negs have seller_routing_number set (bank4 is seller); inbound negs do not.
+	var sellerRoutingNum sql.NullInt32
+	_ = s.DB.QueryRowContext(ctx, `SELECT seller_routing_number FROM otc_negotiations WHERE id = $1`, localID).Scan(&sellerRoutingNum)
+	isOutbound := sellerRoutingNum.Valid && sellerRoutingNum.Int32 != 0
+
+	// For outbound: bank4 is seller and counter-offers on PENDING_SELLER; sets to PENDING_BUYER (our turn).
+	// For inbound: bank4 is buyer and counter-offers on PENDING_BUYER; sets to PENDING_SELLER (our turn).
+	allowedStatus, newStatus := "PENDING_BUYER", "PENDING_SELLER"
+	if isOutbound {
+		allowedStatus, newStatus = "PENDING_SELLER", "PENDING_BUYER"
+	}
+	if currentStatus != allowedStatus {
 		return nil, status.Error(codes.FailedPrecondition, "not your turn")
 	}
 
@@ -1597,10 +1619,10 @@ func (s *OtcServer) InterbankCounterOffer(ctx context.Context, req *pb.Interbank
 	if _, err = s.DB.ExecContext(ctx, `
 		UPDATE otc_negotiations
 		SET amount = $1, price_per_stock = $2, settlement_date = $3, premium = $4,
-		    last_modified = $5, modified_by_id = 0, modified_by_type = 'INTERBANK', status = 'PENDING_SELLER'
-		WHERE id = $6`,
+		    last_modified = $5, modified_by_id = 0, modified_by_type = 'INTERBANK', status = $6
+		WHERE id = $7`,
 		req.Amount, req.PricePerUnit, settleDateOnly(req.SettlementDate), req.Premium,
-		now, localID,
+		now, newStatus, localID,
 	); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update negotiation: %v", err)
 	}
