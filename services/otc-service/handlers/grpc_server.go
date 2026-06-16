@@ -2112,10 +2112,10 @@ func lookupEmailAndName(employeeDB, clientDB *sql.DB, userID int64, userType str
 }
 
 type negSnapshot struct {
-	Amount        int32
-	PricePerStock float64
+	Amount         int32
+	PricePerStock  float64
 	SettlementDate string
-	Premium       float64
+	Premium        float64
 }
 
 func (s *OtcServer) insertHistory(ctx context.Context, negID int64, action string, actorID int64, actorType string, old, newSnap *negSnapshot) {

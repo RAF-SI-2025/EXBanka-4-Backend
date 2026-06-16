@@ -585,20 +585,20 @@ func GetPublicStock(client pb.OtcServiceClient) gin.HandlerFunc {
 
 func historyEntryToJSON(e *pb.NegotiationHistoryEntry) gin.H {
 	return gin.H{
-		"id":                 e.Id,
-		"action":             e.Action,
-		"actorId":            e.ActorId,
-		"actorType":          e.ActorType,
-		"actorName":          e.ActorName,
-		"oldAmount":          e.OldAmount,
-		"newAmount":          e.NewAmount,
-		"oldPricePerStock":   e.OldPricePerStock,
-		"newPricePerStock":   e.NewPricePerStock,
-		"oldSettlementDate":  e.OldSettlementDate,
-		"newSettlementDate":  e.NewSettlementDate,
-		"oldPremium":         e.OldPremium,
-		"newPremium":         e.NewPremium,
-		"timestamp":          e.Timestamp,
+		"id":                e.Id,
+		"action":            e.Action,
+		"actorId":           e.ActorId,
+		"actorType":         e.ActorType,
+		"actorName":         e.ActorName,
+		"oldAmount":         e.OldAmount,
+		"newAmount":         e.NewAmount,
+		"oldPricePerStock":  e.OldPricePerStock,
+		"newPricePerStock":  e.NewPricePerStock,
+		"oldSettlementDate": e.OldSettlementDate,
+		"newSettlementDate": e.NewSettlementDate,
+		"oldPremium":        e.OldPremium,
+		"newPremium":        e.NewPremium,
+		"timestamp":         e.Timestamp,
 	}
 }
 

@@ -123,15 +123,15 @@ type LimitChangeMessage struct {
 }
 
 type OtcCounterOfferMessage struct {
-	Email              string  `json:"email"`
-	FirstName          string  `json:"first_name"`
-	NegotiationId      int64   `json:"negotiation_id"`
-	Ticker             string  `json:"ticker"`
-	NewAmount          int32   `json:"new_amount"`
-	NewPricePerStock   float64 `json:"new_price_per_stock"`
-	NewPremium         float64 `json:"new_premium"`
-	NewSettlementDate  string  `json:"new_settlement_date"`
-	CounterPartyName   string  `json:"counter_party_name"`
+	Email             string  `json:"email"`
+	FirstName         string  `json:"first_name"`
+	NegotiationId     int64   `json:"negotiation_id"`
+	Ticker            string  `json:"ticker"`
+	NewAmount         int32   `json:"new_amount"`
+	NewPricePerStock  float64 `json:"new_price_per_stock"`
+	NewPremium        float64 `json:"new_premium"`
+	NewSettlementDate string  `json:"new_settlement_date"`
+	CounterPartyName  string  `json:"counter_party_name"`
 }
 
 type OtcStatusChangeMessage struct {
