@@ -39,3 +39,6 @@ shared/pb/*/github.com/
 .vscode/
 *.swp
 *.swo
+services/exchange-service/exchange-service
+services/portfolio-service/-
+shared/pb/shared/
