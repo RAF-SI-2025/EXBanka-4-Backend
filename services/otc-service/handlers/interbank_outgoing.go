@@ -61,9 +61,10 @@ type ibOutAsset struct {
 	Asset *ibOutAssetInner `json:"asset,omitempty"`
 }
 type ibOutPosting struct {
-	Account ibOutAccount `json:"account"`
-	Amount  float64      `json:"amount"`
-	Asset   ibOutAsset   `json:"asset"`
+	Account        ibOutAccount `json:"account"`
+	Amount         float64      `json:"amount"`
+	Asset          ibOutAsset   `json:"asset"`
+	IdempotencyKey string       `json:"idempotencyKey,omitempty"`
 }
 
 type otcIbNewTxMessage struct {
@@ -166,8 +167,9 @@ func executeOtcOutgoing2PC(ctx context.Context, bank otcInterbank.BankInfo, req 
 						RoutingNumber: req.partnerRoutingNum,
 						ID:            req.partnerNegotiationID,
 					}},
-					Amount: req.totalCost,
-					Asset:  ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: req.currency}},
+					Amount:         req.totalCost,
+					Asset:          ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: req.currency}},
+					IdempotencyKey: fmt.Sprintf("%d:%s:ex:strike", req.partnerRoutingNum, req.partnerNegotiationID),
 				},
 				{ // OPTION contract gives shares
 					Account: ibOutAccount{Type: "OPTION", ID: &ibOutPartyID{
@@ -215,7 +217,8 @@ func executeOtcOutgoing2PC(ctx context.Context, bank otcInterbank.BankInfo, req 
 		})
 		return "NO", fmt.Errorf("COMMIT_TX request failed: %w", err)
 	}
-	defer func() { _ = commitResp.Body.Close() }()
+	commitBody, _ := io.ReadAll(commitResp.Body)
+	_ = commitResp.Body.Close()
 
 	if commitResp.StatusCode != http.StatusNoContent {
 		_, _ = otcSendInterbankRequest(ctx, bankURL, bank.APIKey, otcIbEnvelope{
@@ -223,7 +226,7 @@ func executeOtcOutgoing2PC(ctx context.Context, bank otcInterbank.BankInfo, req 
 			MessageType:    "ROLLBACK_TX",
 			Message:        otcIbCommitMessage{TransactionID: txID},
 		})
-		return "NO", fmt.Errorf("COMMIT_TX returned status %d", commitResp.StatusCode)
+		return "NO", fmt.Errorf("COMMIT_TX returned status %d: %s", commitResp.StatusCode, string(commitBody))
 	}
 
 	return "YES", nil
@@ -744,8 +747,18 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 					Amount:  premium,
 					Asset:   ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: currency.String}},
 				},
-				{ // posting 4: buyer (bank4) receives option right — triggers bank4's commitOptionPosting to create their mirror contract
-					// NOTE: posting 3 (seller -1 OPTION at routing 888) is intentionally omitted — bank4 rejects OPTION postings for non-444 routing numbers.
+				{ // posting 3: seller (us) gives the option — bank4 skips this in prepare (non-local routing 888) but includes it in balance check
+					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", sellerID)}},
+					Amount:  -1,
+					Asset: ibOutAsset{Type: "OPTION", Asset: &ibOutAssetInner{
+						NegotiationID:  &ibOutPartyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", localNegID)},
+						Stock:          &ibOutStock{Ticker: ticker.String},
+						PricePerUnit:   &ibOutMoney{Currency: currency.String, Amount: strikePrice},
+						SettlementDate: settlementDate,
+						Amount:         float64(amount),
+					}},
+				},
+				{ // posting 4: buyer (bank4) receives option right — bank4's commitOptionPosting creates their mirror contract on COMMIT
 					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: int(buyerRoutingNum.Int32), ID: buyerExtID.String}},
 					Amount:  1,
 					Asset: ibOutAsset{Type: "OPTION", Asset: &ibOutAssetInner{
