@@ -11,13 +11,16 @@ import (
 
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/order-service/approval"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/order-service/models"
+	orderqueue "github.com/RAF-SI-2025/EXBanka-4-Backend/services/order-service/queue"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/order-service/repository"
+	pb_client "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
 	pb_emp "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
 	pb_exchange "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/exchange"
 	pb_fund "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/fund"
 	pb_loan "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/loan"
 	pb_portfolio "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/portfolio"
 	pb_sec "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/securities"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 // Scheduler polls for approved orders and drives their partial-fill simulation.
@@ -33,8 +36,40 @@ type Scheduler struct {
 	PortfolioClient  pb_portfolio.PortfolioServiceClient
 	ExchangeClient   pb_exchange.ExchangeServiceClient
 	FundClient       pb_fund.FundServiceClient
+	AmqpChannel      *amqp.Channel
+	ClientClient     pb_client.ClientServiceClient
 
 	inProgress sync.Map // map[int64]bool — orders currently being executed
+}
+
+func (s *Scheduler) sendNotif(ctx context.Context, orderID, userID int64, userType, ticker, direction, status string, quantity, filledQty int32, pricePerUnit float64) {
+	if s.AmqpChannel == nil {
+		return
+	}
+	var email, firstName string
+	if userType == "CLIENT" && s.ClientClient != nil {
+		if resp, err := s.ClientClient.GetClientById(ctx, &pb_client.GetClientByIdRequest{Id: userID}); err == nil && resp.Client != nil {
+			email, firstName = resp.Client.Email, resp.Client.FirstName
+		}
+	} else if s.EmployeeClient != nil {
+		if resp, err := s.EmployeeClient.GetEmployeeById(ctx, &pb_emp.GetEmployeeByIdRequest{Id: userID}); err == nil && resp.Employee != nil {
+			email, firstName = resp.Employee.Email, resp.Employee.FirstName
+		}
+	}
+	if email == "" {
+		return
+	}
+	_ = orderqueue.PublishOrderStatus(s.AmqpChannel, orderqueue.OrderStatusMessage{
+		Email:        email,
+		FirstName:    firstName,
+		OrderID:      orderID,
+		Ticker:       ticker,
+		Direction:    direction,
+		Status:       status,
+		Quantity:     quantity,
+		FilledQty:    filledQty,
+		PricePerUnit: pricePerUnit,
+	})
 }
 
 // Start launches the background polling goroutines.
@@ -194,6 +229,11 @@ func (s *Scheduler) executeOrder(order models.Order) {
 			_ = repository.UpdateOrderStatus(ctx, s.DB, order.ID, "DECLINED", nil)
 			return
 		}
+		if commission > 0 {
+			if err := repository.AddCommissionPaid(ctx, s.DB, order.ID, commission); err != nil {
+				log.Printf("order-scheduler: AddCommissionPaid for order %d: %v", order.ID, err)
+			}
+		}
 		// Price per unit in account currency — used to keep liquid_assets and average_cost in the
 		// same currency as the fund account (RSD), not the security's trading currency.
 		settledPricePerUnit := settledTotal / float64(fillQty) / float64(order.ContractSize)
@@ -244,10 +284,16 @@ func (s *Scheduler) executeOrder(order models.Order) {
 			log.Printf("order-scheduler: update remaining error for order %d: %v", order.ID, err)
 		}
 
+		if remaining > 0 {
+			filled := order.Quantity - remaining
+			go s.sendNotif(context.Background(), order.ID, order.UserID, order.UserType, listing.Ticker, order.Direction, "PARTIAL_FILL", order.Quantity, filled, pricePerUnit)
+		}
+
 		if remaining == 0 {
 			if err := repository.SetOrderDone(ctx, s.DB, order.ID); err != nil {
 				log.Printf("order-scheduler: set done error for order %d: %v", order.ID, err)
 			}
+			go s.sendNotif(context.Background(), order.ID, order.UserID, order.UserType, listing.Ticker, order.Direction, "DONE", order.Quantity, order.Quantity, pricePerUnit)
 			log.Printf("order-scheduler: order %d fully executed", order.ID)
 			if order.FundID != 0 && order.Direction == "SELL" && s.FundClient != nil {
 				if _, err := s.FundClient.CheckPendingWithdrawals(ctx, &pb_fund.CheckPendingWithdrawalsRequest{

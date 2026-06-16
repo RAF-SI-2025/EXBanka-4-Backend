@@ -46,6 +46,49 @@ message SendLoanLatePaymentEmailRequest {
 }
 message SendLoanLatePaymentEmailResponse {}
 
+message SendAccountLockedEmailRequest {
+  string email              = 1;
+  string first_name         = 2;
+  string password_reset_link = 3;
+}
+message SendAccountLockedEmailResponse {}
+
+message SendPaymentNotificationEmailRequest {
+  string email            = 1;
+  string first_name       = 2;
+  string direction        = 3;  // "incoming" | "outgoing"
+  double amount           = 4;
+  string currency         = 5;
+  string counterparty     = 6;
+  string account_number   = 7;
+}
+message SendPaymentNotificationEmailResponse {}
+
+message SendCardBlockedEmailRequest {
+  string email            = 1;
+  string first_name       = 2;
+  string card_number      = 3;  // masked, e.g. **** **** **** 1234
+}
+message SendCardBlockedEmailResponse {}
+
+message SendLoanApprovedEmailRequest {
+  string email               = 1;
+  string first_name          = 2;
+  double loan_amount         = 3;
+  string currency            = 4;
+  double monthly_installment = 5;
+}
+message SendLoanApprovedEmailResponse {}
+
+message SendLimitChangeEmailRequest {
+  string email         = 1;
+  string first_name    = 2;
+  double daily_limit   = 3;
+  double monthly_limit = 4;
+  string currency      = 5;
+}
+message SendLimitChangeEmailResponse {}
+
 service EmailService {
   rpc SendActivationEmail(SendActivationEmailRequest)                 returns (SendActivationEmailResponse);
   rpc SendPasswordResetEmail(SendPasswordResetEmailRequest)           returns (SendPasswordResetEmailResponse);
@@ -54,4 +97,9 @@ service EmailService {
   rpc SendAccountCreatedEmail(SendAccountCreatedEmailRequest)         returns (SendAccountCreatedEmailResponse);
   rpc SendCardConfirmationEmail(SendCardConfirmationEmailRequest)     returns (SendCardConfirmationEmailResponse);
   rpc SendLoanLatePaymentEmail(SendLoanLatePaymentEmailRequest)       returns (SendLoanLatePaymentEmailResponse);
+  rpc SendAccountLockedEmail(SendAccountLockedEmailRequest)           returns (SendAccountLockedEmailResponse);
+  rpc SendPaymentNotificationEmail(SendPaymentNotificationEmailRequest) returns (SendPaymentNotificationEmailResponse);
+  rpc SendCardBlockedEmail(SendCardBlockedEmailRequest)               returns (SendCardBlockedEmailResponse);
+  rpc SendLoanApprovedEmail(SendLoanApprovedEmailRequest)             returns (SendLoanApprovedEmailResponse);
+  rpc SendLimitChangeEmail(SendLimitChangeEmailRequest)               returns (SendLimitChangeEmailResponse);
 }

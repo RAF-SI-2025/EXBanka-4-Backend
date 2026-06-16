@@ -7,6 +7,7 @@ require (
 	github.com/RAF-SI-2025/EXBanka-4-Backend/shared v0.0.0-00010101000000-000000000000
 	github.com/alicebob/miniredis/v2 v2.37.0
 	github.com/lib/pq v1.11.2
+	github.com/rabbitmq/amqp091-go v1.11.0
 	github.com/redis/go-redis/v9 v9.19.0
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.79.3

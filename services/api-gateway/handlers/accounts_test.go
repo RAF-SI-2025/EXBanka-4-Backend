@@ -381,13 +381,13 @@ func TestGetAllAccounts_Happy(t *testing.T) {
 
 func TestUpdateAccountLimitsHandler_InvalidId(t *testing.T) {
 	svc := &stubAccountClient{}
-	w := serveHandler(UpdateAccountLimits(svc), "PUT", "/admin/accounts/:accountId/limits", "/admin/accounts/bad/limits", `{"dailyLimit":100,"monthlyLimit":500}`)
+	w := serveHandler(UpdateAccountLimits(svc, &stubEmailClient{}, &stubAuthClient{}, &stubClientSvcClient{}), "PUT", "/admin/accounts/:accountId/limits", "/admin/accounts/bad/limits", `{"dailyLimit":100,"monthlyLimit":500}`)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestUpdateAccountLimitsHandler_MissingField(t *testing.T) {
 	svc := &stubAccountClient{}
-	w := serveHandler(UpdateAccountLimits(svc), "PUT", "/admin/accounts/:accountId/limits", "/admin/accounts/1/limits", `{}`)
+	w := serveHandler(UpdateAccountLimits(svc, &stubEmailClient{}, &stubAuthClient{}, &stubClientSvcClient{}), "PUT", "/admin/accounts/:accountId/limits", "/admin/accounts/1/limits", `{}`)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
@@ -397,7 +397,7 @@ func TestUpdateAccountLimitsHandler_NotFound(t *testing.T) {
 			return nil, status.Error(codes.NotFound, "not found")
 		},
 	}
-	w := serveHandler(UpdateAccountLimits(svc), "PUT", "/admin/accounts/:accountId/limits", "/admin/accounts/1/limits", `{"dailyLimit":100,"monthlyLimit":500}`)
+	w := serveHandler(UpdateAccountLimits(svc, &stubEmailClient{}, &stubAuthClient{}, &stubClientSvcClient{}), "PUT", "/admin/accounts/:accountId/limits", "/admin/accounts/1/limits", `{"dailyLimit":100,"monthlyLimit":500}`)
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
@@ -407,7 +407,7 @@ func TestUpdateAccountLimitsHandler_InternalError(t *testing.T) {
 			return nil, fmt.Errorf("db error")
 		},
 	}
-	w := serveHandler(UpdateAccountLimits(svc), "PUT", "/admin/accounts/:accountId/limits", "/admin/accounts/1/limits", `{"dailyLimit":100,"monthlyLimit":500}`)
+	w := serveHandler(UpdateAccountLimits(svc, &stubEmailClient{}, &stubAuthClient{}, &stubClientSvcClient{}), "PUT", "/admin/accounts/:accountId/limits", "/admin/accounts/1/limits", `{"dailyLimit":100,"monthlyLimit":500}`)
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
@@ -417,7 +417,7 @@ func TestUpdateAccountLimitsHandler_Happy(t *testing.T) {
 			return &accountpb.UpdateAccountLimitsResponse{}, nil
 		},
 	}
-	w := serveHandler(UpdateAccountLimits(svc), "PUT", "/admin/accounts/:accountId/limits", "/admin/accounts/1/limits", `{"dailyLimit":100,"monthlyLimit":500}`)
+	w := serveHandler(UpdateAccountLimits(svc, &stubEmailClient{}, &stubAuthClient{}, &stubClientSvcClient{}), "PUT", "/admin/accounts/:accountId/limits", "/admin/accounts/1/limits", `{"dailyLimit":100,"monthlyLimit":500}`)
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 

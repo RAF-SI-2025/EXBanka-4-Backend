@@ -52,11 +52,23 @@ message GetEmployeeCredentialsRequest {
 }
 
 message GetEmployeeCredentialsResponse {
-  int64           id            = 1;
-  string          password_hash = 2;
-  repeated string permissions   = 3;
-  bool            active        = 4;
+  int64           id                    = 1;
+  string          password_hash         = 2;
+  repeated string permissions           = 3;
+  bool            active                = 4;
+  string          email                 = 5;
+  string          first_name            = 6;
+  int32           failed_login_attempts = 7;
+  string          account_locked_until  = 8;
 }
+
+message UpdateLoginAttemptsRequest {
+  int64  id           = 1;
+  int32  attempts     = 2;
+  string locked_until = 3;
+}
+
+message UpdateLoginAttemptsResponse {}
 
 message CreateEmployeeRequest {
   string first_name    = 1;
@@ -99,6 +111,7 @@ message UpdateEmployeeRequest {
   bool            active        = 12;
   repeated string permissions   = 13;
   string          jmbg          = 14;
+  int64           actor_id      = 15;
 }
 
 message UpdateEmployeeResponse {
@@ -151,11 +164,13 @@ message GetActuariesResponse {
 message SetAgentLimitRequest {
   int64  employee_id  = 1;
   double limit_amount = 2;
+  int64  actor_id     = 3;
 }
 message SetAgentLimitResponse {}
 
 message ResetAgentUsedLimitRequest {
   int64 employee_id = 1;
+  int64 actor_id    = 2;
 }
 message ResetAgentUsedLimitResponse {}
 
@@ -197,6 +212,45 @@ message GetActuaryPerformersResponse {
   repeated ActuaryPerformer performers = 1;
 }
 
+// Audit log messages (BE-C3-05)
+message AuditLogRequest {
+  int64  actor_id    = 1;
+  string actor_type  = 2;
+  string actor_name  = 3;
+  string action      = 4;
+  int64  target_id   = 5;
+  string target_type = 6;
+  string target_name = 7;
+  string old_value   = 8;
+  string new_value   = 9;
+}
+message AuditLogResponse {}
+
+message ListAuditLogsRequest {
+  string action     = 1;
+  int64  actor_id   = 2;
+  string from_date  = 3;
+  string to_date    = 4;
+  int32  page       = 5;
+  int32  page_size  = 6;
+}
+message AuditLogEntry {
+  int64  id          = 1;
+  int64  actor_id    = 2;
+  string actor_type  = 3;
+  string actor_name  = 4;
+  string action      = 5;
+  int64  target_id   = 6;
+  string target_type = 7;
+  string target_name = 8;
+  string old_value   = 9;
+  string new_value   = 10;
+  string timestamp   = 11;
+}
+message ListAuditLogsResponse {
+  repeated AuditLogEntry entries = 1;
+}
+
 service EmployeeService {
   rpc GetAllEmployees(GetAllEmployeesRequest) returns (GetAllEmployeesResponse);
   rpc SearchEmployees(SearchEmployeesRequest) returns (SearchEmployeesResponse);
@@ -214,4 +268,7 @@ service EmployeeService {
   rpc ResetAllActuaryUsedLimits(ResetAllActuaryUsedLimitsRequest) returns (ResetAllActuaryUsedLimitsResponse);
   rpc GetActuaryPerformers(GetActuaryPerformersRequest) returns (GetActuaryPerformersResponse);
   rpc GetSupervisors(GetSupervisorsRequest) returns (GetSupervisorsResponse);
+  rpc UpdateLoginAttempts(UpdateLoginAttemptsRequest) returns (UpdateLoginAttemptsResponse);
+  rpc LogAuditEvent(AuditLogRequest) returns (AuditLogResponse);
+  rpc ListAuditLogs(ListAuditLogsRequest) returns (ListAuditLogsResponse);
 }

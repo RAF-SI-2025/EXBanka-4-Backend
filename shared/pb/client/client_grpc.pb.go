@@ -25,6 +25,7 @@ const (
 	ClientService_UpdateClient_FullMethodName         = "/client.ClientService/UpdateClient"
 	ClientService_GetClientCredentials_FullMethodName = "/client.ClientService/GetClientCredentials"
 	ClientService_ActivateClient_FullMethodName       = "/client.ClientService/ActivateClient"
+	ClientService_UpdateLoginAttempts_FullMethodName  = "/client.ClientService/UpdateLoginAttempts"
 )
 
 // ClientServiceClient is the client API for ClientService service.
@@ -37,6 +38,7 @@ type ClientServiceClient interface {
 	UpdateClient(ctx context.Context, in *UpdateClientRequest, opts ...grpc.CallOption) (*UpdateClientResponse, error)
 	GetClientCredentials(ctx context.Context, in *GetClientCredentialsRequest, opts ...grpc.CallOption) (*GetClientCredentialsResponse, error)
 	ActivateClient(ctx context.Context, in *ActivateClientRequest, opts ...grpc.CallOption) (*ActivateClientResponse, error)
+	UpdateLoginAttempts(ctx context.Context, in *UpdateLoginAttemptsRequest, opts ...grpc.CallOption) (*UpdateLoginAttemptsResponse, error)
 }
 
 type clientServiceClient struct {
@@ -107,6 +109,16 @@ func (c *clientServiceClient) ActivateClient(ctx context.Context, in *ActivateCl
 	return out, nil
 }
 
+func (c *clientServiceClient) UpdateLoginAttempts(ctx context.Context, in *UpdateLoginAttemptsRequest, opts ...grpc.CallOption) (*UpdateLoginAttemptsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateLoginAttemptsResponse)
+	err := c.cc.Invoke(ctx, ClientService_UpdateLoginAttempts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ClientServiceServer is the server API for ClientService service.
 // All implementations must embed UnimplementedClientServiceServer
 // for forward compatibility.
@@ -117,6 +129,7 @@ type ClientServiceServer interface {
 	UpdateClient(context.Context, *UpdateClientRequest) (*UpdateClientResponse, error)
 	GetClientCredentials(context.Context, *GetClientCredentialsRequest) (*GetClientCredentialsResponse, error)
 	ActivateClient(context.Context, *ActivateClientRequest) (*ActivateClientResponse, error)
+	UpdateLoginAttempts(context.Context, *UpdateLoginAttemptsRequest) (*UpdateLoginAttemptsResponse, error)
 	mustEmbedUnimplementedClientServiceServer()
 }
 
@@ -144,6 +157,9 @@ func (UnimplementedClientServiceServer) GetClientCredentials(context.Context, *G
 }
 func (UnimplementedClientServiceServer) ActivateClient(context.Context, *ActivateClientRequest) (*ActivateClientResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ActivateClient not implemented")
+}
+func (UnimplementedClientServiceServer) UpdateLoginAttempts(context.Context, *UpdateLoginAttemptsRequest) (*UpdateLoginAttemptsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateLoginAttempts not implemented")
 }
 func (UnimplementedClientServiceServer) mustEmbedUnimplementedClientServiceServer() {}
 func (UnimplementedClientServiceServer) testEmbeddedByValue()                       {}
@@ -274,6 +290,24 @@ func _ClientService_ActivateClient_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ClientService_UpdateLoginAttempts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateLoginAttemptsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ClientServiceServer).UpdateLoginAttempts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ClientService_UpdateLoginAttempts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ClientServiceServer).UpdateLoginAttempts(ctx, req.(*UpdateLoginAttemptsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ClientService_ServiceDesc is the grpc.ServiceDesc for ClientService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -304,6 +338,10 @@ var ClientService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ActivateClient",
 			Handler:    _ClientService_ActivateClient_Handler,
+		},
+		{
+			MethodName: "UpdateLoginAttempts",
+			Handler:    _ClientService_UpdateLoginAttempts_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -40,10 +40,21 @@ type ibOutAccount struct {
 	Num  string        `json:"num,omitempty"`
 	ID   *ibOutPartyID `json:"id,omitempty"`
 }
+type ibOutStock struct {
+	Ticker string `json:"ticker"`
+}
+type ibOutMoney struct {
+	Currency string  `json:"currency"`
+	Amount   float64 `json:"amount"`
+}
 type ibOutAssetInner struct {
-	Currency      string        `json:"currency,omitempty"`
-	Ticker        string        `json:"ticker,omitempty"`
-	NegotiationID *ibOutPartyID `json:"negotiationId,omitempty"`
+	Currency       string        `json:"currency,omitempty"`
+	Ticker         string        `json:"ticker,omitempty"`
+	NegotiationID  *ibOutPartyID `json:"negotiationId,omitempty"`
+	Stock          *ibOutStock   `json:"stock,omitempty"`
+	PricePerUnit   *ibOutMoney   `json:"pricePerUnit,omitempty"`
+	SettlementDate string        `json:"settlementDate,omitempty"`
+	Amount         float64       `json:"amount,omitempty"`
 }
 type ibOutAsset struct {
 	Type  string           `json:"type"`
@@ -673,14 +684,17 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 	var buyerAcctNum, buyerExtID, currency, ticker, sellerType sql.NullString
 	var buyerRoutingNum sql.NullInt32
 	var sellerID int64
-	var premium float64
+	var premium, strikePrice float64
 	var amount int32
+	var settlementDate string
 	err := s.DB.QueryRowContext(ctx, `
 		SELECT buyer_account_number, buyer_routing_number, buyer_external_id,
-		       seller_id, seller_type, premium, currency, amount, ticker
+		       seller_id, seller_type, premium, currency, amount, ticker,
+		       settlement_date::text, price_per_stock
 		FROM otc_negotiations WHERE id = $1`, localNegID,
 	).Scan(&buyerAcctNum, &buyerRoutingNum, &buyerExtID,
-		&sellerID, &sellerType, &premium, &currency, &amount, &ticker)
+		&sellerID, &sellerType, &premium, &currency, &amount, &ticker,
+		&settlementDate, &strikePrice)
 	if err != nil {
 		return fmt.Errorf("load negotiation: %w", err)
 	}
@@ -710,22 +724,27 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 			PaymentCode:    "289",
 			PaymentPurpose: "OTC option premium",
 			Postings: []ibOutPosting{
-				{ // buyer's account debited (premium)
+				{ // posting 1: buyer's account debited (premium)
 					Account: ibOutAccount{Type: "ACCOUNT", Num: buyerAcctNum.String},
 					Amount:  -premium,
 					Asset:   ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: currency.String}},
 				},
-				{ // seller (us) receives premium
+				{ // posting 2: seller (us) receives premium
 					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", sellerID)}},
 					Amount:  premium,
 					Asset:   ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: currency.String}},
 				},
-				// OPTION postings are intentionally omitted from this 2PC:
-				// Bank 4 routes all 2PC postings to their payment service, which rejects
-				// OPTION-type assets as UNACCEPTABLE_ASSET. The 2PC covers only the MONAS
-				// premium transfer. Each bank creates its own OTC contract independently —
-				// we create ours below after YES; bank 4 creates theirs when they receive
-				// our 200 response to their accept endpoint call.
+				{ // posting 4: buyer (bank4) receives option right — triggers bank4's commitOptionPosting to create their mirror contract
+					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: int(buyerRoutingNum.Int32), ID: buyerExtID.String}},
+					Amount:  1,
+					Asset: ibOutAsset{Type: "OPTION", Asset: &ibOutAssetInner{
+						NegotiationID:  &ibOutPartyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", localNegID)},
+						Stock:          &ibOutStock{Ticker: ticker.String},
+						PricePerUnit:   &ibOutMoney{Currency: currency.String, Amount: strikePrice},
+						SettlementDate: settlementDate,
+						Amount:         float64(amount),
+					}},
+				},
 			},
 		},
 	}
@@ -780,11 +799,6 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 		return fmt.Errorf("seller has insufficient free shares")
 	}
 
-	var settlementDate, strikeStr string
-	_ = s.DB.QueryRowContext(ctx, `SELECT settlement_date::text, price_per_stock::text FROM otc_negotiations WHERE id = $1`, localNegID).Scan(&settlementDate, &strikeStr)
-	var strikePrice float64
-	_, _ = fmt.Sscanf(strikeStr, "%f", &strikePrice)
-
 	_, _ = s.DB.ExecContext(ctx, `
 		INSERT INTO otc_contracts
 			(negotiation_id, seller_id, seller_type, buyer_id, buyer_type,
@@ -811,6 +825,145 @@ func (s *OtcServer) executeInterbankAcceptOutgoing(ctx context.Context, localNeg
 				premium, sellerAcctID)
 		}
 	}
+
+	return nil
+}
+
+// executeInterbankAcceptBuyerSide coordinates the 2PC when we are the buyer and bank4 (seller)
+// has accepted. Bank4 called our /accept endpoint (AcceptAsLocal); we form the NEW_TX, send it
+// to bank4, debit our buyer's account on YES, create our buyer-side contract, and send COMMIT.
+// Bank4 on COMMIT creates their authoritative seller contract via commitOptionPosting.
+func (s *OtcServer) executeInterbankAcceptBuyerSide(ctx context.Context, localNegID int64) error {
+	var ticker, currency, buyerType string
+	var sellerExtID, buyerAcctNum sql.NullString
+	var settlementDate string
+	var buyerID int64
+	var sellerRoutingNum sql.NullInt32
+	var partnerNegID sql.NullString
+	var amount int32
+	var strikePrice, premium float64
+
+	err := s.DB.QueryRowContext(ctx, `
+		SELECT ticker, currency, settlement_date::text,
+		       buyer_id, buyer_type, buyer_account_number,
+		       seller_routing_number, seller_external_id,
+		       partner_negotiation_id, amount, price_per_stock, premium
+		FROM otc_negotiations WHERE id = $1`, localNegID,
+	).Scan(&ticker, &currency, &settlementDate,
+		&buyerID, &buyerType, &buyerAcctNum,
+		&sellerRoutingNum, &sellerExtID,
+		&partnerNegID, &amount, &strikePrice, &premium)
+	if err != nil {
+		return fmt.Errorf("load negotiation: %w", err)
+	}
+	if !sellerRoutingNum.Valid || !partnerNegID.Valid || partnerNegID.String == "" {
+		return fmt.Errorf("missing seller_routing_number or partner_negotiation_id on outbound negotiation %d", localNegID)
+	}
+	if !buyerAcctNum.Valid || buyerAcctNum.String == "" {
+		return fmt.Errorf("missing buyer_account_number on outbound negotiation %d", localNegID)
+	}
+
+	bank, err := otcInterbank.ResolveBankByRoutingNumber(fmt.Sprintf("%d", sellerRoutingNum.Int32))
+	if err != nil {
+		return fmt.Errorf("resolve seller bank: %w", err)
+	}
+
+	bankURL := bank.BankURL + "/interbank"
+	ownRouting := otcOwnRoutingInt()
+	txID := otcIbTransactionID{RoutingNumber: ownRouting, ID: otcGenerateUUID()}
+	idemKey := otcIbIdempotenceKey{RoutingNumber: ownRouting, LocallyGeneratedKey: otcGenerateUUID()}
+
+	// OPTION asset: negotiationId uses bank4's routing + bank4's UUID (they are authoritative seller).
+	optionAI := ibOutAssetInner{
+		NegotiationID:  &ibOutPartyID{RoutingNumber: int(sellerRoutingNum.Int32), ID: partnerNegID.String},
+		Stock:          &ibOutStock{Ticker: ticker},
+		PricePerUnit:   &ibOutMoney{Currency: currency, Amount: strikePrice},
+		SettlementDate: settlementDate,
+		Amount:         float64(amount),
+	}
+
+	envelope := otcIbEnvelope{
+		IdempotenceKey: idemKey,
+		MessageType:    "NEW_TX",
+		Message: otcIbNewTxMessage{
+			TransactionID:  txID,
+			Message:        "Peer OTC option premium and contract acceptance",
+			PaymentCode:    "289",
+			PaymentPurpose: "OTC option premium",
+			Postings: []ibOutPosting{
+				{ // posting 1: buyer ACCOUNT MONAS credit — buyer pays premium (non-local to bank4, skipped by them)
+					Account: ibOutAccount{Type: "ACCOUNT", Num: buyerAcctNum.String},
+					Amount:  -premium,
+					Asset:   ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: currency}},
+				},
+				{ // posting 2: seller PERSON MONAS debit — seller receives premium
+					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: int(sellerRoutingNum.Int32), ID: sellerExtID.String}},
+					Amount:  premium,
+					Asset:   ibOutAsset{Type: "MONAS", Asset: &ibOutAssetInner{Currency: currency}},
+				},
+				{ // posting 3: seller PERSON OPTION credit — seller gives option (reserves shares; triggers authoritative contract on COMMIT)
+					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: int(sellerRoutingNum.Int32), ID: sellerExtID.String}},
+					Amount:  -1,
+					Asset:   ibOutAsset{Type: "OPTION", Asset: &optionAI},
+				},
+				{ // posting 4: buyer PERSON OPTION debit — buyer receives option (non-local to bank4, skipped by them; we handle locally)
+					Account: ibOutAccount{Type: "PERSON", ID: &ibOutPartyID{RoutingNumber: ownRouting, ID: fmt.Sprintf("%d", buyerID)}},
+					Amount:  1,
+					Asset:   ibOutAsset{Type: "OPTION", Asset: &optionAI},
+				},
+			},
+		},
+	}
+
+	resp, err := otcSendInterbankRequest(ctx, bankURL, bank.APIKey, envelope)
+	if err != nil {
+		return fmt.Errorf("NEW_TX: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	rawBody, _ := io.ReadAll(resp.Body)
+	var vote otcIbVoteResponse
+	if jsonErr := json.Unmarshal(rawBody, &vote); jsonErr != nil || vote.Vote != "YES" {
+		_, _ = otcSendInterbankRequest(ctx, bankURL, bank.APIKey, otcIbEnvelope{
+			IdempotenceKey: otcIbIdempotenceKey{RoutingNumber: ownRouting, LocallyGeneratedKey: otcGenerateUUID()},
+			MessageType:    "ROLLBACK_TX",
+			Message:        otcIbCommitMessage{TransactionID: txID},
+		})
+		return fmt.Errorf("seller bank voted NO (status=%d body=%s)", resp.StatusCode, string(rawBody))
+	}
+
+	// YES: debit buyer's account (converting currency if needed) and create our buyer-side contract.
+	premiumToPay := premium
+	if ncurrencyID, ok := currencyIDMap[currency]; ok {
+		var buyerAcctCurrencyID int64
+		if qErr := s.AccountDB.QueryRowContext(ctx,
+			`SELECT currency_id FROM accounts WHERE account_number = $1`, buyerAcctNum.String,
+		).Scan(&buyerAcctCurrencyID); qErr == nil {
+			if converted, convErr := convertAmount(ctx, s.ExchangeDB, premium, ncurrencyID, buyerAcctCurrencyID); convErr == nil {
+				premiumToPay = converted
+			}
+		}
+	}
+	_, _ = s.AccountDB.ExecContext(ctx,
+		`UPDATE accounts SET balance = balance - $1, available_balance = available_balance - $1
+		 WHERE account_number = $2 AND available_balance >= $1`,
+		premiumToPay, buyerAcctNum.String)
+
+	_, _ = s.DB.ExecContext(ctx, `
+		INSERT INTO otc_contracts
+			(negotiation_id, seller_id, seller_type, buyer_id, buyer_type,
+			 ticker, amount, strike_price, premium, currency, settlement_date)
+		VALUES ($1, 0, 'INTERBANK', $2, $3, $4, $5, $6, $7, $8, $9)
+		ON CONFLICT (negotiation_id) DO NOTHING`,
+		localNegID, buyerID, buyerType,
+		ticker, amount, strikePrice, premium, currency, settlementDate)
+
+	// COMMIT — bank4 will commit their postings (credit seller's MONAS, create authoritative seller contract).
+	_, _ = otcSendInterbankRequest(ctx, bankURL, bank.APIKey, otcIbEnvelope{
+		IdempotenceKey: otcIbIdempotenceKey{RoutingNumber: ownRouting, LocallyGeneratedKey: otcGenerateUUID()},
+		MessageType:    "COMMIT_TX",
+		Message:        otcIbCommitMessage{TransactionID: txID},
+	})
 
 	return nil
 }

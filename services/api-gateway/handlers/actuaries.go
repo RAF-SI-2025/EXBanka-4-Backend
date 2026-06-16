@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/api-gateway/middleware"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
 	pb_order "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/order"
 	"github.com/gin-gonic/gin"
@@ -110,9 +111,11 @@ func SetAgentLimit(client pb.EmployeeServiceClient) gin.HandlerFunc {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 		defer cancel()
 
+		actorID, _ := middleware.GetUserIDFromToken(c)
 		_, err = client.SetAgentLimit(ctx, &pb.SetAgentLimitRequest{
 			EmployeeId:  id,
 			LimitAmount: req.Limit,
+			ActorId:     actorID,
 		})
 		if err != nil {
 			switch status.Code(err) {
@@ -151,7 +154,8 @@ func ResetAgentUsedLimit(client pb.EmployeeServiceClient) gin.HandlerFunc {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 		defer cancel()
 
-		_, err = client.ResetAgentUsedLimit(ctx, &pb.ResetAgentUsedLimitRequest{EmployeeId: id})
+		actorID, _ := middleware.GetUserIDFromToken(c)
+		_, err = client.ResetAgentUsedLimit(ctx, &pb.ResetAgentUsedLimitRequest{EmployeeId: id, ActorId: actorID})
 		if err != nil {
 			switch status.Code(err) {
 			case codes.NotFound:

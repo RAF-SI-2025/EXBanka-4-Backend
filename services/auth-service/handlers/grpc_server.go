@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -16,7 +17,10 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	otp_lib "github.com/pquerna/otp"
+	"github.com/pquerna/otp/totp"
 	"github.com/redis/go-redis/v9"
+	qrcode "github.com/skip2/go-qrcode"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -53,8 +57,52 @@ func (s *AuthServer) Login(ctx context.Context, req *pb_auth.LoginRequest) (*pb_
 		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
 	}
 
+	if creds.AccountLockedUntil != "" {
+		lockedUntil, parseErr := time.Parse(time.RFC3339, creds.AccountLockedUntil)
+		if parseErr == nil && time.Now().Before(lockedUntil) {
+			return nil, status.Errorf(codes.PermissionDenied, "account locked until %s", lockedUntil.Format(time.RFC3339))
+		}
+		_, _ = s.EmployeeClient.UpdateLoginAttempts(ctx, &pb_emp.UpdateLoginAttemptsRequest{
+			Id: creds.Id, Attempts: 0, LockedUntil: "",
+		})
+	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(creds.PasswordHash), []byte(req.Password)); err != nil {
+		newAttempts := creds.FailedLoginAttempts + 1
+		updateReq := &pb_emp.UpdateLoginAttemptsRequest{Id: creds.Id, Attempts: newAttempts, LockedUntil: ""}
+		if newAttempts >= 5 {
+			updateReq.LockedUntil = time.Now().Add(10 * time.Minute).Format(time.RFC3339)
+			resetLink := os.Getenv("FRONTEND_URL") + "/forgot-password"
+			go func(email, firstName, link string) {
+				_, sendErr := s.EmailClient.SendAccountLockedEmail(context.Background(), &pb_email.SendAccountLockedEmailRequest{
+					Email:             email,
+					FirstName:         firstName,
+					PasswordResetLink: link,
+				})
+				if sendErr != nil {
+					log.Printf("failed to send account locked email: %v", sendErr)
+				}
+			}(creds.Email, creds.FirstName, resetLink)
+		}
+		_, _ = s.EmployeeClient.UpdateLoginAttempts(ctx, updateReq)
 		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
+	}
+
+	_, _ = s.EmployeeClient.UpdateLoginAttempts(ctx, &pb_emp.UpdateLoginAttemptsRequest{
+		Id: creds.Id, Attempts: 0, LockedUntil: "",
+	})
+
+	var totpSecret string
+	totpErr := s.DB.QueryRowContext(ctx,
+		`SELECT secret FROM totp_secrets WHERE user_id=$1 AND user_type='EMPLOYEE' AND is_active=true`,
+		creds.Id,
+	).Scan(&totpSecret)
+	if totpErr == nil {
+		sessionToken, stErr := generateSessionToken(creds.Id, "EMPLOYEE", 5*time.Minute)
+		if stErr != nil {
+			return nil, status.Error(codes.Internal, "failed to generate session token")
+		}
+		return &pb_auth.LoginResponse{RequiresTotp: true, SessionToken: sessionToken}, nil
 	}
 
 	empResp, err := s.EmployeeClient.GetEmployeeById(ctx, &pb_emp.GetEmployeeByIdRequest{Id: creds.Id})
@@ -298,6 +346,10 @@ func (s *AuthServer) ResetPassword(ctx context.Context, req *pb_auth.ResetPasswo
 		return nil, err
 	}
 
+	_, _ = s.EmployeeClient.UpdateLoginAttempts(ctx, &pb_emp.UpdateLoginAttemptsRequest{
+		Id: employeeID, Attempts: 0, LockedUntil: "",
+	})
+
 	if _, err := s.DB.ExecContext(ctx, `DELETE FROM password_reset_tokens WHERE token = $1`, req.Token); err != nil {
 		log.Printf("failed to delete used password reset token: %v", err)
 	}
@@ -408,8 +460,52 @@ func (s *AuthServer) ClientLogin(ctx context.Context, req *pb_auth.ClientLoginRe
 		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
 	}
 
+	if creds.AccountLockedUntil != "" {
+		lockedUntil, parseErr := time.Parse(time.RFC3339, creds.AccountLockedUntil)
+		if parseErr == nil && time.Now().Before(lockedUntil) {
+			return nil, status.Errorf(codes.PermissionDenied, "account locked until %s", lockedUntil.Format(time.RFC3339))
+		}
+		_, _ = s.ClientClient.UpdateLoginAttempts(ctx, &pb_client.UpdateLoginAttemptsRequest{
+			Id: creds.Id, Attempts: 0, LockedUntil: "",
+		})
+	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(creds.PasswordHash), []byte(req.Password)); err != nil {
+		newAttempts := creds.FailedLoginAttempts + 1
+		updateReq := &pb_client.UpdateLoginAttemptsRequest{Id: creds.Id, Attempts: newAttempts, LockedUntil: ""}
+		if newAttempts >= 5 {
+			updateReq.LockedUntil = time.Now().Add(10 * time.Minute).Format(time.RFC3339)
+			resetLink := os.Getenv("FRONTEND_URL") + "/forgot-password"
+			go func(email, firstName, link string) {
+				_, sendErr := s.EmailClient.SendAccountLockedEmail(context.Background(), &pb_email.SendAccountLockedEmailRequest{
+					Email:             email,
+					FirstName:         firstName,
+					PasswordResetLink: link,
+				})
+				if sendErr != nil {
+					log.Printf("failed to send account locked email: %v", sendErr)
+				}
+			}(creds.Email, creds.FirstName, resetLink)
+		}
+		_, _ = s.ClientClient.UpdateLoginAttempts(ctx, updateReq)
 		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
+	}
+
+	_, _ = s.ClientClient.UpdateLoginAttempts(ctx, &pb_client.UpdateLoginAttemptsRequest{
+		Id: creds.Id, Attempts: 0, LockedUntil: "",
+	})
+
+	var clientTotpSecret string
+	clientTotpErr := s.DB.QueryRowContext(ctx,
+		`SELECT secret FROM totp_secrets WHERE user_id=$1 AND user_type='CLIENT' AND is_active=true`,
+		creds.Id,
+	).Scan(&clientTotpSecret)
+	if clientTotpErr == nil {
+		sessionToken, stErr := generateSessionToken(creds.Id, "CLIENT", 5*time.Minute)
+		if stErr != nil {
+			return nil, status.Error(codes.Internal, "failed to generate session token")
+		}
+		return &pb_auth.ClientLoginResponse{RequiresTotp: true, SessionToken: sessionToken}, nil
 	}
 
 	clientResp, err := s.ClientClient.GetClientById(ctx, &pb_client.GetClientByIdRequest{Id: creds.Id})
@@ -849,6 +945,278 @@ func (s *AuthServer) Logout(ctx context.Context, req *pb_auth.LogoutRequest) (*p
 		_ = s.Redis.Set(ctx, "blacklist:"+jti, "1", ttl).Err()
 	}
 	return &pb_auth.LogoutResponse{}, nil
+}
+
+func (s *AuthServer) CreateNotification(ctx context.Context, req *pb_auth.CreateNotificationRequest) (*pb_auth.CreateNotificationResponse, error) {
+	var n pb_auth.Notification
+	var createdAt time.Time
+	err := s.DB.QueryRowContext(ctx,
+		`INSERT INTO notifications (user_id, user_type, title, message, type)
+		 VALUES ($1, $2, $3, $4, $5)
+		 RETURNING id, user_id, user_type, title, message, type, is_read, created_at`,
+		req.UserId, req.UserType, req.Title, req.Message, req.Type,
+	).Scan(&n.Id, &n.UserId, &n.UserType, &n.Title, &n.Message, &n.Type, &n.IsRead, &createdAt)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create notification: %v", err)
+	}
+	n.CreatedAt = createdAt.Format(time.RFC3339)
+	return &pb_auth.CreateNotificationResponse{Notification: &n}, nil
+}
+
+func (s *AuthServer) ListNotifications(ctx context.Context, req *pb_auth.ListNotificationsRequest) (*pb_auth.ListNotificationsResponse, error) {
+	pageSize := req.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	page := req.Page
+	if page <= 0 {
+		page = 1
+	}
+	offset := (page - 1) * pageSize
+
+	query := `SELECT id, user_id, user_type, title, message, type, is_read, created_at
+	          FROM notifications WHERE user_id=$1 AND user_type=$2`
+	countQuery := `SELECT COUNT(*) FROM notifications WHERE user_id=$1 AND user_type=$2`
+	args := []interface{}{req.UserId, req.UserType}
+	countArgs := []interface{}{req.UserId, req.UserType}
+
+	if req.UnreadOnly {
+		query += ` AND is_read=false`
+		countQuery += ` AND is_read=false`
+	}
+	query += ` ORDER BY created_at DESC LIMIT $3 OFFSET $4`
+	args = append(args, pageSize, offset)
+
+	var total int64
+	_ = s.DB.QueryRowContext(ctx, countQuery, countArgs...).Scan(&total)
+
+	rows, err := s.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list notifications: %v", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var notifications []*pb_auth.Notification
+	for rows.Next() {
+		var n pb_auth.Notification
+		var createdAt time.Time
+		if err := rows.Scan(&n.Id, &n.UserId, &n.UserType, &n.Title, &n.Message, &n.Type, &n.IsRead, &createdAt); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to scan notification: %v", err)
+		}
+		n.CreatedAt = createdAt.Format(time.RFC3339)
+		notifications = append(notifications, &n)
+	}
+	return &pb_auth.ListNotificationsResponse{Notifications: notifications, Total: total}, nil
+}
+
+func (s *AuthServer) MarkNotificationRead(ctx context.Context, req *pb_auth.MarkNotificationReadRequest) (*pb_auth.MarkNotificationReadResponse, error) {
+	_, err := s.DB.ExecContext(ctx,
+		`UPDATE notifications SET is_read=true WHERE id=$1 AND user_id=$2`,
+		req.Id, req.UserId,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to mark notification as read: %v", err)
+	}
+	return &pb_auth.MarkNotificationReadResponse{}, nil
+}
+
+func (s *AuthServer) MarkAllRead(ctx context.Context, req *pb_auth.MarkAllReadRequest) (*pb_auth.MarkAllReadResponse, error) {
+	_, err := s.DB.ExecContext(ctx,
+		`UPDATE notifications SET is_read=true WHERE user_id=$1 AND user_type=$2`,
+		req.UserId, req.UserType,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to mark all notifications as read: %v", err)
+	}
+	return &pb_auth.MarkAllReadResponse{}, nil
+}
+
+func (s *AuthServer) GetUnreadCount(ctx context.Context, req *pb_auth.GetUnreadCountRequest) (*pb_auth.GetUnreadCountResponse, error) {
+	var count int64
+	err := s.DB.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM notifications WHERE user_id=$1 AND user_type=$2 AND is_read=false`,
+		req.UserId, req.UserType,
+	).Scan(&count)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get unread count: %v", err)
+	}
+	return &pb_auth.GetUnreadCountResponse{Count: count}, nil
+}
+
+func generateSessionToken(userID int64, userType string, d time.Duration) (string, error) {
+	claims := jwt.MapClaims{
+		"jti":       uuid.New().String(),
+		"user_id":   userID,
+		"user_type": userType,
+		"scope":     "pre-auth",
+		"exp":       time.Now().Add(d).Unix(),
+	}
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(jwtSecret))
+}
+
+func (s *AuthServer) GenerateTOTPSecret(ctx context.Context, req *pb_auth.GenerateTOTPRequest) (*pb_auth.GenerateTOTPResponse, error) {
+	key, err := totp.Generate(totp.GenerateOpts{
+		Issuer:      "EXBanka",
+		AccountName: req.Email,
+		Period:      30,
+		Digits:      otp_lib.DigitsSix,
+		Algorithm:   otp_lib.AlgorithmSHA1,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate TOTP secret: %v", err)
+	}
+
+	_, err = s.DB.ExecContext(ctx,
+		`INSERT INTO totp_secrets (user_id, user_type, secret, is_active)
+		 VALUES ($1, $2, $3, false)
+		 ON CONFLICT (user_id, user_type) DO UPDATE SET secret = EXCLUDED.secret, is_active = false`,
+		req.UserId, req.UserType, key.Secret(),
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to store TOTP secret: %v", err)
+	}
+
+	png, err := qrcode.Encode(key.URL(), qrcode.Medium, 256)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to generate QR code: %v", err)
+	}
+
+	return &pb_auth.GenerateTOTPResponse{
+		Secret:     key.Secret(),
+		OtpauthUri: key.URL(),
+		QrCodePng:  base64.StdEncoding.EncodeToString(png),
+	}, nil
+}
+
+func (s *AuthServer) VerifyTOTP(ctx context.Context, req *pb_auth.VerifyTOTPRequest) (*pb_auth.VerifyTOTPResponse, error) {
+	var secret string
+	err := s.DB.QueryRowContext(ctx,
+		`SELECT secret FROM totp_secrets WHERE user_id=$1 AND user_type=$2`,
+		req.UserId, req.UserType,
+	).Scan(&secret)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "TOTP not configured")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch TOTP secret: %v", err)
+	}
+
+	valid, err := totp.ValidateCustom(req.Code, secret, time.Now(), totp.ValidateOpts{
+		Period:    30,
+		Skew:      1,
+		Digits:    otp_lib.DigitsSix,
+		Algorithm: otp_lib.AlgorithmSHA1,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to validate TOTP: %v", err)
+	}
+
+	return &pb_auth.VerifyTOTPResponse{Valid: valid}, nil
+}
+
+func (s *AuthServer) EnableTOTP(ctx context.Context, req *pb_auth.EnableTOTPRequest) (*pb_auth.EnableTOTPResponse, error) {
+	_, err := s.DB.ExecContext(ctx,
+		`UPDATE totp_secrets SET is_active=true WHERE user_id=$1 AND user_type=$2`,
+		req.UserId, req.UserType,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to enable TOTP: %v", err)
+	}
+	return &pb_auth.EnableTOTPResponse{}, nil
+}
+
+func (s *AuthServer) ValidateTOTPLogin(ctx context.Context, req *pb_auth.ValidateTOTPLoginRequest) (*pb_auth.ValidateTOTPLoginResponse, error) {
+	token, err := jwt.Parse(req.SessionToken, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(jwtSecret), nil
+	})
+	if err != nil || !token.Valid {
+		return nil, status.Error(codes.Unauthenticated, "invalid or expired session token")
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || claims["scope"] != "pre-auth" {
+		return nil, status.Error(codes.Unauthenticated, "invalid session token")
+	}
+
+	userIDRaw, ok := claims["user_id"].(float64)
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "invalid session token")
+	}
+	userID := int64(userIDRaw)
+	userType, _ := claims["user_type"].(string)
+
+	var secret string
+	err = s.DB.QueryRowContext(ctx,
+		`SELECT secret FROM totp_secrets WHERE user_id=$1 AND user_type=$2 AND is_active=true`,
+		userID, userType,
+	).Scan(&secret)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "TOTP not configured")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch TOTP secret: %v", err)
+	}
+
+	valid, err := totp.ValidateCustom(req.Code, secret, time.Now(), totp.ValidateOpts{
+		Period:    30,
+		Skew:      1,
+		Digits:    otp_lib.DigitsSix,
+		Algorithm: otp_lib.AlgorithmSHA1,
+	})
+	if err != nil || !valid {
+		return nil, status.Error(codes.Unauthenticated, "invalid TOTP code")
+	}
+
+	if userType == "EMPLOYEE" {
+		empResp, err := s.EmployeeClient.GetEmployeeById(ctx, &pb_emp.GetEmployeeByIdRequest{Id: userID})
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to fetch employee")
+		}
+		emp := empResp.Employee
+		credsResp, err := s.EmployeeClient.GetEmployeeCredentials(ctx, &pb_emp.GetEmployeeCredentialsRequest{Email: emp.Email})
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to fetch employee credentials")
+		}
+		accessToken, err := generateToken(userID, emp.Email, "access", credsResp.Permissions, emp.FirstName, emp.LastName, emp.Email, 15*time.Minute)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to generate token")
+		}
+		refreshToken, err := generateToken(userID, emp.Email, "refresh", credsResp.Permissions, emp.FirstName, emp.LastName, emp.Email, 7*24*time.Hour)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to generate token")
+		}
+		return &pb_auth.ValidateTOTPLoginResponse{AccessToken: accessToken, RefreshToken: refreshToken}, nil
+	}
+
+	// CLIENT
+	clientResp, err := s.ClientClient.GetClientById(ctx, &pb_client.GetClientByIdRequest{Id: userID})
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to fetch client")
+	}
+	cl := clientResp.Client
+	accessToken, err := generateClientToken(userID, cl.Email, "access", cl.FirstName, cl.LastName, 15*time.Minute)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate token")
+	}
+	refreshToken, err := generateClientToken(userID, cl.Email, "refresh", cl.FirstName, cl.LastName, 7*24*time.Hour)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate token")
+	}
+	return &pb_auth.ValidateTOTPLoginResponse{AccessToken: accessToken, RefreshToken: refreshToken}, nil
+}
+
+func (s *AuthServer) DisableTOTP(_ context.Context, req *pb_auth.DisableTOTPRequest) (*pb_auth.DisableTOTPResponse, error) {
+	_, err := s.DB.Exec(
+		`UPDATE totp_secrets SET is_active = false WHERE user_id = $1 AND user_type = $2`,
+		req.UserId, req.UserType,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to disable TOTP: %v", err)
+	}
+	return &pb_auth.DisableTOTPResponse{}, nil
 }
 
 func approvalPushMessage(actionType string) (title, body string) {

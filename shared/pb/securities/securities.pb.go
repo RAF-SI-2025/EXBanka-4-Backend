@@ -2688,6 +2688,450 @@ func (x *GetListingHistoryResponse) GetHistory() []*DailyPriceInfo {
 	return nil
 }
 
+type PriceAlert struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId           int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType         string                 `protobuf:"bytes,3,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	ListingId        int64                  `protobuf:"varint,4,opt,name=listing_id,json=listingId,proto3" json:"listing_id,omitempty"`
+	Condition        string                 `protobuf:"bytes,5,opt,name=condition,proto3" json:"condition,omitempty"` // ABOVE, BELOW, CHANGE_PCT_UP, CHANGE_PCT_DOWN
+	Threshold        float64                `protobuf:"fixed64,6,opt,name=threshold,proto3" json:"threshold,omitempty"`
+	NotificationType string                 `protobuf:"bytes,7,opt,name=notification_type,json=notificationType,proto3" json:"notification_type,omitempty"` // EMAIL, IN_APP, BOTH
+	IsActive         bool                   `protobuf:"varint,8,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
+	TriggeredAt      string                 `protobuf:"bytes,9,opt,name=triggered_at,json=triggeredAt,proto3" json:"triggered_at,omitempty"`
+	CreatedAt        string                 `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Ticker           string                 `protobuf:"bytes,11,opt,name=ticker,proto3" json:"ticker,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *PriceAlert) Reset() {
+	*x = PriceAlert{}
+	mi := &file_securities_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PriceAlert) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PriceAlert) ProtoMessage() {}
+
+func (x *PriceAlert) ProtoReflect() protoreflect.Message {
+	mi := &file_securities_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PriceAlert.ProtoReflect.Descriptor instead.
+func (*PriceAlert) Descriptor() ([]byte, []int) {
+	return file_securities_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *PriceAlert) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *PriceAlert) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *PriceAlert) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+func (x *PriceAlert) GetListingId() int64 {
+	if x != nil {
+		return x.ListingId
+	}
+	return 0
+}
+
+func (x *PriceAlert) GetCondition() string {
+	if x != nil {
+		return x.Condition
+	}
+	return ""
+}
+
+func (x *PriceAlert) GetThreshold() float64 {
+	if x != nil {
+		return x.Threshold
+	}
+	return 0
+}
+
+func (x *PriceAlert) GetNotificationType() string {
+	if x != nil {
+		return x.NotificationType
+	}
+	return ""
+}
+
+func (x *PriceAlert) GetIsActive() bool {
+	if x != nil {
+		return x.IsActive
+	}
+	return false
+}
+
+func (x *PriceAlert) GetTriggeredAt() string {
+	if x != nil {
+		return x.TriggeredAt
+	}
+	return ""
+}
+
+func (x *PriceAlert) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *PriceAlert) GetTicker() string {
+	if x != nil {
+		return x.Ticker
+	}
+	return ""
+}
+
+type CreatePriceAlertRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	UserId           int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType         string                 `protobuf:"bytes,2,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	ListingId        int64                  `protobuf:"varint,3,opt,name=listing_id,json=listingId,proto3" json:"listing_id,omitempty"`
+	Condition        string                 `protobuf:"bytes,4,opt,name=condition,proto3" json:"condition,omitempty"`
+	Threshold        float64                `protobuf:"fixed64,5,opt,name=threshold,proto3" json:"threshold,omitempty"`
+	NotificationType string                 `protobuf:"bytes,6,opt,name=notification_type,json=notificationType,proto3" json:"notification_type,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *CreatePriceAlertRequest) Reset() {
+	*x = CreatePriceAlertRequest{}
+	mi := &file_securities_proto_msgTypes[46]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreatePriceAlertRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreatePriceAlertRequest) ProtoMessage() {}
+
+func (x *CreatePriceAlertRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_securities_proto_msgTypes[46]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreatePriceAlertRequest.ProtoReflect.Descriptor instead.
+func (*CreatePriceAlertRequest) Descriptor() ([]byte, []int) {
+	return file_securities_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *CreatePriceAlertRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *CreatePriceAlertRequest) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+func (x *CreatePriceAlertRequest) GetListingId() int64 {
+	if x != nil {
+		return x.ListingId
+	}
+	return 0
+}
+
+func (x *CreatePriceAlertRequest) GetCondition() string {
+	if x != nil {
+		return x.Condition
+	}
+	return ""
+}
+
+func (x *CreatePriceAlertRequest) GetThreshold() float64 {
+	if x != nil {
+		return x.Threshold
+	}
+	return 0
+}
+
+func (x *CreatePriceAlertRequest) GetNotificationType() string {
+	if x != nil {
+		return x.NotificationType
+	}
+	return ""
+}
+
+type CreatePriceAlertResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Alert         *PriceAlert            `protobuf:"bytes,1,opt,name=alert,proto3" json:"alert,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreatePriceAlertResponse) Reset() {
+	*x = CreatePriceAlertResponse{}
+	mi := &file_securities_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreatePriceAlertResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreatePriceAlertResponse) ProtoMessage() {}
+
+func (x *CreatePriceAlertResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_securities_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreatePriceAlertResponse.ProtoReflect.Descriptor instead.
+func (*CreatePriceAlertResponse) Descriptor() ([]byte, []int) {
+	return file_securities_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *CreatePriceAlertResponse) GetAlert() *PriceAlert {
+	if x != nil {
+		return x.Alert
+	}
+	return nil
+}
+
+type ListPriceAlertsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,2,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPriceAlertsRequest) Reset() {
+	*x = ListPriceAlertsRequest{}
+	mi := &file_securities_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPriceAlertsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPriceAlertsRequest) ProtoMessage() {}
+
+func (x *ListPriceAlertsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_securities_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPriceAlertsRequest.ProtoReflect.Descriptor instead.
+func (*ListPriceAlertsRequest) Descriptor() ([]byte, []int) {
+	return file_securities_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *ListPriceAlertsRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *ListPriceAlertsRequest) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+type ListPriceAlertsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Alerts        []*PriceAlert          `protobuf:"bytes,1,rep,name=alerts,proto3" json:"alerts,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPriceAlertsResponse) Reset() {
+	*x = ListPriceAlertsResponse{}
+	mi := &file_securities_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPriceAlertsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPriceAlertsResponse) ProtoMessage() {}
+
+func (x *ListPriceAlertsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_securities_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPriceAlertsResponse.ProtoReflect.Descriptor instead.
+func (*ListPriceAlertsResponse) Descriptor() ([]byte, []int) {
+	return file_securities_proto_rawDescGZIP(), []int{49}
+}
+
+func (x *ListPriceAlertsResponse) GetAlerts() []*PriceAlert {
+	if x != nil {
+		return x.Alerts
+	}
+	return nil
+}
+
+type DeletePriceAlertRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,3,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeletePriceAlertRequest) Reset() {
+	*x = DeletePriceAlertRequest{}
+	mi := &file_securities_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeletePriceAlertRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeletePriceAlertRequest) ProtoMessage() {}
+
+func (x *DeletePriceAlertRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_securities_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeletePriceAlertRequest.ProtoReflect.Descriptor instead.
+func (*DeletePriceAlertRequest) Descriptor() ([]byte, []int) {
+	return file_securities_proto_rawDescGZIP(), []int{50}
+}
+
+func (x *DeletePriceAlertRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *DeletePriceAlertRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *DeletePriceAlertRequest) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+type DeletePriceAlertResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeletePriceAlertResponse) Reset() {
+	*x = DeletePriceAlertResponse{}
+	mi := &file_securities_proto_msgTypes[51]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeletePriceAlertResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeletePriceAlertResponse) ProtoMessage() {}
+
+func (x *DeletePriceAlertResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_securities_proto_msgTypes[51]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeletePriceAlertResponse.ProtoReflect.Descriptor instead.
+func (*DeletePriceAlertResponse) Descriptor() ([]byte, []int) {
+	return file_securities_proto_rawDescGZIP(), []int{51}
+}
+
 var File_securities_proto protoreflect.FileDescriptor
 
 const file_securities_proto_rawDesc = "" +
@@ -2874,7 +3318,43 @@ const file_securities_proto_rawDesc = "" +
 	"\tfrom_date\x18\x02 \x01(\tR\bfromDate\x12\x17\n" +
 	"\ato_date\x18\x03 \x01(\tR\x06toDate\"Q\n" +
 	"\x19GetListingHistoryResponse\x124\n" +
-	"\ahistory\x18\x01 \x03(\v2\x1a.securities.DailyPriceInfoR\ahistory2\xf0\f\n" +
+	"\ahistory\x18\x01 \x03(\v2\x1a.securities.DailyPriceInfoR\ahistory\"\xd1\x02\n" +
+	"\n" +
+	"PriceAlert\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x03 \x01(\tR\buserType\x12\x1d\n" +
+	"\n" +
+	"listing_id\x18\x04 \x01(\x03R\tlistingId\x12\x1c\n" +
+	"\tcondition\x18\x05 \x01(\tR\tcondition\x12\x1c\n" +
+	"\tthreshold\x18\x06 \x01(\x01R\tthreshold\x12+\n" +
+	"\x11notification_type\x18\a \x01(\tR\x10notificationType\x12\x1b\n" +
+	"\tis_active\x18\b \x01(\bR\bisActive\x12!\n" +
+	"\ftriggered_at\x18\t \x01(\tR\vtriggeredAt\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\n" +
+	" \x01(\tR\tcreatedAt\x12\x16\n" +
+	"\x06ticker\x18\v \x01(\tR\x06ticker\"\xd7\x01\n" +
+	"\x17CreatePriceAlertRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x02 \x01(\tR\buserType\x12\x1d\n" +
+	"\n" +
+	"listing_id\x18\x03 \x01(\x03R\tlistingId\x12\x1c\n" +
+	"\tcondition\x18\x04 \x01(\tR\tcondition\x12\x1c\n" +
+	"\tthreshold\x18\x05 \x01(\x01R\tthreshold\x12+\n" +
+	"\x11notification_type\x18\x06 \x01(\tR\x10notificationType\"H\n" +
+	"\x18CreatePriceAlertResponse\x12,\n" +
+	"\x05alert\x18\x01 \x01(\v2\x16.securities.PriceAlertR\x05alert\"N\n" +
+	"\x16ListPriceAlertsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x02 \x01(\tR\buserType\"I\n" +
+	"\x17ListPriceAlertsResponse\x12.\n" +
+	"\x06alerts\x18\x01 \x03(\v2\x16.securities.PriceAlertR\x06alerts\"_\n" +
+	"\x17DeletePriceAlertRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x03 \x01(\tR\buserType\"\x1a\n" +
+	"\x18DeletePriceAlertResponse2\x8a\x0f\n" +
 	"\x11SecuritiesService\x129\n" +
 	"\x04Ping\x12\x17.securities.PingRequest\x1a\x18.securities.PingResponse\x12`\n" +
 	"\x11GetStockExchanges\x12$.securities.GetStockExchangesRequest\x1a%.securities.GetStockExchangesResponse\x12l\n" +
@@ -2894,7 +3374,10 @@ const file_securities_proto_rawDesc = "" +
 	"\vSetTestMode\x12\x1e.securities.SetTestModeRequest\x1a\x1f.securities.SetTestModeResponse\x12N\n" +
 	"\vGetListings\x12\x1e.securities.GetListingsRequest\x1a\x1f.securities.GetListingsResponse\x12W\n" +
 	"\x0eGetListingById\x12!.securities.GetListingByIdRequest\x1a\".securities.GetListingByIdResponse\x12`\n" +
-	"\x11GetListingHistory\x12$.securities.GetListingHistoryRequest\x1a%.securities.GetListingHistoryResponseB?Z=github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/securitiesb\x06proto3"
+	"\x11GetListingHistory\x12$.securities.GetListingHistoryRequest\x1a%.securities.GetListingHistoryResponse\x12]\n" +
+	"\x10CreatePriceAlert\x12#.securities.CreatePriceAlertRequest\x1a$.securities.CreatePriceAlertResponse\x12Z\n" +
+	"\x0fListPriceAlerts\x12\".securities.ListPriceAlertsRequest\x1a#.securities.ListPriceAlertsResponse\x12]\n" +
+	"\x10DeletePriceAlert\x12#.securities.DeletePriceAlertRequest\x1a$.securities.DeletePriceAlertResponseB?Z=github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/securitiesb\x06proto3"
 
 var (
 	file_securities_proto_rawDescOnce sync.Once
@@ -2908,7 +3391,7 @@ func file_securities_proto_rawDescGZIP() []byte {
 	return file_securities_proto_rawDescData
 }
 
-var file_securities_proto_msgTypes = make([]protoimpl.MessageInfo, 45)
+var file_securities_proto_msgTypes = make([]protoimpl.MessageInfo, 52)
 var file_securities_proto_goTypes = []any{
 	(*PingRequest)(nil),                   // 0: securities.PingRequest
 	(*PingResponse)(nil),                  // 1: securities.PingResponse
@@ -2955,6 +3438,13 @@ var file_securities_proto_goTypes = []any{
 	(*GetListingByIdResponse)(nil),        // 42: securities.GetListingByIdResponse
 	(*GetListingHistoryRequest)(nil),      // 43: securities.GetListingHistoryRequest
 	(*GetListingHistoryResponse)(nil),     // 44: securities.GetListingHistoryResponse
+	(*PriceAlert)(nil),                    // 45: securities.PriceAlert
+	(*CreatePriceAlertRequest)(nil),       // 46: securities.CreatePriceAlertRequest
+	(*CreatePriceAlertResponse)(nil),      // 47: securities.CreatePriceAlertResponse
+	(*ListPriceAlertsRequest)(nil),        // 48: securities.ListPriceAlertsRequest
+	(*ListPriceAlertsResponse)(nil),       // 49: securities.ListPriceAlertsResponse
+	(*DeletePriceAlertRequest)(nil),       // 50: securities.DeletePriceAlertRequest
+	(*DeletePriceAlertResponse)(nil),      // 51: securities.DeletePriceAlertResponse
 }
 var file_securities_proto_depIdxs = []int32{
 	2,  // 0: securities.GetStockExchangesResponse.exchanges:type_name -> securities.StockExchange
@@ -2974,47 +3464,55 @@ var file_securities_proto_depIdxs = []int32{
 	40, // 14: securities.GetListingByIdResponse.futures:type_name -> securities.FuturesDetail
 	41, // 15: securities.GetListingByIdResponse.option:type_name -> securities.OptionDetail
 	37, // 16: securities.GetListingHistoryResponse.history:type_name -> securities.DailyPriceInfo
-	0,  // 17: securities.SecuritiesService.Ping:input_type -> securities.PingRequest
-	3,  // 18: securities.SecuritiesService.GetStockExchanges:input_type -> securities.GetStockExchangesRequest
-	5,  // 19: securities.SecuritiesService.GetStockExchangeByMIC:input_type -> securities.GetStockExchangeByMICRequest
-	7,  // 20: securities.SecuritiesService.GetStockExchangeById:input_type -> securities.GetStockExchangeByIdRequest
-	9,  // 21: securities.SecuritiesService.CreateStockExchange:input_type -> securities.CreateStockExchangeRequest
-	11, // 22: securities.SecuritiesService.UpdateStockExchange:input_type -> securities.UpdateStockExchangeRequest
-	13, // 23: securities.SecuritiesService.DeleteStockExchange:input_type -> securities.DeleteStockExchangeRequest
-	16, // 24: securities.SecuritiesService.GetWorkingHours:input_type -> securities.GetWorkingHoursRequest
-	18, // 25: securities.SecuritiesService.SetWorkingHours:input_type -> securities.SetWorkingHoursRequest
-	21, // 26: securities.SecuritiesService.GetHolidays:input_type -> securities.GetHolidaysRequest
-	23, // 27: securities.SecuritiesService.AddHoliday:input_type -> securities.AddHolidayRequest
-	25, // 28: securities.SecuritiesService.DeleteHoliday:input_type -> securities.DeleteHolidayRequest
-	27, // 29: securities.SecuritiesService.IsExchangeOpen:input_type -> securities.IsExchangeOpenRequest
-	29, // 30: securities.SecuritiesService.GetTestMode:input_type -> securities.GetTestModeRequest
-	31, // 31: securities.SecuritiesService.SetTestMode:input_type -> securities.SetTestModeRequest
-	33, // 32: securities.SecuritiesService.GetListings:input_type -> securities.GetListingsRequest
-	36, // 33: securities.SecuritiesService.GetListingById:input_type -> securities.GetListingByIdRequest
-	43, // 34: securities.SecuritiesService.GetListingHistory:input_type -> securities.GetListingHistoryRequest
-	1,  // 35: securities.SecuritiesService.Ping:output_type -> securities.PingResponse
-	4,  // 36: securities.SecuritiesService.GetStockExchanges:output_type -> securities.GetStockExchangesResponse
-	6,  // 37: securities.SecuritiesService.GetStockExchangeByMIC:output_type -> securities.GetStockExchangeByMICResponse
-	8,  // 38: securities.SecuritiesService.GetStockExchangeById:output_type -> securities.GetStockExchangeByIdResponse
-	10, // 39: securities.SecuritiesService.CreateStockExchange:output_type -> securities.CreateStockExchangeResponse
-	12, // 40: securities.SecuritiesService.UpdateStockExchange:output_type -> securities.UpdateStockExchangeResponse
-	14, // 41: securities.SecuritiesService.DeleteStockExchange:output_type -> securities.DeleteStockExchangeResponse
-	17, // 42: securities.SecuritiesService.GetWorkingHours:output_type -> securities.GetWorkingHoursResponse
-	19, // 43: securities.SecuritiesService.SetWorkingHours:output_type -> securities.SetWorkingHoursResponse
-	22, // 44: securities.SecuritiesService.GetHolidays:output_type -> securities.GetHolidaysResponse
-	24, // 45: securities.SecuritiesService.AddHoliday:output_type -> securities.AddHolidayResponse
-	26, // 46: securities.SecuritiesService.DeleteHoliday:output_type -> securities.DeleteHolidayResponse
-	28, // 47: securities.SecuritiesService.IsExchangeOpen:output_type -> securities.IsExchangeOpenResponse
-	30, // 48: securities.SecuritiesService.GetTestMode:output_type -> securities.GetTestModeResponse
-	32, // 49: securities.SecuritiesService.SetTestMode:output_type -> securities.SetTestModeResponse
-	35, // 50: securities.SecuritiesService.GetListings:output_type -> securities.GetListingsResponse
-	42, // 51: securities.SecuritiesService.GetListingById:output_type -> securities.GetListingByIdResponse
-	44, // 52: securities.SecuritiesService.GetListingHistory:output_type -> securities.GetListingHistoryResponse
-	35, // [35:53] is the sub-list for method output_type
-	17, // [17:35] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	45, // 17: securities.CreatePriceAlertResponse.alert:type_name -> securities.PriceAlert
+	45, // 18: securities.ListPriceAlertsResponse.alerts:type_name -> securities.PriceAlert
+	0,  // 19: securities.SecuritiesService.Ping:input_type -> securities.PingRequest
+	3,  // 20: securities.SecuritiesService.GetStockExchanges:input_type -> securities.GetStockExchangesRequest
+	5,  // 21: securities.SecuritiesService.GetStockExchangeByMIC:input_type -> securities.GetStockExchangeByMICRequest
+	7,  // 22: securities.SecuritiesService.GetStockExchangeById:input_type -> securities.GetStockExchangeByIdRequest
+	9,  // 23: securities.SecuritiesService.CreateStockExchange:input_type -> securities.CreateStockExchangeRequest
+	11, // 24: securities.SecuritiesService.UpdateStockExchange:input_type -> securities.UpdateStockExchangeRequest
+	13, // 25: securities.SecuritiesService.DeleteStockExchange:input_type -> securities.DeleteStockExchangeRequest
+	16, // 26: securities.SecuritiesService.GetWorkingHours:input_type -> securities.GetWorkingHoursRequest
+	18, // 27: securities.SecuritiesService.SetWorkingHours:input_type -> securities.SetWorkingHoursRequest
+	21, // 28: securities.SecuritiesService.GetHolidays:input_type -> securities.GetHolidaysRequest
+	23, // 29: securities.SecuritiesService.AddHoliday:input_type -> securities.AddHolidayRequest
+	25, // 30: securities.SecuritiesService.DeleteHoliday:input_type -> securities.DeleteHolidayRequest
+	27, // 31: securities.SecuritiesService.IsExchangeOpen:input_type -> securities.IsExchangeOpenRequest
+	29, // 32: securities.SecuritiesService.GetTestMode:input_type -> securities.GetTestModeRequest
+	31, // 33: securities.SecuritiesService.SetTestMode:input_type -> securities.SetTestModeRequest
+	33, // 34: securities.SecuritiesService.GetListings:input_type -> securities.GetListingsRequest
+	36, // 35: securities.SecuritiesService.GetListingById:input_type -> securities.GetListingByIdRequest
+	43, // 36: securities.SecuritiesService.GetListingHistory:input_type -> securities.GetListingHistoryRequest
+	46, // 37: securities.SecuritiesService.CreatePriceAlert:input_type -> securities.CreatePriceAlertRequest
+	48, // 38: securities.SecuritiesService.ListPriceAlerts:input_type -> securities.ListPriceAlertsRequest
+	50, // 39: securities.SecuritiesService.DeletePriceAlert:input_type -> securities.DeletePriceAlertRequest
+	1,  // 40: securities.SecuritiesService.Ping:output_type -> securities.PingResponse
+	4,  // 41: securities.SecuritiesService.GetStockExchanges:output_type -> securities.GetStockExchangesResponse
+	6,  // 42: securities.SecuritiesService.GetStockExchangeByMIC:output_type -> securities.GetStockExchangeByMICResponse
+	8,  // 43: securities.SecuritiesService.GetStockExchangeById:output_type -> securities.GetStockExchangeByIdResponse
+	10, // 44: securities.SecuritiesService.CreateStockExchange:output_type -> securities.CreateStockExchangeResponse
+	12, // 45: securities.SecuritiesService.UpdateStockExchange:output_type -> securities.UpdateStockExchangeResponse
+	14, // 46: securities.SecuritiesService.DeleteStockExchange:output_type -> securities.DeleteStockExchangeResponse
+	17, // 47: securities.SecuritiesService.GetWorkingHours:output_type -> securities.GetWorkingHoursResponse
+	19, // 48: securities.SecuritiesService.SetWorkingHours:output_type -> securities.SetWorkingHoursResponse
+	22, // 49: securities.SecuritiesService.GetHolidays:output_type -> securities.GetHolidaysResponse
+	24, // 50: securities.SecuritiesService.AddHoliday:output_type -> securities.AddHolidayResponse
+	26, // 51: securities.SecuritiesService.DeleteHoliday:output_type -> securities.DeleteHolidayResponse
+	28, // 52: securities.SecuritiesService.IsExchangeOpen:output_type -> securities.IsExchangeOpenResponse
+	30, // 53: securities.SecuritiesService.GetTestMode:output_type -> securities.GetTestModeResponse
+	32, // 54: securities.SecuritiesService.SetTestMode:output_type -> securities.SetTestModeResponse
+	35, // 55: securities.SecuritiesService.GetListings:output_type -> securities.GetListingsResponse
+	42, // 56: securities.SecuritiesService.GetListingById:output_type -> securities.GetListingByIdResponse
+	44, // 57: securities.SecuritiesService.GetListingHistory:output_type -> securities.GetListingHistoryResponse
+	47, // 58: securities.SecuritiesService.CreatePriceAlert:output_type -> securities.CreatePriceAlertResponse
+	49, // 59: securities.SecuritiesService.ListPriceAlerts:output_type -> securities.ListPriceAlertsResponse
+	51, // 60: securities.SecuritiesService.DeletePriceAlert:output_type -> securities.DeletePriceAlertResponse
+	40, // [40:61] is the sub-list for method output_type
+	19, // [19:40] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_securities_proto_init() }
@@ -3034,7 +3532,7 @@ func file_securities_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_securities_proto_rawDesc), len(file_securities_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   45,
+			NumMessages:   52,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

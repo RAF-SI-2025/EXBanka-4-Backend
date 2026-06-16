@@ -1122,6 +1122,1406 @@ func (*CollectTaxForUserResponse) Descriptor() ([]byte, []int) {
 	return file_portfolio_proto_rawDescGZIP(), []int{19}
 }
 
+type Watchlist struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,3,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	Name          string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Watchlist) Reset() {
+	*x = Watchlist{}
+	mi := &file_portfolio_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Watchlist) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Watchlist) ProtoMessage() {}
+
+func (x *Watchlist) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Watchlist.ProtoReflect.Descriptor instead.
+func (*Watchlist) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *Watchlist) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Watchlist) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *Watchlist) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+func (x *Watchlist) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Watchlist) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+type CreateWatchlistRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,2,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateWatchlistRequest) Reset() {
+	*x = CreateWatchlistRequest{}
+	mi := &file_portfolio_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateWatchlistRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateWatchlistRequest) ProtoMessage() {}
+
+func (x *CreateWatchlistRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateWatchlistRequest.ProtoReflect.Descriptor instead.
+func (*CreateWatchlistRequest) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *CreateWatchlistRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *CreateWatchlistRequest) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+func (x *CreateWatchlistRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type WatchlistResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Watchlist     *Watchlist             `protobuf:"bytes,1,opt,name=watchlist,proto3" json:"watchlist,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WatchlistResponse) Reset() {
+	*x = WatchlistResponse{}
+	mi := &file_portfolio_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WatchlistResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WatchlistResponse) ProtoMessage() {}
+
+func (x *WatchlistResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WatchlistResponse.ProtoReflect.Descriptor instead.
+func (*WatchlistResponse) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *WatchlistResponse) GetWatchlist() *Watchlist {
+	if x != nil {
+		return x.Watchlist
+	}
+	return nil
+}
+
+type ListWatchlistsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,2,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListWatchlistsRequest) Reset() {
+	*x = ListWatchlistsRequest{}
+	mi := &file_portfolio_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListWatchlistsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListWatchlistsRequest) ProtoMessage() {}
+
+func (x *ListWatchlistsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListWatchlistsRequest.ProtoReflect.Descriptor instead.
+func (*ListWatchlistsRequest) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *ListWatchlistsRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *ListWatchlistsRequest) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+type ListWatchlistsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Watchlists    []*Watchlist           `protobuf:"bytes,1,rep,name=watchlists,proto3" json:"watchlists,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListWatchlistsResponse) Reset() {
+	*x = ListWatchlistsResponse{}
+	mi := &file_portfolio_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListWatchlistsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListWatchlistsResponse) ProtoMessage() {}
+
+func (x *ListWatchlistsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListWatchlistsResponse.ProtoReflect.Descriptor instead.
+func (*ListWatchlistsResponse) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *ListWatchlistsResponse) GetWatchlists() []*Watchlist {
+	if x != nil {
+		return x.Watchlists
+	}
+	return nil
+}
+
+type DeleteWatchlistRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WatchlistId   int64                  `protobuf:"varint,1,opt,name=watchlist_id,json=watchlistId,proto3" json:"watchlist_id,omitempty"`
+	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,3,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteWatchlistRequest) Reset() {
+	*x = DeleteWatchlistRequest{}
+	mi := &file_portfolio_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteWatchlistRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteWatchlistRequest) ProtoMessage() {}
+
+func (x *DeleteWatchlistRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteWatchlistRequest.ProtoReflect.Descriptor instead.
+func (*DeleteWatchlistRequest) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *DeleteWatchlistRequest) GetWatchlistId() int64 {
+	if x != nil {
+		return x.WatchlistId
+	}
+	return 0
+}
+
+func (x *DeleteWatchlistRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *DeleteWatchlistRequest) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+type DeleteWatchlistResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteWatchlistResponse) Reset() {
+	*x = DeleteWatchlistResponse{}
+	mi := &file_portfolio_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteWatchlistResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteWatchlistResponse) ProtoMessage() {}
+
+func (x *DeleteWatchlistResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteWatchlistResponse.ProtoReflect.Descriptor instead.
+func (*DeleteWatchlistResponse) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{26}
+}
+
+type AddWatchlistItemRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WatchlistId   int64                  `protobuf:"varint,1,opt,name=watchlist_id,json=watchlistId,proto3" json:"watchlist_id,omitempty"`
+	ListingId     int64                  `protobuf:"varint,2,opt,name=listing_id,json=listingId,proto3" json:"listing_id,omitempty"`
+	UserId        int64                  `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,4,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddWatchlistItemRequest) Reset() {
+	*x = AddWatchlistItemRequest{}
+	mi := &file_portfolio_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddWatchlistItemRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddWatchlistItemRequest) ProtoMessage() {}
+
+func (x *AddWatchlistItemRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddWatchlistItemRequest.ProtoReflect.Descriptor instead.
+func (*AddWatchlistItemRequest) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *AddWatchlistItemRequest) GetWatchlistId() int64 {
+	if x != nil {
+		return x.WatchlistId
+	}
+	return 0
+}
+
+func (x *AddWatchlistItemRequest) GetListingId() int64 {
+	if x != nil {
+		return x.ListingId
+	}
+	return 0
+}
+
+func (x *AddWatchlistItemRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *AddWatchlistItemRequest) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+type WatchlistItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	WatchlistId   int64                  `protobuf:"varint,2,opt,name=watchlist_id,json=watchlistId,proto3" json:"watchlist_id,omitempty"`
+	ListingId     int64                  `protobuf:"varint,3,opt,name=listing_id,json=listingId,proto3" json:"listing_id,omitempty"`
+	AddedAt       string                 `protobuf:"bytes,4,opt,name=added_at,json=addedAt,proto3" json:"added_at,omitempty"`
+	Ticker        string                 `protobuf:"bytes,5,opt,name=ticker,proto3" json:"ticker,omitempty"`
+	Name          string                 `protobuf:"bytes,6,opt,name=name,proto3" json:"name,omitempty"`
+	AssetType     string                 `protobuf:"bytes,7,opt,name=asset_type,json=assetType,proto3" json:"asset_type,omitempty"`
+	Price         float64                `protobuf:"fixed64,8,opt,name=price,proto3" json:"price,omitempty"`
+	Change        float64                `protobuf:"fixed64,9,opt,name=change,proto3" json:"change,omitempty"`
+	ChangePercent float64                `protobuf:"fixed64,10,opt,name=change_percent,json=changePercent,proto3" json:"change_percent,omitempty"`
+	Volume        float64                `protobuf:"fixed64,11,opt,name=volume,proto3" json:"volume,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WatchlistItem) Reset() {
+	*x = WatchlistItem{}
+	mi := &file_portfolio_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WatchlistItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WatchlistItem) ProtoMessage() {}
+
+func (x *WatchlistItem) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WatchlistItem.ProtoReflect.Descriptor instead.
+func (*WatchlistItem) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *WatchlistItem) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *WatchlistItem) GetWatchlistId() int64 {
+	if x != nil {
+		return x.WatchlistId
+	}
+	return 0
+}
+
+func (x *WatchlistItem) GetListingId() int64 {
+	if x != nil {
+		return x.ListingId
+	}
+	return 0
+}
+
+func (x *WatchlistItem) GetAddedAt() string {
+	if x != nil {
+		return x.AddedAt
+	}
+	return ""
+}
+
+func (x *WatchlistItem) GetTicker() string {
+	if x != nil {
+		return x.Ticker
+	}
+	return ""
+}
+
+func (x *WatchlistItem) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *WatchlistItem) GetAssetType() string {
+	if x != nil {
+		return x.AssetType
+	}
+	return ""
+}
+
+func (x *WatchlistItem) GetPrice() float64 {
+	if x != nil {
+		return x.Price
+	}
+	return 0
+}
+
+func (x *WatchlistItem) GetChange() float64 {
+	if x != nil {
+		return x.Change
+	}
+	return 0
+}
+
+func (x *WatchlistItem) GetChangePercent() float64 {
+	if x != nil {
+		return x.ChangePercent
+	}
+	return 0
+}
+
+func (x *WatchlistItem) GetVolume() float64 {
+	if x != nil {
+		return x.Volume
+	}
+	return 0
+}
+
+type WatchlistItemResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Item          *WatchlistItem         `protobuf:"bytes,1,opt,name=item,proto3" json:"item,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WatchlistItemResponse) Reset() {
+	*x = WatchlistItemResponse{}
+	mi := &file_portfolio_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WatchlistItemResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WatchlistItemResponse) ProtoMessage() {}
+
+func (x *WatchlistItemResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WatchlistItemResponse.ProtoReflect.Descriptor instead.
+func (*WatchlistItemResponse) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *WatchlistItemResponse) GetItem() *WatchlistItem {
+	if x != nil {
+		return x.Item
+	}
+	return nil
+}
+
+type RemoveWatchlistItemRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WatchlistId   int64                  `protobuf:"varint,1,opt,name=watchlist_id,json=watchlistId,proto3" json:"watchlist_id,omitempty"`
+	ListingId     int64                  `protobuf:"varint,2,opt,name=listing_id,json=listingId,proto3" json:"listing_id,omitempty"`
+	UserId        int64                  `protobuf:"varint,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,4,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoveWatchlistItemRequest) Reset() {
+	*x = RemoveWatchlistItemRequest{}
+	mi := &file_portfolio_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveWatchlistItemRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveWatchlistItemRequest) ProtoMessage() {}
+
+func (x *RemoveWatchlistItemRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveWatchlistItemRequest.ProtoReflect.Descriptor instead.
+func (*RemoveWatchlistItemRequest) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *RemoveWatchlistItemRequest) GetWatchlistId() int64 {
+	if x != nil {
+		return x.WatchlistId
+	}
+	return 0
+}
+
+func (x *RemoveWatchlistItemRequest) GetListingId() int64 {
+	if x != nil {
+		return x.ListingId
+	}
+	return 0
+}
+
+func (x *RemoveWatchlistItemRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *RemoveWatchlistItemRequest) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+type RemoveWatchlistItemResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoveWatchlistItemResponse) Reset() {
+	*x = RemoveWatchlistItemResponse{}
+	mi := &file_portfolio_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveWatchlistItemResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveWatchlistItemResponse) ProtoMessage() {}
+
+func (x *RemoveWatchlistItemResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveWatchlistItemResponse.ProtoReflect.Descriptor instead.
+func (*RemoveWatchlistItemResponse) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{31}
+}
+
+type GetWatchlistItemsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WatchlistId   int64                  `protobuf:"varint,1,opt,name=watchlist_id,json=watchlistId,proto3" json:"watchlist_id,omitempty"`
+	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,3,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetWatchlistItemsRequest) Reset() {
+	*x = GetWatchlistItemsRequest{}
+	mi := &file_portfolio_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWatchlistItemsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWatchlistItemsRequest) ProtoMessage() {}
+
+func (x *GetWatchlistItemsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWatchlistItemsRequest.ProtoReflect.Descriptor instead.
+func (*GetWatchlistItemsRequest) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *GetWatchlistItemsRequest) GetWatchlistId() int64 {
+	if x != nil {
+		return x.WatchlistId
+	}
+	return 0
+}
+
+func (x *GetWatchlistItemsRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *GetWatchlistItemsRequest) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+type GetWatchlistItemsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*WatchlistItem       `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetWatchlistItemsResponse) Reset() {
+	*x = GetWatchlistItemsResponse{}
+	mi := &file_portfolio_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetWatchlistItemsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetWatchlistItemsResponse) ProtoMessage() {}
+
+func (x *GetWatchlistItemsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetWatchlistItemsResponse.ProtoReflect.Descriptor instead.
+func (*GetWatchlistItemsResponse) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *GetWatchlistItemsResponse) GetItems() []*WatchlistItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type CreateDividendPayoutRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	UserId         int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType       string                 `protobuf:"bytes,2,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	StockListingId int64                  `protobuf:"varint,3,opt,name=stock_listing_id,json=stockListingId,proto3" json:"stock_listing_id,omitempty"`
+	Quantity       float64                `protobuf:"fixed64,4,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	GrossAmount    float64                `protobuf:"fixed64,5,opt,name=gross_amount,json=grossAmount,proto3" json:"gross_amount,omitempty"`
+	Currency       string                 `protobuf:"bytes,6,opt,name=currency,proto3" json:"currency,omitempty"`
+	TaxRsd         float64                `protobuf:"fixed64,7,opt,name=tax_rsd,json=taxRsd,proto3" json:"tax_rsd,omitempty"`
+	NetAmount      float64                `protobuf:"fixed64,8,opt,name=net_amount,json=netAmount,proto3" json:"net_amount,omitempty"`
+	AccountId      int64                  `protobuf:"varint,9,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	PaymentDate    string                 `protobuf:"bytes,10,opt,name=payment_date,json=paymentDate,proto3" json:"payment_date,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *CreateDividendPayoutRequest) Reset() {
+	*x = CreateDividendPayoutRequest{}
+	mi := &file_portfolio_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateDividendPayoutRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateDividendPayoutRequest) ProtoMessage() {}
+
+func (x *CreateDividendPayoutRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateDividendPayoutRequest.ProtoReflect.Descriptor instead.
+func (*CreateDividendPayoutRequest) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *CreateDividendPayoutRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *CreateDividendPayoutRequest) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+func (x *CreateDividendPayoutRequest) GetStockListingId() int64 {
+	if x != nil {
+		return x.StockListingId
+	}
+	return 0
+}
+
+func (x *CreateDividendPayoutRequest) GetQuantity() float64 {
+	if x != nil {
+		return x.Quantity
+	}
+	return 0
+}
+
+func (x *CreateDividendPayoutRequest) GetGrossAmount() float64 {
+	if x != nil {
+		return x.GrossAmount
+	}
+	return 0
+}
+
+func (x *CreateDividendPayoutRequest) GetCurrency() string {
+	if x != nil {
+		return x.Currency
+	}
+	return ""
+}
+
+func (x *CreateDividendPayoutRequest) GetTaxRsd() float64 {
+	if x != nil {
+		return x.TaxRsd
+	}
+	return 0
+}
+
+func (x *CreateDividendPayoutRequest) GetNetAmount() float64 {
+	if x != nil {
+		return x.NetAmount
+	}
+	return 0
+}
+
+func (x *CreateDividendPayoutRequest) GetAccountId() int64 {
+	if x != nil {
+		return x.AccountId
+	}
+	return 0
+}
+
+func (x *CreateDividendPayoutRequest) GetPaymentDate() string {
+	if x != nil {
+		return x.PaymentDate
+	}
+	return ""
+}
+
+type DividendPayoutResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DividendPayoutResponse) Reset() {
+	*x = DividendPayoutResponse{}
+	mi := &file_portfolio_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DividendPayoutResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DividendPayoutResponse) ProtoMessage() {}
+
+func (x *DividendPayoutResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DividendPayoutResponse.ProtoReflect.Descriptor instead.
+func (*DividendPayoutResponse) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *DividendPayoutResponse) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type GetDividendHistoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,2,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	ListingId     int64                  `protobuf:"varint,3,opt,name=listing_id,json=listingId,proto3" json:"listing_id,omitempty"`
+	FromDate      string                 `protobuf:"bytes,4,opt,name=from_date,json=fromDate,proto3" json:"from_date,omitempty"`
+	ToDate        string                 `protobuf:"bytes,5,opt,name=to_date,json=toDate,proto3" json:"to_date,omitempty"`
+	Page          int32                  `protobuf:"varint,6,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,7,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDividendHistoryRequest) Reset() {
+	*x = GetDividendHistoryRequest{}
+	mi := &file_portfolio_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDividendHistoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDividendHistoryRequest) ProtoMessage() {}
+
+func (x *GetDividendHistoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDividendHistoryRequest.ProtoReflect.Descriptor instead.
+func (*GetDividendHistoryRequest) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *GetDividendHistoryRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *GetDividendHistoryRequest) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+func (x *GetDividendHistoryRequest) GetListingId() int64 {
+	if x != nil {
+		return x.ListingId
+	}
+	return 0
+}
+
+func (x *GetDividendHistoryRequest) GetFromDate() string {
+	if x != nil {
+		return x.FromDate
+	}
+	return ""
+}
+
+func (x *GetDividendHistoryRequest) GetToDate() string {
+	if x != nil {
+		return x.ToDate
+	}
+	return ""
+}
+
+func (x *GetDividendHistoryRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *GetDividendHistoryRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type DividendPayout struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId         int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType       string                 `protobuf:"bytes,3,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	StockListingId int64                  `protobuf:"varint,4,opt,name=stock_listing_id,json=stockListingId,proto3" json:"stock_listing_id,omitempty"`
+	Quantity       float64                `protobuf:"fixed64,5,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	GrossAmount    float64                `protobuf:"fixed64,6,opt,name=gross_amount,json=grossAmount,proto3" json:"gross_amount,omitempty"`
+	Currency       string                 `protobuf:"bytes,7,opt,name=currency,proto3" json:"currency,omitempty"`
+	TaxRsd         float64                `protobuf:"fixed64,8,opt,name=tax_rsd,json=taxRsd,proto3" json:"tax_rsd,omitempty"`
+	NetAmount      float64                `protobuf:"fixed64,9,opt,name=net_amount,json=netAmount,proto3" json:"net_amount,omitempty"`
+	AccountId      int64                  `protobuf:"varint,10,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	PaymentDate    string                 `protobuf:"bytes,11,opt,name=payment_date,json=paymentDate,proto3" json:"payment_date,omitempty"`
+	Ticker         string                 `protobuf:"bytes,12,opt,name=ticker,proto3" json:"ticker,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *DividendPayout) Reset() {
+	*x = DividendPayout{}
+	mi := &file_portfolio_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DividendPayout) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DividendPayout) ProtoMessage() {}
+
+func (x *DividendPayout) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DividendPayout.ProtoReflect.Descriptor instead.
+func (*DividendPayout) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *DividendPayout) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *DividendPayout) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *DividendPayout) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+func (x *DividendPayout) GetStockListingId() int64 {
+	if x != nil {
+		return x.StockListingId
+	}
+	return 0
+}
+
+func (x *DividendPayout) GetQuantity() float64 {
+	if x != nil {
+		return x.Quantity
+	}
+	return 0
+}
+
+func (x *DividendPayout) GetGrossAmount() float64 {
+	if x != nil {
+		return x.GrossAmount
+	}
+	return 0
+}
+
+func (x *DividendPayout) GetCurrency() string {
+	if x != nil {
+		return x.Currency
+	}
+	return ""
+}
+
+func (x *DividendPayout) GetTaxRsd() float64 {
+	if x != nil {
+		return x.TaxRsd
+	}
+	return 0
+}
+
+func (x *DividendPayout) GetNetAmount() float64 {
+	if x != nil {
+		return x.NetAmount
+	}
+	return 0
+}
+
+func (x *DividendPayout) GetAccountId() int64 {
+	if x != nil {
+		return x.AccountId
+	}
+	return 0
+}
+
+func (x *DividendPayout) GetPaymentDate() string {
+	if x != nil {
+		return x.PaymentDate
+	}
+	return ""
+}
+
+func (x *DividendPayout) GetTicker() string {
+	if x != nil {
+		return x.Ticker
+	}
+	return ""
+}
+
+type GetDividendHistoryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Payouts       []*DividendPayout      `protobuf:"bytes,1,rep,name=payouts,proto3" json:"payouts,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDividendHistoryResponse) Reset() {
+	*x = GetDividendHistoryResponse{}
+	mi := &file_portfolio_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDividendHistoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDividendHistoryResponse) ProtoMessage() {}
+
+func (x *GetDividendHistoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDividendHistoryResponse.ProtoReflect.Descriptor instead.
+func (*GetDividendHistoryResponse) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *GetDividendHistoryResponse) GetPayouts() []*DividendPayout {
+	if x != nil {
+		return x.Payouts
+	}
+	return nil
+}
+
+type GetHoldersByListingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ListingId     int64                  `protobuf:"varint,1,opt,name=listing_id,json=listingId,proto3" json:"listing_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetHoldersByListingRequest) Reset() {
+	*x = GetHoldersByListingRequest{}
+	mi := &file_portfolio_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetHoldersByListingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetHoldersByListingRequest) ProtoMessage() {}
+
+func (x *GetHoldersByListingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetHoldersByListingRequest.ProtoReflect.Descriptor instead.
+func (*GetHoldersByListingRequest) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *GetHoldersByListingRequest) GetListingId() int64 {
+	if x != nil {
+		return x.ListingId
+	}
+	return 0
+}
+
+type PortfolioHolder struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserType      string                 `protobuf:"bytes,2,opt,name=user_type,json=userType,proto3" json:"user_type,omitempty"`
+	Amount        float64                `protobuf:"fixed64,3,opt,name=amount,proto3" json:"amount,omitempty"`
+	AccountId     int64                  `protobuf:"varint,4,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PortfolioHolder) Reset() {
+	*x = PortfolioHolder{}
+	mi := &file_portfolio_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PortfolioHolder) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PortfolioHolder) ProtoMessage() {}
+
+func (x *PortfolioHolder) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PortfolioHolder.ProtoReflect.Descriptor instead.
+func (*PortfolioHolder) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *PortfolioHolder) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *PortfolioHolder) GetUserType() string {
+	if x != nil {
+		return x.UserType
+	}
+	return ""
+}
+
+func (x *PortfolioHolder) GetAmount() float64 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+func (x *PortfolioHolder) GetAccountId() int64 {
+	if x != nil {
+		return x.AccountId
+	}
+	return 0
+}
+
+type GetHoldersByListingResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Holders       []*PortfolioHolder     `protobuf:"bytes,1,rep,name=holders,proto3" json:"holders,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetHoldersByListingResponse) Reset() {
+	*x = GetHoldersByListingResponse{}
+	mi := &file_portfolio_proto_msgTypes[41]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetHoldersByListingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetHoldersByListingResponse) ProtoMessage() {}
+
+func (x *GetHoldersByListingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_portfolio_proto_msgTypes[41]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetHoldersByListingResponse.ProtoReflect.Descriptor instead.
+func (*GetHoldersByListingResponse) Descriptor() ([]byte, []int) {
+	return file_portfolio_proto_rawDescGZIP(), []int{41}
+}
+
+func (x *GetHoldersByListingResponse) GetHolders() []*PortfolioHolder {
+	if x != nil {
+		return x.Holders
+	}
+	return nil
+}
+
 var File_portfolio_proto protoreflect.FileDescriptor
 
 const file_portfolio_proto_rawDesc = "" +
@@ -1202,7 +2602,122 @@ const file_portfolio_proto_rawDesc = "" +
 	"\x18CollectTaxForUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1b\n" +
 	"\tuser_type\x18\x02 \x01(\tR\buserType\"\x1b\n" +
-	"\x19CollectTaxForUserResponse2\xe8\x05\n" +
+	"\x19CollectTaxForUserResponse\"\x84\x01\n" +
+	"\tWatchlist\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x03 \x01(\tR\buserType\x12\x12\n" +
+	"\x04name\x18\x04 \x01(\tR\x04name\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x05 \x01(\tR\tcreatedAt\"b\n" +
+	"\x16CreateWatchlistRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x02 \x01(\tR\buserType\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\"G\n" +
+	"\x11WatchlistResponse\x122\n" +
+	"\twatchlist\x18\x01 \x01(\v2\x14.portfolio.WatchlistR\twatchlist\"M\n" +
+	"\x15ListWatchlistsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x02 \x01(\tR\buserType\"N\n" +
+	"\x16ListWatchlistsResponse\x124\n" +
+	"\n" +
+	"watchlists\x18\x01 \x03(\v2\x14.portfolio.WatchlistR\n" +
+	"watchlists\"q\n" +
+	"\x16DeleteWatchlistRequest\x12!\n" +
+	"\fwatchlist_id\x18\x01 \x01(\x03R\vwatchlistId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x03 \x01(\tR\buserType\"\x19\n" +
+	"\x17DeleteWatchlistResponse\"\x91\x01\n" +
+	"\x17AddWatchlistItemRequest\x12!\n" +
+	"\fwatchlist_id\x18\x01 \x01(\x03R\vwatchlistId\x12\x1d\n" +
+	"\n" +
+	"listing_id\x18\x02 \x01(\x03R\tlistingId\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x04 \x01(\tR\buserType\"\xb4\x02\n" +
+	"\rWatchlistItem\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12!\n" +
+	"\fwatchlist_id\x18\x02 \x01(\x03R\vwatchlistId\x12\x1d\n" +
+	"\n" +
+	"listing_id\x18\x03 \x01(\x03R\tlistingId\x12\x19\n" +
+	"\badded_at\x18\x04 \x01(\tR\aaddedAt\x12\x16\n" +
+	"\x06ticker\x18\x05 \x01(\tR\x06ticker\x12\x12\n" +
+	"\x04name\x18\x06 \x01(\tR\x04name\x12\x1d\n" +
+	"\n" +
+	"asset_type\x18\a \x01(\tR\tassetType\x12\x14\n" +
+	"\x05price\x18\b \x01(\x01R\x05price\x12\x16\n" +
+	"\x06change\x18\t \x01(\x01R\x06change\x12%\n" +
+	"\x0echange_percent\x18\n" +
+	" \x01(\x01R\rchangePercent\x12\x16\n" +
+	"\x06volume\x18\v \x01(\x01R\x06volume\"E\n" +
+	"\x15WatchlistItemResponse\x12,\n" +
+	"\x04item\x18\x01 \x01(\v2\x18.portfolio.WatchlistItemR\x04item\"\x94\x01\n" +
+	"\x1aRemoveWatchlistItemRequest\x12!\n" +
+	"\fwatchlist_id\x18\x01 \x01(\x03R\vwatchlistId\x12\x1d\n" +
+	"\n" +
+	"listing_id\x18\x02 \x01(\x03R\tlistingId\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x04 \x01(\tR\buserType\"\x1d\n" +
+	"\x1bRemoveWatchlistItemResponse\"s\n" +
+	"\x18GetWatchlistItemsRequest\x12!\n" +
+	"\fwatchlist_id\x18\x01 \x01(\x03R\vwatchlistId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x03 \x01(\tR\buserType\"K\n" +
+	"\x19GetWatchlistItemsResponse\x12.\n" +
+	"\x05items\x18\x01 \x03(\v2\x18.portfolio.WatchlistItemR\x05items\"\xd2\x02\n" +
+	"\x1bCreateDividendPayoutRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x02 \x01(\tR\buserType\x12(\n" +
+	"\x10stock_listing_id\x18\x03 \x01(\x03R\x0estockListingId\x12\x1a\n" +
+	"\bquantity\x18\x04 \x01(\x01R\bquantity\x12!\n" +
+	"\fgross_amount\x18\x05 \x01(\x01R\vgrossAmount\x12\x1a\n" +
+	"\bcurrency\x18\x06 \x01(\tR\bcurrency\x12\x17\n" +
+	"\atax_rsd\x18\a \x01(\x01R\x06taxRsd\x12\x1d\n" +
+	"\n" +
+	"net_amount\x18\b \x01(\x01R\tnetAmount\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\t \x01(\x03R\taccountId\x12!\n" +
+	"\fpayment_date\x18\n" +
+	" \x01(\tR\vpaymentDate\"(\n" +
+	"\x16DividendPayoutResponse\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\"\xd7\x01\n" +
+	"\x19GetDividendHistoryRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x02 \x01(\tR\buserType\x12\x1d\n" +
+	"\n" +
+	"listing_id\x18\x03 \x01(\x03R\tlistingId\x12\x1b\n" +
+	"\tfrom_date\x18\x04 \x01(\tR\bfromDate\x12\x17\n" +
+	"\ato_date\x18\x05 \x01(\tR\x06toDate\x12\x12\n" +
+	"\x04page\x18\x06 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\a \x01(\x05R\bpageSize\"\xed\x02\n" +
+	"\x0eDividendPayout\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x03 \x01(\tR\buserType\x12(\n" +
+	"\x10stock_listing_id\x18\x04 \x01(\x03R\x0estockListingId\x12\x1a\n" +
+	"\bquantity\x18\x05 \x01(\x01R\bquantity\x12!\n" +
+	"\fgross_amount\x18\x06 \x01(\x01R\vgrossAmount\x12\x1a\n" +
+	"\bcurrency\x18\a \x01(\tR\bcurrency\x12\x17\n" +
+	"\atax_rsd\x18\b \x01(\x01R\x06taxRsd\x12\x1d\n" +
+	"\n" +
+	"net_amount\x18\t \x01(\x01R\tnetAmount\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\n" +
+	" \x01(\x03R\taccountId\x12!\n" +
+	"\fpayment_date\x18\v \x01(\tR\vpaymentDate\x12\x16\n" +
+	"\x06ticker\x18\f \x01(\tR\x06ticker\"Q\n" +
+	"\x1aGetDividendHistoryResponse\x123\n" +
+	"\apayouts\x18\x01 \x03(\v2\x19.portfolio.DividendPayoutR\apayouts\";\n" +
+	"\x1aGetHoldersByListingRequest\x12\x1d\n" +
+	"\n" +
+	"listing_id\x18\x01 \x01(\x03R\tlistingId\"~\n" +
+	"\x0fPortfolioHolder\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1b\n" +
+	"\tuser_type\x18\x02 \x01(\tR\buserType\x12\x16\n" +
+	"\x06amount\x18\x03 \x01(\x01R\x06amount\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\x04 \x01(\x03R\taccountId\"S\n" +
+	"\x1bGetHoldersByListingResponse\x124\n" +
+	"\aholders\x18\x01 \x03(\v2\x1a.portfolio.PortfolioHolderR\aholders2\xb9\f\n" +
 	"\x10PortfolioService\x12R\n" +
 	"\rUpdateHolding\x12\x1f.portfolio.UpdateHoldingRequest\x1a .portfolio.UpdateHoldingResponse\x12O\n" +
 	"\fGetPortfolio\x12\x1e.portfolio.GetPortfolioRequest\x1a\x1f.portfolio.GetPortfolioResponse\x12F\n" +
@@ -1214,7 +2729,16 @@ const file_portfolio_proto_rawDesc = "" +
 	"GetTaxList\x12\x1c.portfolio.GetTaxListRequest\x1a\x1d.portfolio.GetTaxListResponse\x12I\n" +
 	"\n" +
 	"CollectTax\x12\x1c.portfolio.CollectTaxRequest\x1a\x1d.portfolio.CollectTaxResponse\x12^\n" +
-	"\x11CollectTaxForUser\x12#.portfolio.CollectTaxForUserRequest\x1a$.portfolio.CollectTaxForUserResponseB>Z<github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/portfoliob\x06proto3"
+	"\x11CollectTaxForUser\x12#.portfolio.CollectTaxForUserRequest\x1a$.portfolio.CollectTaxForUserResponse\x12R\n" +
+	"\x0fCreateWatchlist\x12!.portfolio.CreateWatchlistRequest\x1a\x1c.portfolio.WatchlistResponse\x12U\n" +
+	"\x0eListWatchlists\x12 .portfolio.ListWatchlistsRequest\x1a!.portfolio.ListWatchlistsResponse\x12X\n" +
+	"\x0fDeleteWatchlist\x12!.portfolio.DeleteWatchlistRequest\x1a\".portfolio.DeleteWatchlistResponse\x12X\n" +
+	"\x10AddWatchlistItem\x12\".portfolio.AddWatchlistItemRequest\x1a .portfolio.WatchlistItemResponse\x12d\n" +
+	"\x13RemoveWatchlistItem\x12%.portfolio.RemoveWatchlistItemRequest\x1a&.portfolio.RemoveWatchlistItemResponse\x12^\n" +
+	"\x11GetWatchlistItems\x12#.portfolio.GetWatchlistItemsRequest\x1a$.portfolio.GetWatchlistItemsResponse\x12a\n" +
+	"\x14CreateDividendPayout\x12&.portfolio.CreateDividendPayoutRequest\x1a!.portfolio.DividendPayoutResponse\x12a\n" +
+	"\x12GetDividendHistory\x12$.portfolio.GetDividendHistoryRequest\x1a%.portfolio.GetDividendHistoryResponse\x12d\n" +
+	"\x13GetHoldersByListing\x12%.portfolio.GetHoldersByListingRequest\x1a&.portfolio.GetHoldersByListingResponseB>Z<github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/portfoliob\x06proto3"
 
 var (
 	file_portfolio_proto_rawDescOnce sync.Once
@@ -1228,55 +2752,101 @@ func file_portfolio_proto_rawDescGZIP() []byte {
 	return file_portfolio_proto_rawDescData
 }
 
-var file_portfolio_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_portfolio_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
 var file_portfolio_proto_goTypes = []any{
-	(*UpdateHoldingRequest)(nil),      // 0: portfolio.UpdateHoldingRequest
-	(*UpdateHoldingResponse)(nil),     // 1: portfolio.UpdateHoldingResponse
-	(*GetPortfolioRequest)(nil),       // 2: portfolio.GetPortfolioRequest
-	(*PortfolioEntry)(nil),            // 3: portfolio.PortfolioEntry
-	(*GetPortfolioResponse)(nil),      // 4: portfolio.GetPortfolioResponse
-	(*GetProfitRequest)(nil),          // 5: portfolio.GetProfitRequest
-	(*GetProfitResponse)(nil),         // 6: portfolio.GetProfitResponse
-	(*SetPublicAmountRequest)(nil),    // 7: portfolio.SetPublicAmountRequest
-	(*SetPublicAmountResponse)(nil),   // 8: portfolio.SetPublicAmountResponse
-	(*SetPublicModeRequest)(nil),      // 9: portfolio.SetPublicModeRequest
-	(*SetPublicModeResponse)(nil),     // 10: portfolio.SetPublicModeResponse
-	(*GetMyTaxRequest)(nil),           // 11: portfolio.GetMyTaxRequest
-	(*GetMyTaxResponse)(nil),          // 12: portfolio.GetMyTaxResponse
-	(*GetTaxListRequest)(nil),         // 13: portfolio.GetTaxListRequest
-	(*TaxDebtEntry)(nil),              // 14: portfolio.TaxDebtEntry
-	(*GetTaxListResponse)(nil),        // 15: portfolio.GetTaxListResponse
-	(*CollectTaxRequest)(nil),         // 16: portfolio.CollectTaxRequest
-	(*CollectTaxResponse)(nil),        // 17: portfolio.CollectTaxResponse
-	(*CollectTaxForUserRequest)(nil),  // 18: portfolio.CollectTaxForUserRequest
-	(*CollectTaxForUserResponse)(nil), // 19: portfolio.CollectTaxForUserResponse
+	(*UpdateHoldingRequest)(nil),        // 0: portfolio.UpdateHoldingRequest
+	(*UpdateHoldingResponse)(nil),       // 1: portfolio.UpdateHoldingResponse
+	(*GetPortfolioRequest)(nil),         // 2: portfolio.GetPortfolioRequest
+	(*PortfolioEntry)(nil),              // 3: portfolio.PortfolioEntry
+	(*GetPortfolioResponse)(nil),        // 4: portfolio.GetPortfolioResponse
+	(*GetProfitRequest)(nil),            // 5: portfolio.GetProfitRequest
+	(*GetProfitResponse)(nil),           // 6: portfolio.GetProfitResponse
+	(*SetPublicAmountRequest)(nil),      // 7: portfolio.SetPublicAmountRequest
+	(*SetPublicAmountResponse)(nil),     // 8: portfolio.SetPublicAmountResponse
+	(*SetPublicModeRequest)(nil),        // 9: portfolio.SetPublicModeRequest
+	(*SetPublicModeResponse)(nil),       // 10: portfolio.SetPublicModeResponse
+	(*GetMyTaxRequest)(nil),             // 11: portfolio.GetMyTaxRequest
+	(*GetMyTaxResponse)(nil),            // 12: portfolio.GetMyTaxResponse
+	(*GetTaxListRequest)(nil),           // 13: portfolio.GetTaxListRequest
+	(*TaxDebtEntry)(nil),                // 14: portfolio.TaxDebtEntry
+	(*GetTaxListResponse)(nil),          // 15: portfolio.GetTaxListResponse
+	(*CollectTaxRequest)(nil),           // 16: portfolio.CollectTaxRequest
+	(*CollectTaxResponse)(nil),          // 17: portfolio.CollectTaxResponse
+	(*CollectTaxForUserRequest)(nil),    // 18: portfolio.CollectTaxForUserRequest
+	(*CollectTaxForUserResponse)(nil),   // 19: portfolio.CollectTaxForUserResponse
+	(*Watchlist)(nil),                   // 20: portfolio.Watchlist
+	(*CreateWatchlistRequest)(nil),      // 21: portfolio.CreateWatchlistRequest
+	(*WatchlistResponse)(nil),           // 22: portfolio.WatchlistResponse
+	(*ListWatchlistsRequest)(nil),       // 23: portfolio.ListWatchlistsRequest
+	(*ListWatchlistsResponse)(nil),      // 24: portfolio.ListWatchlistsResponse
+	(*DeleteWatchlistRequest)(nil),      // 25: portfolio.DeleteWatchlistRequest
+	(*DeleteWatchlistResponse)(nil),     // 26: portfolio.DeleteWatchlistResponse
+	(*AddWatchlistItemRequest)(nil),     // 27: portfolio.AddWatchlistItemRequest
+	(*WatchlistItem)(nil),               // 28: portfolio.WatchlistItem
+	(*WatchlistItemResponse)(nil),       // 29: portfolio.WatchlistItemResponse
+	(*RemoveWatchlistItemRequest)(nil),  // 30: portfolio.RemoveWatchlistItemRequest
+	(*RemoveWatchlistItemResponse)(nil), // 31: portfolio.RemoveWatchlistItemResponse
+	(*GetWatchlistItemsRequest)(nil),    // 32: portfolio.GetWatchlistItemsRequest
+	(*GetWatchlistItemsResponse)(nil),   // 33: portfolio.GetWatchlistItemsResponse
+	(*CreateDividendPayoutRequest)(nil), // 34: portfolio.CreateDividendPayoutRequest
+	(*DividendPayoutResponse)(nil),      // 35: portfolio.DividendPayoutResponse
+	(*GetDividendHistoryRequest)(nil),   // 36: portfolio.GetDividendHistoryRequest
+	(*DividendPayout)(nil),              // 37: portfolio.DividendPayout
+	(*GetDividendHistoryResponse)(nil),  // 38: portfolio.GetDividendHistoryResponse
+	(*GetHoldersByListingRequest)(nil),  // 39: portfolio.GetHoldersByListingRequest
+	(*PortfolioHolder)(nil),             // 40: portfolio.PortfolioHolder
+	(*GetHoldersByListingResponse)(nil), // 41: portfolio.GetHoldersByListingResponse
 }
 var file_portfolio_proto_depIdxs = []int32{
 	3,  // 0: portfolio.GetPortfolioResponse.entries:type_name -> portfolio.PortfolioEntry
 	14, // 1: portfolio.GetTaxListResponse.entries:type_name -> portfolio.TaxDebtEntry
-	0,  // 2: portfolio.PortfolioService.UpdateHolding:input_type -> portfolio.UpdateHoldingRequest
-	2,  // 3: portfolio.PortfolioService.GetPortfolio:input_type -> portfolio.GetPortfolioRequest
-	5,  // 4: portfolio.PortfolioService.GetProfit:input_type -> portfolio.GetProfitRequest
-	7,  // 5: portfolio.PortfolioService.SetPublicAmount:input_type -> portfolio.SetPublicAmountRequest
-	9,  // 6: portfolio.PortfolioService.SetPublicMode:input_type -> portfolio.SetPublicModeRequest
-	11, // 7: portfolio.PortfolioService.GetMyTax:input_type -> portfolio.GetMyTaxRequest
-	13, // 8: portfolio.PortfolioService.GetTaxList:input_type -> portfolio.GetTaxListRequest
-	16, // 9: portfolio.PortfolioService.CollectTax:input_type -> portfolio.CollectTaxRequest
-	18, // 10: portfolio.PortfolioService.CollectTaxForUser:input_type -> portfolio.CollectTaxForUserRequest
-	1,  // 11: portfolio.PortfolioService.UpdateHolding:output_type -> portfolio.UpdateHoldingResponse
-	4,  // 12: portfolio.PortfolioService.GetPortfolio:output_type -> portfolio.GetPortfolioResponse
-	6,  // 13: portfolio.PortfolioService.GetProfit:output_type -> portfolio.GetProfitResponse
-	8,  // 14: portfolio.PortfolioService.SetPublicAmount:output_type -> portfolio.SetPublicAmountResponse
-	10, // 15: portfolio.PortfolioService.SetPublicMode:output_type -> portfolio.SetPublicModeResponse
-	12, // 16: portfolio.PortfolioService.GetMyTax:output_type -> portfolio.GetMyTaxResponse
-	15, // 17: portfolio.PortfolioService.GetTaxList:output_type -> portfolio.GetTaxListResponse
-	17, // 18: portfolio.PortfolioService.CollectTax:output_type -> portfolio.CollectTaxResponse
-	19, // 19: portfolio.PortfolioService.CollectTaxForUser:output_type -> portfolio.CollectTaxForUserResponse
-	11, // [11:20] is the sub-list for method output_type
-	2,  // [2:11] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	20, // 2: portfolio.WatchlistResponse.watchlist:type_name -> portfolio.Watchlist
+	20, // 3: portfolio.ListWatchlistsResponse.watchlists:type_name -> portfolio.Watchlist
+	28, // 4: portfolio.WatchlistItemResponse.item:type_name -> portfolio.WatchlistItem
+	28, // 5: portfolio.GetWatchlistItemsResponse.items:type_name -> portfolio.WatchlistItem
+	37, // 6: portfolio.GetDividendHistoryResponse.payouts:type_name -> portfolio.DividendPayout
+	40, // 7: portfolio.GetHoldersByListingResponse.holders:type_name -> portfolio.PortfolioHolder
+	0,  // 8: portfolio.PortfolioService.UpdateHolding:input_type -> portfolio.UpdateHoldingRequest
+	2,  // 9: portfolio.PortfolioService.GetPortfolio:input_type -> portfolio.GetPortfolioRequest
+	5,  // 10: portfolio.PortfolioService.GetProfit:input_type -> portfolio.GetProfitRequest
+	7,  // 11: portfolio.PortfolioService.SetPublicAmount:input_type -> portfolio.SetPublicAmountRequest
+	9,  // 12: portfolio.PortfolioService.SetPublicMode:input_type -> portfolio.SetPublicModeRequest
+	11, // 13: portfolio.PortfolioService.GetMyTax:input_type -> portfolio.GetMyTaxRequest
+	13, // 14: portfolio.PortfolioService.GetTaxList:input_type -> portfolio.GetTaxListRequest
+	16, // 15: portfolio.PortfolioService.CollectTax:input_type -> portfolio.CollectTaxRequest
+	18, // 16: portfolio.PortfolioService.CollectTaxForUser:input_type -> portfolio.CollectTaxForUserRequest
+	21, // 17: portfolio.PortfolioService.CreateWatchlist:input_type -> portfolio.CreateWatchlistRequest
+	23, // 18: portfolio.PortfolioService.ListWatchlists:input_type -> portfolio.ListWatchlistsRequest
+	25, // 19: portfolio.PortfolioService.DeleteWatchlist:input_type -> portfolio.DeleteWatchlistRequest
+	27, // 20: portfolio.PortfolioService.AddWatchlistItem:input_type -> portfolio.AddWatchlistItemRequest
+	30, // 21: portfolio.PortfolioService.RemoveWatchlistItem:input_type -> portfolio.RemoveWatchlistItemRequest
+	32, // 22: portfolio.PortfolioService.GetWatchlistItems:input_type -> portfolio.GetWatchlistItemsRequest
+	34, // 23: portfolio.PortfolioService.CreateDividendPayout:input_type -> portfolio.CreateDividendPayoutRequest
+	36, // 24: portfolio.PortfolioService.GetDividendHistory:input_type -> portfolio.GetDividendHistoryRequest
+	39, // 25: portfolio.PortfolioService.GetHoldersByListing:input_type -> portfolio.GetHoldersByListingRequest
+	1,  // 26: portfolio.PortfolioService.UpdateHolding:output_type -> portfolio.UpdateHoldingResponse
+	4,  // 27: portfolio.PortfolioService.GetPortfolio:output_type -> portfolio.GetPortfolioResponse
+	6,  // 28: portfolio.PortfolioService.GetProfit:output_type -> portfolio.GetProfitResponse
+	8,  // 29: portfolio.PortfolioService.SetPublicAmount:output_type -> portfolio.SetPublicAmountResponse
+	10, // 30: portfolio.PortfolioService.SetPublicMode:output_type -> portfolio.SetPublicModeResponse
+	12, // 31: portfolio.PortfolioService.GetMyTax:output_type -> portfolio.GetMyTaxResponse
+	15, // 32: portfolio.PortfolioService.GetTaxList:output_type -> portfolio.GetTaxListResponse
+	17, // 33: portfolio.PortfolioService.CollectTax:output_type -> portfolio.CollectTaxResponse
+	19, // 34: portfolio.PortfolioService.CollectTaxForUser:output_type -> portfolio.CollectTaxForUserResponse
+	22, // 35: portfolio.PortfolioService.CreateWatchlist:output_type -> portfolio.WatchlistResponse
+	24, // 36: portfolio.PortfolioService.ListWatchlists:output_type -> portfolio.ListWatchlistsResponse
+	26, // 37: portfolio.PortfolioService.DeleteWatchlist:output_type -> portfolio.DeleteWatchlistResponse
+	29, // 38: portfolio.PortfolioService.AddWatchlistItem:output_type -> portfolio.WatchlistItemResponse
+	31, // 39: portfolio.PortfolioService.RemoveWatchlistItem:output_type -> portfolio.RemoveWatchlistItemResponse
+	33, // 40: portfolio.PortfolioService.GetWatchlistItems:output_type -> portfolio.GetWatchlistItemsResponse
+	35, // 41: portfolio.PortfolioService.CreateDividendPayout:output_type -> portfolio.DividendPayoutResponse
+	38, // 42: portfolio.PortfolioService.GetDividendHistory:output_type -> portfolio.GetDividendHistoryResponse
+	41, // 43: portfolio.PortfolioService.GetHoldersByListing:output_type -> portfolio.GetHoldersByListingResponse
+	26, // [26:44] is the sub-list for method output_type
+	8,  // [8:26] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_portfolio_proto_init() }
@@ -1290,7 +2860,7 @@ func file_portfolio_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_portfolio_proto_rawDesc), len(file_portfolio_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   42,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

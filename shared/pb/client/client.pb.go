@@ -702,12 +702,16 @@ func (x *GetClientCredentialsRequest) GetEmail() string {
 }
 
 type GetClientCredentialsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	PasswordHash  string                 `protobuf:"bytes,2,opt,name=password_hash,json=passwordHash,proto3" json:"password_hash,omitempty"`
-	Active        bool                   `protobuf:"varint,3,opt,name=active,proto3" json:"active,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Id                  int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	PasswordHash        string                 `protobuf:"bytes,2,opt,name=password_hash,json=passwordHash,proto3" json:"password_hash,omitempty"`
+	Active              bool                   `protobuf:"varint,3,opt,name=active,proto3" json:"active,omitempty"`
+	Email               string                 `protobuf:"bytes,4,opt,name=email,proto3" json:"email,omitempty"`
+	FirstName           string                 `protobuf:"bytes,5,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	FailedLoginAttempts int32                  `protobuf:"varint,6,opt,name=failed_login_attempts,json=failedLoginAttempts,proto3" json:"failed_login_attempts,omitempty"`
+	AccountLockedUntil  string                 `protobuf:"bytes,7,opt,name=account_locked_until,json=accountLockedUntil,proto3" json:"account_locked_until,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *GetClientCredentialsResponse) Reset() {
@@ -761,6 +765,130 @@ func (x *GetClientCredentialsResponse) GetActive() bool {
 	return false
 }
 
+func (x *GetClientCredentialsResponse) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *GetClientCredentialsResponse) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *GetClientCredentialsResponse) GetFailedLoginAttempts() int32 {
+	if x != nil {
+		return x.FailedLoginAttempts
+	}
+	return 0
+}
+
+func (x *GetClientCredentialsResponse) GetAccountLockedUntil() string {
+	if x != nil {
+		return x.AccountLockedUntil
+	}
+	return ""
+}
+
+type UpdateLoginAttemptsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Attempts      int32                  `protobuf:"varint,2,opt,name=attempts,proto3" json:"attempts,omitempty"`
+	LockedUntil   string                 `protobuf:"bytes,3,opt,name=locked_until,json=lockedUntil,proto3" json:"locked_until,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateLoginAttemptsRequest) Reset() {
+	*x = UpdateLoginAttemptsRequest{}
+	mi := &file_client_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateLoginAttemptsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateLoginAttemptsRequest) ProtoMessage() {}
+
+func (x *UpdateLoginAttemptsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_client_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateLoginAttemptsRequest.ProtoReflect.Descriptor instead.
+func (*UpdateLoginAttemptsRequest) Descriptor() ([]byte, []int) {
+	return file_client_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *UpdateLoginAttemptsRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *UpdateLoginAttemptsRequest) GetAttempts() int32 {
+	if x != nil {
+		return x.Attempts
+	}
+	return 0
+}
+
+func (x *UpdateLoginAttemptsRequest) GetLockedUntil() string {
+	if x != nil {
+		return x.LockedUntil
+	}
+	return ""
+}
+
+type UpdateLoginAttemptsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateLoginAttemptsResponse) Reset() {
+	*x = UpdateLoginAttemptsResponse{}
+	mi := &file_client_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateLoginAttemptsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateLoginAttemptsResponse) ProtoMessage() {}
+
+func (x *UpdateLoginAttemptsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_client_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateLoginAttemptsResponse.ProtoReflect.Descriptor instead.
+func (*UpdateLoginAttemptsResponse) Descriptor() ([]byte, []int) {
+	return file_client_proto_rawDescGZIP(), []int{12}
+}
+
 type ActivateClientRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ClientId      int64                  `protobuf:"varint,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
@@ -771,7 +899,7 @@ type ActivateClientRequest struct {
 
 func (x *ActivateClientRequest) Reset() {
 	*x = ActivateClientRequest{}
-	mi := &file_client_proto_msgTypes[11]
+	mi := &file_client_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -783,7 +911,7 @@ func (x *ActivateClientRequest) String() string {
 func (*ActivateClientRequest) ProtoMessage() {}
 
 func (x *ActivateClientRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_client_proto_msgTypes[11]
+	mi := &file_client_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -796,7 +924,7 @@ func (x *ActivateClientRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActivateClientRequest.ProtoReflect.Descriptor instead.
 func (*ActivateClientRequest) Descriptor() ([]byte, []int) {
-	return file_client_proto_rawDescGZIP(), []int{11}
+	return file_client_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ActivateClientRequest) GetClientId() int64 {
@@ -821,7 +949,7 @@ type ActivateClientResponse struct {
 
 func (x *ActivateClientResponse) Reset() {
 	*x = ActivateClientResponse{}
-	mi := &file_client_proto_msgTypes[12]
+	mi := &file_client_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -833,7 +961,7 @@ func (x *ActivateClientResponse) String() string {
 func (*ActivateClientResponse) ProtoMessage() {}
 
 func (x *ActivateClientResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_client_proto_msgTypes[12]
+	mi := &file_client_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -846,7 +974,7 @@ func (x *ActivateClientResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActivateClientResponse.ProtoReflect.Descriptor instead.
 func (*ActivateClientResponse) Descriptor() ([]byte, []int) {
-	return file_client_proto_rawDescGZIP(), []int{12}
+	return file_client_proto_rawDescGZIP(), []int{14}
 }
 
 var File_client_proto protoreflect.FileDescriptor
@@ -909,22 +1037,33 @@ const file_client_proto_rawDesc = "" +
 	"\x14UpdateClientResponse\x12&\n" +
 	"\x06client\x18\x01 \x01(\v2\x0e.client.ClientR\x06client\"3\n" +
 	"\x1bGetClientCredentialsRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\"k\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\"\x86\x02\n" +
 	"\x1cGetClientCredentialsResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12#\n" +
 	"\rpassword_hash\x18\x02 \x01(\tR\fpasswordHash\x12\x16\n" +
-	"\x06active\x18\x03 \x01(\bR\x06active\"Y\n" +
+	"\x06active\x18\x03 \x01(\bR\x06active\x12\x14\n" +
+	"\x05email\x18\x04 \x01(\tR\x05email\x12\x1d\n" +
+	"\n" +
+	"first_name\x18\x05 \x01(\tR\tfirstName\x122\n" +
+	"\x15failed_login_attempts\x18\x06 \x01(\x05R\x13failedLoginAttempts\x120\n" +
+	"\x14account_locked_until\x18\a \x01(\tR\x12accountLockedUntil\"k\n" +
+	"\x1aUpdateLoginAttemptsRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1a\n" +
+	"\battempts\x18\x02 \x01(\x05R\battempts\x12!\n" +
+	"\flocked_until\x18\x03 \x01(\tR\vlockedUntil\"\x1d\n" +
+	"\x1bUpdateLoginAttemptsResponse\"Y\n" +
 	"\x15ActivateClientRequest\x12\x1b\n" +
 	"\tclient_id\x18\x01 \x01(\x03R\bclientId\x12#\n" +
 	"\rpassword_hash\x18\x02 \x01(\tR\fpasswordHash\"\x18\n" +
-	"\x16ActivateClientResponse2\xf5\x03\n" +
+	"\x16ActivateClientResponse2\xd5\x04\n" +
 	"\rClientService\x12L\n" +
 	"\rGetAllClients\x12\x1c.client.GetAllClientsRequest\x1a\x1d.client.GetAllClientsResponse\x12L\n" +
 	"\rGetClientById\x12\x1c.client.GetClientByIdRequest\x1a\x1d.client.GetClientByIdResponse\x12I\n" +
 	"\fCreateClient\x12\x1b.client.CreateClientRequest\x1a\x1c.client.CreateClientResponse\x12I\n" +
 	"\fUpdateClient\x12\x1b.client.UpdateClientRequest\x1a\x1c.client.UpdateClientResponse\x12a\n" +
 	"\x14GetClientCredentials\x12#.client.GetClientCredentialsRequest\x1a$.client.GetClientCredentialsResponse\x12O\n" +
-	"\x0eActivateClient\x12\x1d.client.ActivateClientRequest\x1a\x1e.client.ActivateClientResponseB;Z9github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/clientb\x06proto3"
+	"\x0eActivateClient\x12\x1d.client.ActivateClientRequest\x1a\x1e.client.ActivateClientResponse\x12^\n" +
+	"\x13UpdateLoginAttempts\x12\".client.UpdateLoginAttemptsRequest\x1a#.client.UpdateLoginAttemptsResponseB;Z9github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/clientb\x06proto3"
 
 var (
 	file_client_proto_rawDescOnce sync.Once
@@ -938,7 +1077,7 @@ func file_client_proto_rawDescGZIP() []byte {
 	return file_client_proto_rawDescData
 }
 
-var file_client_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_client_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_client_proto_goTypes = []any{
 	(*Client)(nil),                       // 0: client.Client
 	(*GetAllClientsRequest)(nil),         // 1: client.GetAllClientsRequest
@@ -951,8 +1090,10 @@ var file_client_proto_goTypes = []any{
 	(*UpdateClientResponse)(nil),         // 8: client.UpdateClientResponse
 	(*GetClientCredentialsRequest)(nil),  // 9: client.GetClientCredentialsRequest
 	(*GetClientCredentialsResponse)(nil), // 10: client.GetClientCredentialsResponse
-	(*ActivateClientRequest)(nil),        // 11: client.ActivateClientRequest
-	(*ActivateClientResponse)(nil),       // 12: client.ActivateClientResponse
+	(*UpdateLoginAttemptsRequest)(nil),   // 11: client.UpdateLoginAttemptsRequest
+	(*UpdateLoginAttemptsResponse)(nil),  // 12: client.UpdateLoginAttemptsResponse
+	(*ActivateClientRequest)(nil),        // 13: client.ActivateClientRequest
+	(*ActivateClientResponse)(nil),       // 14: client.ActivateClientResponse
 }
 var file_client_proto_depIdxs = []int32{
 	0,  // 0: client.GetAllClientsResponse.clients:type_name -> client.Client
@@ -964,15 +1105,17 @@ var file_client_proto_depIdxs = []int32{
 	5,  // 6: client.ClientService.CreateClient:input_type -> client.CreateClientRequest
 	7,  // 7: client.ClientService.UpdateClient:input_type -> client.UpdateClientRequest
 	9,  // 8: client.ClientService.GetClientCredentials:input_type -> client.GetClientCredentialsRequest
-	11, // 9: client.ClientService.ActivateClient:input_type -> client.ActivateClientRequest
-	2,  // 10: client.ClientService.GetAllClients:output_type -> client.GetAllClientsResponse
-	4,  // 11: client.ClientService.GetClientById:output_type -> client.GetClientByIdResponse
-	6,  // 12: client.ClientService.CreateClient:output_type -> client.CreateClientResponse
-	8,  // 13: client.ClientService.UpdateClient:output_type -> client.UpdateClientResponse
-	10, // 14: client.ClientService.GetClientCredentials:output_type -> client.GetClientCredentialsResponse
-	12, // 15: client.ClientService.ActivateClient:output_type -> client.ActivateClientResponse
-	10, // [10:16] is the sub-list for method output_type
-	4,  // [4:10] is the sub-list for method input_type
+	13, // 9: client.ClientService.ActivateClient:input_type -> client.ActivateClientRequest
+	11, // 10: client.ClientService.UpdateLoginAttempts:input_type -> client.UpdateLoginAttemptsRequest
+	2,  // 11: client.ClientService.GetAllClients:output_type -> client.GetAllClientsResponse
+	4,  // 12: client.ClientService.GetClientById:output_type -> client.GetClientByIdResponse
+	6,  // 13: client.ClientService.CreateClient:output_type -> client.CreateClientResponse
+	8,  // 14: client.ClientService.UpdateClient:output_type -> client.UpdateClientResponse
+	10, // 15: client.ClientService.GetClientCredentials:output_type -> client.GetClientCredentialsResponse
+	14, // 16: client.ClientService.ActivateClient:output_type -> client.ActivateClientResponse
+	12, // 17: client.ClientService.UpdateLoginAttempts:output_type -> client.UpdateLoginAttemptsResponse
+	11, // [11:18] is the sub-list for method output_type
+	4,  // [4:11] is the sub-list for method input_type
 	4,  // [4:4] is the sub-list for extension type_name
 	4,  // [4:4] is the sub-list for extension extendee
 	0,  // [0:4] is the sub-list for field type_name
@@ -989,7 +1132,7 @@ func file_client_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_client_proto_rawDesc), len(file_client_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

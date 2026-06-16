@@ -35,6 +35,9 @@ const (
 	EmployeeService_ResetAllActuaryUsedLimits_FullMethodName = "/employee.EmployeeService/ResetAllActuaryUsedLimits"
 	EmployeeService_GetActuaryPerformers_FullMethodName      = "/employee.EmployeeService/GetActuaryPerformers"
 	EmployeeService_GetSupervisors_FullMethodName            = "/employee.EmployeeService/GetSupervisors"
+	EmployeeService_UpdateLoginAttempts_FullMethodName       = "/employee.EmployeeService/UpdateLoginAttempts"
+	EmployeeService_LogAuditEvent_FullMethodName             = "/employee.EmployeeService/LogAuditEvent"
+	EmployeeService_ListAuditLogs_FullMethodName             = "/employee.EmployeeService/ListAuditLogs"
 )
 
 // EmployeeServiceClient is the client API for EmployeeService service.
@@ -57,6 +60,9 @@ type EmployeeServiceClient interface {
 	ResetAllActuaryUsedLimits(ctx context.Context, in *ResetAllActuaryUsedLimitsRequest, opts ...grpc.CallOption) (*ResetAllActuaryUsedLimitsResponse, error)
 	GetActuaryPerformers(ctx context.Context, in *GetActuaryPerformersRequest, opts ...grpc.CallOption) (*GetActuaryPerformersResponse, error)
 	GetSupervisors(ctx context.Context, in *GetSupervisorsRequest, opts ...grpc.CallOption) (*GetSupervisorsResponse, error)
+	UpdateLoginAttempts(ctx context.Context, in *UpdateLoginAttemptsRequest, opts ...grpc.CallOption) (*UpdateLoginAttemptsResponse, error)
+	LogAuditEvent(ctx context.Context, in *AuditLogRequest, opts ...grpc.CallOption) (*AuditLogResponse, error)
+	ListAuditLogs(ctx context.Context, in *ListAuditLogsRequest, opts ...grpc.CallOption) (*ListAuditLogsResponse, error)
 }
 
 type employeeServiceClient struct {
@@ -227,6 +233,36 @@ func (c *employeeServiceClient) GetSupervisors(ctx context.Context, in *GetSuper
 	return out, nil
 }
 
+func (c *employeeServiceClient) UpdateLoginAttempts(ctx context.Context, in *UpdateLoginAttemptsRequest, opts ...grpc.CallOption) (*UpdateLoginAttemptsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateLoginAttemptsResponse)
+	err := c.cc.Invoke(ctx, EmployeeService_UpdateLoginAttempts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *employeeServiceClient) LogAuditEvent(ctx context.Context, in *AuditLogRequest, opts ...grpc.CallOption) (*AuditLogResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AuditLogResponse)
+	err := c.cc.Invoke(ctx, EmployeeService_LogAuditEvent_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *employeeServiceClient) ListAuditLogs(ctx context.Context, in *ListAuditLogsRequest, opts ...grpc.CallOption) (*ListAuditLogsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAuditLogsResponse)
+	err := c.cc.Invoke(ctx, EmployeeService_ListAuditLogs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EmployeeServiceServer is the server API for EmployeeService service.
 // All implementations must embed UnimplementedEmployeeServiceServer
 // for forward compatibility.
@@ -247,6 +283,9 @@ type EmployeeServiceServer interface {
 	ResetAllActuaryUsedLimits(context.Context, *ResetAllActuaryUsedLimitsRequest) (*ResetAllActuaryUsedLimitsResponse, error)
 	GetActuaryPerformers(context.Context, *GetActuaryPerformersRequest) (*GetActuaryPerformersResponse, error)
 	GetSupervisors(context.Context, *GetSupervisorsRequest) (*GetSupervisorsResponse, error)
+	UpdateLoginAttempts(context.Context, *UpdateLoginAttemptsRequest) (*UpdateLoginAttemptsResponse, error)
+	LogAuditEvent(context.Context, *AuditLogRequest) (*AuditLogResponse, error)
+	ListAuditLogs(context.Context, *ListAuditLogsRequest) (*ListAuditLogsResponse, error)
 	mustEmbedUnimplementedEmployeeServiceServer()
 }
 
@@ -304,6 +343,15 @@ func (UnimplementedEmployeeServiceServer) GetActuaryPerformers(context.Context, 
 }
 func (UnimplementedEmployeeServiceServer) GetSupervisors(context.Context, *GetSupervisorsRequest) (*GetSupervisorsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSupervisors not implemented")
+}
+func (UnimplementedEmployeeServiceServer) UpdateLoginAttempts(context.Context, *UpdateLoginAttemptsRequest) (*UpdateLoginAttemptsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateLoginAttempts not implemented")
+}
+func (UnimplementedEmployeeServiceServer) LogAuditEvent(context.Context, *AuditLogRequest) (*AuditLogResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LogAuditEvent not implemented")
+}
+func (UnimplementedEmployeeServiceServer) ListAuditLogs(context.Context, *ListAuditLogsRequest) (*ListAuditLogsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAuditLogs not implemented")
 }
 func (UnimplementedEmployeeServiceServer) mustEmbedUnimplementedEmployeeServiceServer() {}
 func (UnimplementedEmployeeServiceServer) testEmbeddedByValue()                         {}
@@ -614,6 +662,60 @@ func _EmployeeService_GetSupervisors_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _EmployeeService_UpdateLoginAttempts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateLoginAttemptsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EmployeeServiceServer).UpdateLoginAttempts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EmployeeService_UpdateLoginAttempts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EmployeeServiceServer).UpdateLoginAttempts(ctx, req.(*UpdateLoginAttemptsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EmployeeService_LogAuditEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuditLogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EmployeeServiceServer).LogAuditEvent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EmployeeService_LogAuditEvent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EmployeeServiceServer).LogAuditEvent(ctx, req.(*AuditLogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EmployeeService_ListAuditLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAuditLogsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EmployeeServiceServer).ListAuditLogs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EmployeeService_ListAuditLogs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EmployeeServiceServer).ListAuditLogs(ctx, req.(*ListAuditLogsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // EmployeeService_ServiceDesc is the grpc.ServiceDesc for EmployeeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -684,6 +786,18 @@ var EmployeeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSupervisors",
 			Handler:    _EmployeeService_GetSupervisors_Handler,
+		},
+		{
+			MethodName: "UpdateLoginAttempts",
+			Handler:    _EmployeeService_UpdateLoginAttempts_Handler,
+		},
+		{
+			MethodName: "LogAuditEvent",
+			Handler:    _EmployeeService_LogAuditEvent_Handler,
+		},
+		{
+			MethodName: "ListAuditLogs",
+			Handler:    _EmployeeService_ListAuditLogs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

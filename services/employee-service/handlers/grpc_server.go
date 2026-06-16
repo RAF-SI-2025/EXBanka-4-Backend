@@ -3,13 +3,40 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"regexp"
 	"strings"
+	"time"
 
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/employee"
 	"github.com/lib/pq"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+var (
+	emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+	phoneRegex = regexp.MustCompile(`^\+?[0-9]+$`)
+)
+
+func validateEmployeeInput(email, phone, dob string) error {
+	if email != "" && !emailRegex.MatchString(email) {
+		return status.Error(codes.InvalidArgument, "invalid email format")
+	}
+	if phone != "" && !phoneRegex.MatchString(phone) {
+		return status.Error(codes.InvalidArgument, "phone must contain only digits and optional leading +")
+	}
+	if dob != "" {
+		t, err := time.Parse("2006-01-02", dob)
+		if err != nil {
+			return status.Error(codes.InvalidArgument, "date of birth must be in YYYY-MM-DD format")
+		}
+		if !time.Now().After(t) {
+			return status.Error(codes.InvalidArgument, "date of birth must be in the past")
+		}
+	}
+	return nil
+}
 
 // containsPermission returns true if perms contains the given permission (case-insensitive).
 func containsPermission(perms []string, perm string) bool {
@@ -127,20 +154,59 @@ func (s *EmployeeServer) SearchEmployees(ctx context.Context, req *pb.SearchEmpl
 
 func (s *EmployeeServer) GetEmployeeCredentials(ctx context.Context, req *pb.GetEmployeeCredentialsRequest) (*pb.GetEmployeeCredentialsResponse, error) {
 	var id int64
-	var passwordHash string
+	var passwordHash, email, firstName string
 	var active bool
+	var failedAttempts int32
+	var lockedUntil sql.NullTime
 	var permissions pq.StringArray
 	err := s.DB.QueryRowContext(ctx,
-		`SELECT id, password, active, permissions FROM employees WHERE email = $1`,
+		`SELECT id, password, active, permissions, email, first_name,
+		        failed_login_attempts, account_locked_until
+		 FROM employees WHERE email = $1`,
 		req.Email,
-	).Scan(&id, &passwordHash, &active, &permissions)
+	).Scan(&id, &passwordHash, &active, &permissions, &email, &firstName,
+		&failedAttempts, &lockedUntil)
 	if err == sql.ErrNoRows {
 		return nil, status.Error(codes.NotFound, "user not found")
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetEmployeeCredentialsResponse{Id: id, PasswordHash: passwordHash, Active: active, Permissions: permissions}, nil
+	lockedUntilStr := ""
+	if lockedUntil.Valid {
+		lockedUntilStr = lockedUntil.Time.UTC().Format(time.RFC3339)
+	}
+	return &pb.GetEmployeeCredentialsResponse{
+		Id:                  id,
+		PasswordHash:        passwordHash,
+		Active:              active,
+		Permissions:         permissions,
+		Email:               email,
+		FirstName:           firstName,
+		FailedLoginAttempts: failedAttempts,
+		AccountLockedUntil:  lockedUntilStr,
+	}, nil
+}
+
+func (s *EmployeeServer) UpdateLoginAttempts(ctx context.Context, req *pb.UpdateLoginAttemptsRequest) (*pb.UpdateLoginAttemptsResponse, error) {
+	var lockedUntil interface{}
+	if req.LockedUntil == "" {
+		lockedUntil = nil
+	} else {
+		t, err := time.Parse(time.RFC3339, req.LockedUntil)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid locked_until format, expected RFC3339")
+		}
+		lockedUntil = t
+	}
+	_, err := s.DB.ExecContext(ctx,
+		`UPDATE employees SET failed_login_attempts = $1, account_locked_until = $2 WHERE id = $3`,
+		req.Attempts, lockedUntil, req.Id,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "update login attempts: %v", err)
+	}
+	return &pb.UpdateLoginAttemptsResponse{}, nil
 }
 
 func (s *EmployeeServer) GetEmployeeById(ctx context.Context, req *pb.GetEmployeeByIdRequest) (*pb.GetEmployeeByIdResponse, error) {
@@ -166,6 +232,9 @@ func (s *EmployeeServer) GetEmployeeById(ctx context.Context, req *pb.GetEmploye
 }
 
 func (s *EmployeeServer) UpdateEmployee(ctx context.Context, req *pb.UpdateEmployeeRequest) (*pb.UpdateEmployeeResponse, error) {
+	if err := validateEmployeeInput(req.Email, req.PhoneNumber, req.DateOfBirth); err != nil {
+		return nil, err
+	}
 	// --- Permission validation (#143) ---
 	hasAgent, hasSupervisor, hasAdmin := false, false, false
 	for _, p := range req.Permissions {
@@ -271,6 +340,14 @@ func (s *EmployeeServer) UpdateEmployee(ctx context.Context, req *pb.UpdateEmplo
 		_, _ = s.DB.ExecContext(ctx, `DELETE FROM actuary_info WHERE employee_id = $1`, req.Id)
 	}
 
+	if req.ActorId != 0 {
+		oldPerms := strings.Join(targetPerms, ",")
+		newPerms := strings.Join(req.Permissions, ",")
+		if oldPerms != newPerms {
+			s.insertAuditLog(ctx, req.ActorId, "EMPLOYEE", "PERMISSION_CHANGE", req.Id, oldPerms, newPerms)
+		}
+	}
+
 	return &pb.UpdateEmployeeResponse{Employee: &e}, nil
 }
 
@@ -329,6 +406,9 @@ func (s *EmployeeServer) UpdatePassword(ctx context.Context, req *pb.UpdatePassw
 }
 
 func (s *EmployeeServer) CreateEmployee(ctx context.Context, req *pb.CreateEmployeeRequest) (*pb.CreateEmployeeResponse, error) {
+	if err := validateEmployeeInput(req.Email, req.PhoneNumber, req.DateOfBirth); err != nil {
+		return nil, err
+	}
 	var id int64
 	err := s.DB.QueryRowContext(ctx, `
 		INSERT INTO employees
@@ -449,6 +529,8 @@ func (s *EmployeeServer) SetAgentLimit(ctx context.Context, req *pb.SetAgentLimi
 	if !containsPermission(perms, "AGENT") {
 		return nil, status.Error(codes.InvalidArgument, "employee is not an agent")
 	}
+	var oldLimit float64
+	_ = s.DB.QueryRowContext(ctx, `SELECT limit_amount FROM actuary_info WHERE employee_id = $1`, req.EmployeeId).Scan(&oldLimit)
 	res, err := s.DB.ExecContext(ctx,
 		`UPDATE actuary_info SET limit_amount = $2 WHERE employee_id = $1`,
 		req.EmployeeId, req.LimitAmount)
@@ -457,6 +539,10 @@ func (s *EmployeeServer) SetAgentLimit(ctx context.Context, req *pb.SetAgentLimi
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return nil, status.Error(codes.NotFound, "actuary info not found")
+	}
+	if req.ActorId != 0 {
+		s.insertAuditLog(ctx, req.ActorId, "EMPLOYEE", "LIMIT_CHANGE", req.EmployeeId,
+			fmt.Sprintf("%.2f", oldLimit), fmt.Sprintf("%.2f", req.LimitAmount))
 	}
 	return &pb.SetAgentLimitResponse{}, nil
 }
@@ -474,6 +560,8 @@ func (s *EmployeeServer) ResetAgentUsedLimit(ctx context.Context, req *pb.ResetA
 	if !containsPermission(perms, "AGENT") {
 		return nil, status.Error(codes.InvalidArgument, "employee is not an agent")
 	}
+	var oldUsed float64
+	_ = s.DB.QueryRowContext(ctx, `SELECT used_limit FROM actuary_info WHERE employee_id = $1`, req.EmployeeId).Scan(&oldUsed)
 	res, err := s.DB.ExecContext(ctx,
 		`UPDATE actuary_info SET used_limit = 0 WHERE employee_id = $1`,
 		req.EmployeeId)
@@ -482,6 +570,10 @@ func (s *EmployeeServer) ResetAgentUsedLimit(ctx context.Context, req *pb.ResetA
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return nil, status.Error(codes.NotFound, "actuary info not found")
+	}
+	if req.ActorId != 0 {
+		s.insertAuditLog(ctx, req.ActorId, "EMPLOYEE", "RESET_USED_LIMIT", req.EmployeeId,
+			fmt.Sprintf("%.2f", oldUsed), "0.00")
 	}
 	return &pb.ResetAgentUsedLimitResponse{}, nil
 }

@@ -14,6 +14,17 @@ service PortfolioService {
   rpc GetTaxList(GetTaxListRequest)                   returns (GetTaxListResponse);
   rpc CollectTax(CollectTaxRequest)                   returns (CollectTaxResponse);
   rpc CollectTaxForUser(CollectTaxForUserRequest)     returns (CollectTaxForUserResponse);
+  // Watchlist RPCs (BE-C3-04)
+  rpc CreateWatchlist(CreateWatchlistRequest)         returns (WatchlistResponse);
+  rpc ListWatchlists(ListWatchlistsRequest)           returns (ListWatchlistsResponse);
+  rpc DeleteWatchlist(DeleteWatchlistRequest)         returns (DeleteWatchlistResponse);
+  rpc AddWatchlistItem(AddWatchlistItemRequest)       returns (WatchlistItemResponse);
+  rpc RemoveWatchlistItem(RemoveWatchlistItemRequest) returns (RemoveWatchlistItemResponse);
+  rpc GetWatchlistItems(GetWatchlistItemsRequest)     returns (GetWatchlistItemsResponse);
+  // Dividend RPCs (BE-C3-07)
+  rpc CreateDividendPayout(CreateDividendPayoutRequest)   returns (DividendPayoutResponse);
+  rpc GetDividendHistory(GetDividendHistoryRequest)       returns (GetDividendHistoryResponse);
+  rpc GetHoldersByListing(GetHoldersByListingRequest)     returns (GetHoldersByListingResponse);
 }
 
 // UpdateHolding — called by order-service on each partial fill
@@ -111,3 +122,119 @@ message CollectTaxForUserRequest {
   string user_type = 2;
 }
 message CollectTaxForUserResponse {}
+
+// ── Watchlist messages (BE-C3-04) ─────────────────────────────────────────────
+
+message Watchlist {
+  int64  id         = 1;
+  int64  user_id    = 2;
+  string user_type  = 3;
+  string name       = 4;
+  string created_at = 5;
+}
+
+message CreateWatchlistRequest {
+  int64  user_id   = 1;
+  string user_type = 2;
+  string name      = 3;
+}
+message WatchlistResponse { Watchlist watchlist = 1; }
+
+message ListWatchlistsRequest {
+  int64  user_id   = 1;
+  string user_type = 2;
+}
+message ListWatchlistsResponse { repeated Watchlist watchlists = 1; }
+
+message DeleteWatchlistRequest {
+  int64 watchlist_id = 1;
+  int64 user_id      = 2;
+  string user_type   = 3;
+}
+message DeleteWatchlistResponse {}
+
+message AddWatchlistItemRequest {
+  int64 watchlist_id = 1;
+  int64 listing_id   = 2;
+  int64 user_id      = 3;
+  string user_type   = 4;
+}
+message WatchlistItem {
+  int64  id           = 1;
+  int64  watchlist_id = 2;
+  int64  listing_id   = 3;
+  string added_at     = 4;
+  string ticker       = 5;
+  string name         = 6;
+  string asset_type   = 7;
+  double price        = 8;
+  double change       = 9;
+  double change_percent = 10;
+  double volume       = 11;
+}
+message WatchlistItemResponse { WatchlistItem item = 1; }
+
+message RemoveWatchlistItemRequest {
+  int64  watchlist_id = 1;
+  int64  listing_id   = 2;
+  int64  user_id      = 3;
+  string user_type    = 4;
+}
+message RemoveWatchlistItemResponse {}
+
+message GetWatchlistItemsRequest {
+  int64  watchlist_id = 1;
+  int64  user_id      = 2;
+  string user_type    = 3;
+}
+message GetWatchlistItemsResponse { repeated WatchlistItem items = 1; }
+
+// ── Dividend messages (BE-C3-07) ──────────────────────────────────────────────
+
+message CreateDividendPayoutRequest {
+  int64  user_id          = 1;
+  string user_type        = 2;
+  int64  stock_listing_id = 3;
+  double quantity         = 4;
+  double gross_amount     = 5;
+  string currency         = 6;
+  double tax_rsd          = 7;
+  double net_amount       = 8;
+  int64  account_id       = 9;
+  string payment_date     = 10;
+}
+message DividendPayoutResponse { int64 id = 1; }
+
+message GetDividendHistoryRequest {
+  int64  user_id    = 1;
+  string user_type  = 2;
+  int64  listing_id = 3;
+  string from_date  = 4;
+  string to_date    = 5;
+  int32  page       = 6;
+  int32  page_size  = 7;
+}
+message DividendPayout {
+  int64  id               = 1;
+  int64  user_id          = 2;
+  string user_type        = 3;
+  int64  stock_listing_id = 4;
+  double quantity         = 5;
+  double gross_amount     = 6;
+  string currency         = 7;
+  double tax_rsd          = 8;
+  double net_amount       = 9;
+  int64  account_id       = 10;
+  string payment_date     = 11;
+  string ticker           = 12;
+}
+message GetDividendHistoryResponse { repeated DividendPayout payouts = 1; }
+
+message GetHoldersByListingRequest { int64 listing_id = 1; }
+message PortfolioHolder {
+  int64  user_id    = 1;
+  string user_type  = 2;
+  double amount     = 3;
+  int64  account_id = 4;
+}
+message GetHoldersByListingResponse { repeated PortfolioHolder holders = 1; }

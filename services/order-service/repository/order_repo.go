@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/order-service/models"
+	"github.com/lib/pq"
 )
 
 func GetApprovedActiveOrders(ctx context.Context, db *sql.DB) ([]models.Order, error) {
@@ -180,6 +181,107 @@ func ListOrders(ctx context.Context, db *sql.DB, statusFilter string, agentID in
 		orders = append(orders, o)
 	}
 	return orders, rows.Err()
+}
+
+// GetMyOrders returns orders for a specific user with optional filters.
+// orderDB is the orders database; securitiesDB is used to resolve ticker/asset_type via a batch lookup.
+// assetType filter is applied post-join on the resolved listing info.
+func GetMyOrders(ctx context.Context, orderDB *sql.DB, securitiesDB *sql.DB, userID int64, userType, statusFilter, assetType, direction, fromDate, toDate string, page, pageSize int32) ([]models.Order, error) {
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+	offset := (page - 1) * pageSize
+
+	rows, err := orderDB.QueryContext(ctx, `
+		SELECT o.id, o.user_id, o.user_type, o.asset_id, o.order_type, o.quantity,
+		       o.contract_size, o.price_per_unit, o.limit_value, o.stop_value, o.direction,
+		       o.status, o.approved_by, o.is_done, o.last_modification, o.remaining_portions,
+		       o.after_hours, o.is_aon, o.is_margin, o.account_id, o.fund_id, o.commission_paid
+		FROM orders o
+		WHERE o.user_id = $1 AND o.user_type = $2
+		  AND ($3 = '' OR $3 = 'ALL' OR o.status::text = $3)
+		  AND ($4 = '' OR o.direction::text = $4)
+		  AND ($5 = '' OR o.last_modification::date >= $5::date)
+		  AND ($6 = '' OR o.last_modification::date <= $6::date)
+		ORDER BY o.last_modification DESC
+		LIMIT $7 OFFSET $8`,
+		userID, userType, statusFilter, direction, fromDate, toDate, pageSize, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var orders []models.Order
+	for rows.Next() {
+		var o models.Order
+		if err := rows.Scan(
+			&o.ID, &o.UserID, &o.UserType, &o.AssetID, &o.OrderType, &o.Quantity, &o.ContractSize,
+			&o.PricePerUnit, &o.LimitValue, &o.StopValue, &o.Direction, &o.Status, &o.ApprovedBy,
+			&o.IsDone, &o.LastModification, &o.RemainingPortions, &o.AfterHours, &o.IsAON, &o.IsMargin,
+			&o.AccountID, &o.FundID, &o.CommissionPaid,
+		); err != nil {
+			return nil, err
+		}
+		orders = append(orders, o)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(orders) == 0 {
+		return orders, nil
+	}
+
+	// Batch lookup ticker + type from SecuritiesDB.
+	assetIDs := make([]int64, 0, len(orders))
+	seen := make(map[int64]bool)
+	for _, o := range orders {
+		if !seen[o.AssetID] {
+			assetIDs = append(assetIDs, o.AssetID)
+			seen[o.AssetID] = true
+		}
+	}
+
+	tickerMap := make(map[int64]string)
+	typeMap := make(map[int64]string)
+	if securitiesDB != nil && len(assetIDs) > 0 {
+		lrows, lerr := securitiesDB.QueryContext(ctx,
+			`SELECT id, ticker, type FROM listing WHERE id = ANY($1)`,
+			pq.Array(assetIDs))
+		if lerr == nil {
+			defer func() { _ = lrows.Close() }()
+			for lrows.Next() {
+				var id int64
+				var ticker, ltype string
+				if serr := lrows.Scan(&id, &ticker, &ltype); serr == nil {
+					tickerMap[id] = ticker
+					typeMap[id] = ltype
+				}
+			}
+		}
+	}
+
+	// Merge and apply assetType filter.
+	result := make([]models.Order, 0, len(orders))
+	for i := range orders {
+		orders[i].Ticker = tickerMap[orders[i].AssetID]
+		orders[i].AssetType = typeMap[orders[i].AssetID]
+		if assetType != "" && orders[i].AssetType != assetType {
+			continue
+		}
+		result = append(result, orders[i])
+	}
+	return result, nil
+}
+
+// AddCommissionPaid increments commission_paid for an order.
+func AddCommissionPaid(ctx context.Context, db *sql.DB, orderID int64, amount float64) error {
+	_, err := db.ExecContext(ctx,
+		`UPDATE orders SET commission_paid = commission_paid + $1 WHERE id = $2`,
+		amount, orderID)
+	return err
 }
 
 // CancelOrder marks an order as fully done with no remaining portions.

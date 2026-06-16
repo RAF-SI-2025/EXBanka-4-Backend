@@ -37,6 +37,9 @@ const (
 	SecuritiesService_GetListings_FullMethodName           = "/securities.SecuritiesService/GetListings"
 	SecuritiesService_GetListingById_FullMethodName        = "/securities.SecuritiesService/GetListingById"
 	SecuritiesService_GetListingHistory_FullMethodName     = "/securities.SecuritiesService/GetListingHistory"
+	SecuritiesService_CreatePriceAlert_FullMethodName      = "/securities.SecuritiesService/CreatePriceAlert"
+	SecuritiesService_ListPriceAlerts_FullMethodName       = "/securities.SecuritiesService/ListPriceAlerts"
+	SecuritiesService_DeletePriceAlert_FullMethodName      = "/securities.SecuritiesService/DeletePriceAlert"
 )
 
 // SecuritiesServiceClient is the client API for SecuritiesService service.
@@ -67,6 +70,10 @@ type SecuritiesServiceClient interface {
 	GetListings(ctx context.Context, in *GetListingsRequest, opts ...grpc.CallOption) (*GetListingsResponse, error)
 	GetListingById(ctx context.Context, in *GetListingByIdRequest, opts ...grpc.CallOption) (*GetListingByIdResponse, error)
 	GetListingHistory(ctx context.Context, in *GetListingHistoryRequest, opts ...grpc.CallOption) (*GetListingHistoryResponse, error)
+	// Price Alerts (BE-C3-02)
+	CreatePriceAlert(ctx context.Context, in *CreatePriceAlertRequest, opts ...grpc.CallOption) (*CreatePriceAlertResponse, error)
+	ListPriceAlerts(ctx context.Context, in *ListPriceAlertsRequest, opts ...grpc.CallOption) (*ListPriceAlertsResponse, error)
+	DeletePriceAlert(ctx context.Context, in *DeletePriceAlertRequest, opts ...grpc.CallOption) (*DeletePriceAlertResponse, error)
 }
 
 type securitiesServiceClient struct {
@@ -257,6 +264,36 @@ func (c *securitiesServiceClient) GetListingHistory(ctx context.Context, in *Get
 	return out, nil
 }
 
+func (c *securitiesServiceClient) CreatePriceAlert(ctx context.Context, in *CreatePriceAlertRequest, opts ...grpc.CallOption) (*CreatePriceAlertResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreatePriceAlertResponse)
+	err := c.cc.Invoke(ctx, SecuritiesService_CreatePriceAlert_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *securitiesServiceClient) ListPriceAlerts(ctx context.Context, in *ListPriceAlertsRequest, opts ...grpc.CallOption) (*ListPriceAlertsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPriceAlertsResponse)
+	err := c.cc.Invoke(ctx, SecuritiesService_ListPriceAlerts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *securitiesServiceClient) DeletePriceAlert(ctx context.Context, in *DeletePriceAlertRequest, opts ...grpc.CallOption) (*DeletePriceAlertResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeletePriceAlertResponse)
+	err := c.cc.Invoke(ctx, SecuritiesService_DeletePriceAlert_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SecuritiesServiceServer is the server API for SecuritiesService service.
 // All implementations must embed UnimplementedSecuritiesServiceServer
 // for forward compatibility.
@@ -285,6 +322,10 @@ type SecuritiesServiceServer interface {
 	GetListings(context.Context, *GetListingsRequest) (*GetListingsResponse, error)
 	GetListingById(context.Context, *GetListingByIdRequest) (*GetListingByIdResponse, error)
 	GetListingHistory(context.Context, *GetListingHistoryRequest) (*GetListingHistoryResponse, error)
+	// Price Alerts (BE-C3-02)
+	CreatePriceAlert(context.Context, *CreatePriceAlertRequest) (*CreatePriceAlertResponse, error)
+	ListPriceAlerts(context.Context, *ListPriceAlertsRequest) (*ListPriceAlertsResponse, error)
+	DeletePriceAlert(context.Context, *DeletePriceAlertRequest) (*DeletePriceAlertResponse, error)
 	mustEmbedUnimplementedSecuritiesServiceServer()
 }
 
@@ -348,6 +389,15 @@ func (UnimplementedSecuritiesServiceServer) GetListingById(context.Context, *Get
 }
 func (UnimplementedSecuritiesServiceServer) GetListingHistory(context.Context, *GetListingHistoryRequest) (*GetListingHistoryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetListingHistory not implemented")
+}
+func (UnimplementedSecuritiesServiceServer) CreatePriceAlert(context.Context, *CreatePriceAlertRequest) (*CreatePriceAlertResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreatePriceAlert not implemented")
+}
+func (UnimplementedSecuritiesServiceServer) ListPriceAlerts(context.Context, *ListPriceAlertsRequest) (*ListPriceAlertsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPriceAlerts not implemented")
+}
+func (UnimplementedSecuritiesServiceServer) DeletePriceAlert(context.Context, *DeletePriceAlertRequest) (*DeletePriceAlertResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeletePriceAlert not implemented")
 }
 func (UnimplementedSecuritiesServiceServer) mustEmbedUnimplementedSecuritiesServiceServer() {}
 func (UnimplementedSecuritiesServiceServer) testEmbeddedByValue()                           {}
@@ -694,6 +744,60 @@ func _SecuritiesService_GetListingHistory_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SecuritiesService_CreatePriceAlert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePriceAlertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SecuritiesServiceServer).CreatePriceAlert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SecuritiesService_CreatePriceAlert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SecuritiesServiceServer).CreatePriceAlert(ctx, req.(*CreatePriceAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SecuritiesService_ListPriceAlerts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPriceAlertsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SecuritiesServiceServer).ListPriceAlerts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SecuritiesService_ListPriceAlerts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SecuritiesServiceServer).ListPriceAlerts(ctx, req.(*ListPriceAlertsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SecuritiesService_DeletePriceAlert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePriceAlertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SecuritiesServiceServer).DeletePriceAlert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SecuritiesService_DeletePriceAlert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SecuritiesServiceServer).DeletePriceAlert(ctx, req.(*DeletePriceAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SecuritiesService_ServiceDesc is the grpc.ServiceDesc for SecuritiesService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -772,6 +876,18 @@ var SecuritiesService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetListingHistory",
 			Handler:    _SecuritiesService_GetListingHistory_Handler,
+		},
+		{
+			MethodName: "CreatePriceAlert",
+			Handler:    _SecuritiesService_CreatePriceAlert_Handler,
+		},
+		{
+			MethodName: "ListPriceAlerts",
+			Handler:    _SecuritiesService_ListPriceAlerts_Handler,
+		},
+		{
+			MethodName: "DeletePriceAlert",
+			Handler:    _SecuritiesService_DeletePriceAlert_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

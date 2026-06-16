@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"time"
 
+	pb_auth "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
 	pb_client "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
 	pb_email "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/email"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/loan"
@@ -23,6 +24,7 @@ type LoanServer struct {
 	ExchangeDB   *sql.DB // exchange_db (for currency conversion to determine rate tier)
 	EmailClient  pb_email.EmailServiceClient
 	ClientClient pb_client.ClientServiceClient
+	AuthClient   pb_auth.AuthServiceClient
 }
 
 // --- GetClientLoans ---
@@ -348,7 +350,52 @@ func (s *LoanServer) ApproveLoan(ctx context.Context, req *pb.ApproveLoanRequest
 		return nil, status.Errorf(codes.Internal, "failed to commit: %v", err)
 	}
 
+	go s.sendLoanApprovedNotifications(req.LoanId, amount, currency, installmentAmt)
+
 	return &pb.ApproveLoanResponse{Success: true}, nil
+}
+
+func (s *LoanServer) sendLoanApprovedNotifications(loanID int64, amount float64, currency string, monthlyInstallment float64) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var clientID int64
+	_ = s.DB.QueryRowContext(ctx, `SELECT client_id FROM loans WHERE id=$1`, loanID).Scan(&clientID)
+
+	var email, firstName string
+	if s.ClientClient != nil {
+		resp, err := s.ClientClient.GetClientById(ctx, &pb_client.GetClientByIdRequest{Id: clientID})
+		if err == nil && resp.Client != nil {
+			email = resp.Client.Email
+			firstName = resp.Client.FirstName
+		}
+	}
+
+	if email != "" && s.EmailClient != nil {
+		_, err := s.EmailClient.SendLoanApprovedEmail(ctx, &pb_email.SendLoanApprovedEmailRequest{
+			Email:              email,
+			FirstName:          firstName,
+			LoanAmount:         amount,
+			Currency:           currency,
+			MonthlyInstallment: monthlyInstallment,
+		})
+		if err != nil {
+			log.Printf("failed to send loan approved email: %v", err)
+		}
+	}
+
+	if s.AuthClient != nil {
+		_, err := s.AuthClient.CreateNotification(ctx, &pb_auth.CreateNotificationRequest{
+			UserId:   clientID,
+			UserType: "CLIENT",
+			Title:    "Loan Approved",
+			Message:  fmt.Sprintf("Your loan of %.2f %s has been approved. Monthly installment: %.2f %s.", amount, currency, monthlyInstallment, currency),
+			Type:     "LOAN_APPROVED",
+		})
+		if err != nil {
+			log.Printf("failed to create loan approved notification: %v", err)
+		}
+	}
 }
 
 // --- RejectLoan (#102) ---

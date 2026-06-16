@@ -103,3 +103,17 @@ CREATE TABLE listing_option (
     open_interest      BIGINT           NOT NULL DEFAULT 0,
     settlement_date    DATE
 );
+
+CREATE TABLE price_alerts (
+    id                BIGSERIAL PRIMARY KEY,
+    user_id           BIGINT NOT NULL,
+    user_type         VARCHAR(10) NOT NULL CHECK (user_type IN ('EMPLOYEE', 'CLIENT')),
+    listing_id        BIGINT NOT NULL REFERENCES listing(id) ON DELETE CASCADE,
+    condition         VARCHAR(15) NOT NULL CHECK (condition IN ('ABOVE', 'BELOW', 'CHANGE_PCT_UP', 'CHANGE_PCT_DOWN')),
+    threshold         NUMERIC(20,6) NOT NULL,
+    notification_type VARCHAR(10) NOT NULL DEFAULT 'BOTH' CHECK (notification_type IN ('EMAIL', 'IN_APP', 'BOTH')),
+    is_active         BOOLEAN NOT NULL DEFAULT true,
+    triggered_at      TIMESTAMPTZ,
+    created_at        TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_price_alerts_active ON price_alerts(listing_id) WHERE is_active = true;

@@ -363,3 +363,54 @@ func TestRequireRole_ExpiredBlacklistEntry_Passes(t *testing.T) {
 	runWithRedis(t, rdb, func() { code = runMiddleware("Bearer "+tok, "AGENT") })
 	assert.Equal(t, http.StatusOK, code)
 }
+
+// callerHasPermission is a test helper that builds a minimal gin.Context with the given
+// Authorization header and calls CallerHasPermission.
+func callerHasPermission(authHeader, perm string) bool {
+	router := gin.New()
+	var result bool
+	router.GET("/test", func(c *gin.Context) {
+		result = CallerHasPermission(c, perm)
+		c.Status(http.StatusOK)
+	})
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/test", nil)
+	if authHeader != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
+	router.ServeHTTP(w, req)
+	return result
+}
+
+func TestCallerHasPermission_NoHeader(t *testing.T) {
+	assert.False(t, callerHasPermission("", "SOME_PERMISSION"))
+}
+
+func TestCallerHasPermission_MalformedToken(t *testing.T) {
+	assert.False(t, callerHasPermission("Bearer not.a.jwt", "SOME_PERMISSION"))
+}
+
+func TestCallerHasPermission_NoDozvole(t *testing.T) {
+	token := makeToken("access", nil, time.Hour)
+	assert.False(t, callerHasPermission("Bearer "+token, "SOME_PERMISSION"))
+}
+
+func TestCallerHasPermission_PermissionNotInList(t *testing.T) {
+	token := makeToken("access", []string{"READ_USERS", "WRITE_USERS"}, time.Hour)
+	assert.False(t, callerHasPermission("Bearer "+token, "DELETE_USERS"))
+}
+
+func TestCallerHasPermission_PermissionInList(t *testing.T) {
+	token := makeToken("access", []string{"READ_USERS", "DELETE_USERS"}, time.Hour)
+	assert.True(t, callerHasPermission("Bearer "+token, "DELETE_USERS"))
+}
+
+func TestCallerHasPermission_CaseInsensitive(t *testing.T) {
+	token := makeToken("access", []string{"read_users"}, time.Hour)
+	assert.True(t, callerHasPermission("Bearer "+token, "READ_USERS"))
+}
+
+func TestCallerHasPermission_AdminBypassesAll(t *testing.T) {
+	token := makeToken("access", []string{"ADMIN"}, time.Hour)
+	assert.True(t, callerHasPermission("Bearer "+token, "ANY_PERMISSION_WHATSOEVER"))
+}

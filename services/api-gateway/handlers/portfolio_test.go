@@ -71,6 +71,33 @@ func (s *stubPortfolioClient) SetPublicMode(ctx context.Context, in *pb.SetPubli
 	}
 	return nil, fmt.Errorf("not implemented")
 }
+func (s *stubPortfolioClient) CreateWatchlist(ctx context.Context, in *pb.CreateWatchlistRequest, opts ...grpc.CallOption) (*pb.WatchlistResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubPortfolioClient) ListWatchlists(ctx context.Context, in *pb.ListWatchlistsRequest, opts ...grpc.CallOption) (*pb.ListWatchlistsResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubPortfolioClient) DeleteWatchlist(ctx context.Context, in *pb.DeleteWatchlistRequest, opts ...grpc.CallOption) (*pb.DeleteWatchlistResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubPortfolioClient) AddWatchlistItem(ctx context.Context, in *pb.AddWatchlistItemRequest, opts ...grpc.CallOption) (*pb.WatchlistItemResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubPortfolioClient) RemoveWatchlistItem(ctx context.Context, in *pb.RemoveWatchlistItemRequest, opts ...grpc.CallOption) (*pb.RemoveWatchlistItemResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubPortfolioClient) GetWatchlistItems(ctx context.Context, in *pb.GetWatchlistItemsRequest, opts ...grpc.CallOption) (*pb.GetWatchlistItemsResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubPortfolioClient) CreateDividendPayout(ctx context.Context, in *pb.CreateDividendPayoutRequest, opts ...grpc.CallOption) (*pb.DividendPayoutResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubPortfolioClient) GetDividendHistory(ctx context.Context, in *pb.GetDividendHistoryRequest, opts ...grpc.CallOption) (*pb.GetDividendHistoryResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubPortfolioClient) GetHoldersByListing(ctx context.Context, in *pb.GetHoldersByListingRequest, opts ...grpc.CallOption) (*pb.GetHoldersByListingResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
 
 // ---- GetPortfolio ----
 

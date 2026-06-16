@@ -208,6 +208,7 @@ func UpdateEmployee(empClient pb.EmployeeServiceClient, fundClient pb_fund.FundS
 			}
 		}
 
+		actorID, _ := middleware.GetUserIDFromToken(c)
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 		defer cancel()
 		resp, err := empClient.UpdateEmployee(ctx, &pb.UpdateEmployeeRequest{
@@ -225,6 +226,7 @@ func UpdateEmployee(empClient pb.EmployeeServiceClient, fundClient pb_fund.FundS
 			Active:      req.Active,
 			Permissions: req.Permissions,
 			Jmbg:        req.Jmbg,
+			ActorId:     actorID,
 		})
 		if err != nil {
 			switch status.Code(err) {

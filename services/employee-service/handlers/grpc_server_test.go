@@ -359,8 +359,8 @@ func TestGetEmployeeCredentials_HappyPath(t *testing.T) {
 	defer func() { _ = db.Close() }()
 
 	dbMock.ExpectQuery("SELECT id, password").
-		WillReturnRows(sqlmock.NewRows([]string{"id", "password", "active", "permissions"}).
-			AddRow(int64(1), "hashedpw", true, pq.StringArray{"ADMIN"}))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "password", "active", "permissions", "email", "first_name", "failed_login_attempts", "account_locked_until"}).
+			AddRow(int64(1), "hashedpw", true, pq.StringArray{"ADMIN"}, "user@example.com", "User", int32(0), nil))
 
 	s := &EmployeeServer{DB: db}
 	resp, err := s.GetEmployeeCredentials(context.Background(), &pb.GetEmployeeCredentialsRequest{Email: "user@example.com"})

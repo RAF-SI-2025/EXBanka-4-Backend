@@ -19,15 +19,24 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PortfolioService_UpdateHolding_FullMethodName     = "/portfolio.PortfolioService/UpdateHolding"
-	PortfolioService_GetPortfolio_FullMethodName      = "/portfolio.PortfolioService/GetPortfolio"
-	PortfolioService_GetProfit_FullMethodName         = "/portfolio.PortfolioService/GetProfit"
-	PortfolioService_SetPublicAmount_FullMethodName   = "/portfolio.PortfolioService/SetPublicAmount"
-	PortfolioService_SetPublicMode_FullMethodName     = "/portfolio.PortfolioService/SetPublicMode"
-	PortfolioService_GetMyTax_FullMethodName          = "/portfolio.PortfolioService/GetMyTax"
-	PortfolioService_GetTaxList_FullMethodName        = "/portfolio.PortfolioService/GetTaxList"
-	PortfolioService_CollectTax_FullMethodName        = "/portfolio.PortfolioService/CollectTax"
-	PortfolioService_CollectTaxForUser_FullMethodName = "/portfolio.PortfolioService/CollectTaxForUser"
+	PortfolioService_UpdateHolding_FullMethodName        = "/portfolio.PortfolioService/UpdateHolding"
+	PortfolioService_GetPortfolio_FullMethodName         = "/portfolio.PortfolioService/GetPortfolio"
+	PortfolioService_GetProfit_FullMethodName            = "/portfolio.PortfolioService/GetProfit"
+	PortfolioService_SetPublicAmount_FullMethodName      = "/portfolio.PortfolioService/SetPublicAmount"
+	PortfolioService_SetPublicMode_FullMethodName        = "/portfolio.PortfolioService/SetPublicMode"
+	PortfolioService_GetMyTax_FullMethodName             = "/portfolio.PortfolioService/GetMyTax"
+	PortfolioService_GetTaxList_FullMethodName           = "/portfolio.PortfolioService/GetTaxList"
+	PortfolioService_CollectTax_FullMethodName           = "/portfolio.PortfolioService/CollectTax"
+	PortfolioService_CollectTaxForUser_FullMethodName    = "/portfolio.PortfolioService/CollectTaxForUser"
+	PortfolioService_CreateWatchlist_FullMethodName      = "/portfolio.PortfolioService/CreateWatchlist"
+	PortfolioService_ListWatchlists_FullMethodName       = "/portfolio.PortfolioService/ListWatchlists"
+	PortfolioService_DeleteWatchlist_FullMethodName      = "/portfolio.PortfolioService/DeleteWatchlist"
+	PortfolioService_AddWatchlistItem_FullMethodName     = "/portfolio.PortfolioService/AddWatchlistItem"
+	PortfolioService_RemoveWatchlistItem_FullMethodName  = "/portfolio.PortfolioService/RemoveWatchlistItem"
+	PortfolioService_GetWatchlistItems_FullMethodName    = "/portfolio.PortfolioService/GetWatchlistItems"
+	PortfolioService_CreateDividendPayout_FullMethodName = "/portfolio.PortfolioService/CreateDividendPayout"
+	PortfolioService_GetDividendHistory_FullMethodName   = "/portfolio.PortfolioService/GetDividendHistory"
+	PortfolioService_GetHoldersByListing_FullMethodName  = "/portfolio.PortfolioService/GetHoldersByListing"
 )
 
 // PortfolioServiceClient is the client API for PortfolioService service.
@@ -43,6 +52,17 @@ type PortfolioServiceClient interface {
 	GetTaxList(ctx context.Context, in *GetTaxListRequest, opts ...grpc.CallOption) (*GetTaxListResponse, error)
 	CollectTax(ctx context.Context, in *CollectTaxRequest, opts ...grpc.CallOption) (*CollectTaxResponse, error)
 	CollectTaxForUser(ctx context.Context, in *CollectTaxForUserRequest, opts ...grpc.CallOption) (*CollectTaxForUserResponse, error)
+	// Watchlist RPCs (BE-C3-04)
+	CreateWatchlist(ctx context.Context, in *CreateWatchlistRequest, opts ...grpc.CallOption) (*WatchlistResponse, error)
+	ListWatchlists(ctx context.Context, in *ListWatchlistsRequest, opts ...grpc.CallOption) (*ListWatchlistsResponse, error)
+	DeleteWatchlist(ctx context.Context, in *DeleteWatchlistRequest, opts ...grpc.CallOption) (*DeleteWatchlistResponse, error)
+	AddWatchlistItem(ctx context.Context, in *AddWatchlistItemRequest, opts ...grpc.CallOption) (*WatchlistItemResponse, error)
+	RemoveWatchlistItem(ctx context.Context, in *RemoveWatchlistItemRequest, opts ...grpc.CallOption) (*RemoveWatchlistItemResponse, error)
+	GetWatchlistItems(ctx context.Context, in *GetWatchlistItemsRequest, opts ...grpc.CallOption) (*GetWatchlistItemsResponse, error)
+	// Dividend RPCs (BE-C3-07)
+	CreateDividendPayout(ctx context.Context, in *CreateDividendPayoutRequest, opts ...grpc.CallOption) (*DividendPayoutResponse, error)
+	GetDividendHistory(ctx context.Context, in *GetDividendHistoryRequest, opts ...grpc.CallOption) (*GetDividendHistoryResponse, error)
+	GetHoldersByListing(ctx context.Context, in *GetHoldersByListingRequest, opts ...grpc.CallOption) (*GetHoldersByListingResponse, error)
 }
 
 type portfolioServiceClient struct {
@@ -143,6 +163,96 @@ func (c *portfolioServiceClient) CollectTaxForUser(ctx context.Context, in *Coll
 	return out, nil
 }
 
+func (c *portfolioServiceClient) CreateWatchlist(ctx context.Context, in *CreateWatchlistRequest, opts ...grpc.CallOption) (*WatchlistResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WatchlistResponse)
+	err := c.cc.Invoke(ctx, PortfolioService_CreateWatchlist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *portfolioServiceClient) ListWatchlists(ctx context.Context, in *ListWatchlistsRequest, opts ...grpc.CallOption) (*ListWatchlistsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListWatchlistsResponse)
+	err := c.cc.Invoke(ctx, PortfolioService_ListWatchlists_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *portfolioServiceClient) DeleteWatchlist(ctx context.Context, in *DeleteWatchlistRequest, opts ...grpc.CallOption) (*DeleteWatchlistResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteWatchlistResponse)
+	err := c.cc.Invoke(ctx, PortfolioService_DeleteWatchlist_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *portfolioServiceClient) AddWatchlistItem(ctx context.Context, in *AddWatchlistItemRequest, opts ...grpc.CallOption) (*WatchlistItemResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WatchlistItemResponse)
+	err := c.cc.Invoke(ctx, PortfolioService_AddWatchlistItem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *portfolioServiceClient) RemoveWatchlistItem(ctx context.Context, in *RemoveWatchlistItemRequest, opts ...grpc.CallOption) (*RemoveWatchlistItemResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemoveWatchlistItemResponse)
+	err := c.cc.Invoke(ctx, PortfolioService_RemoveWatchlistItem_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *portfolioServiceClient) GetWatchlistItems(ctx context.Context, in *GetWatchlistItemsRequest, opts ...grpc.CallOption) (*GetWatchlistItemsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetWatchlistItemsResponse)
+	err := c.cc.Invoke(ctx, PortfolioService_GetWatchlistItems_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *portfolioServiceClient) CreateDividendPayout(ctx context.Context, in *CreateDividendPayoutRequest, opts ...grpc.CallOption) (*DividendPayoutResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DividendPayoutResponse)
+	err := c.cc.Invoke(ctx, PortfolioService_CreateDividendPayout_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *portfolioServiceClient) GetDividendHistory(ctx context.Context, in *GetDividendHistoryRequest, opts ...grpc.CallOption) (*GetDividendHistoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDividendHistoryResponse)
+	err := c.cc.Invoke(ctx, PortfolioService_GetDividendHistory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *portfolioServiceClient) GetHoldersByListing(ctx context.Context, in *GetHoldersByListingRequest, opts ...grpc.CallOption) (*GetHoldersByListingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetHoldersByListingResponse)
+	err := c.cc.Invoke(ctx, PortfolioService_GetHoldersByListing_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PortfolioServiceServer is the server API for PortfolioService service.
 // All implementations must embed UnimplementedPortfolioServiceServer
 // for forward compatibility.
@@ -156,6 +266,17 @@ type PortfolioServiceServer interface {
 	GetTaxList(context.Context, *GetTaxListRequest) (*GetTaxListResponse, error)
 	CollectTax(context.Context, *CollectTaxRequest) (*CollectTaxResponse, error)
 	CollectTaxForUser(context.Context, *CollectTaxForUserRequest) (*CollectTaxForUserResponse, error)
+	// Watchlist RPCs (BE-C3-04)
+	CreateWatchlist(context.Context, *CreateWatchlistRequest) (*WatchlistResponse, error)
+	ListWatchlists(context.Context, *ListWatchlistsRequest) (*ListWatchlistsResponse, error)
+	DeleteWatchlist(context.Context, *DeleteWatchlistRequest) (*DeleteWatchlistResponse, error)
+	AddWatchlistItem(context.Context, *AddWatchlistItemRequest) (*WatchlistItemResponse, error)
+	RemoveWatchlistItem(context.Context, *RemoveWatchlistItemRequest) (*RemoveWatchlistItemResponse, error)
+	GetWatchlistItems(context.Context, *GetWatchlistItemsRequest) (*GetWatchlistItemsResponse, error)
+	// Dividend RPCs (BE-C3-07)
+	CreateDividendPayout(context.Context, *CreateDividendPayoutRequest) (*DividendPayoutResponse, error)
+	GetDividendHistory(context.Context, *GetDividendHistoryRequest) (*GetDividendHistoryResponse, error)
+	GetHoldersByListing(context.Context, *GetHoldersByListingRequest) (*GetHoldersByListingResponse, error)
 	mustEmbedUnimplementedPortfolioServiceServer()
 }
 
@@ -192,6 +313,33 @@ func (UnimplementedPortfolioServiceServer) CollectTax(context.Context, *CollectT
 }
 func (UnimplementedPortfolioServiceServer) CollectTaxForUser(context.Context, *CollectTaxForUserRequest) (*CollectTaxForUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CollectTaxForUser not implemented")
+}
+func (UnimplementedPortfolioServiceServer) CreateWatchlist(context.Context, *CreateWatchlistRequest) (*WatchlistResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateWatchlist not implemented")
+}
+func (UnimplementedPortfolioServiceServer) ListWatchlists(context.Context, *ListWatchlistsRequest) (*ListWatchlistsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListWatchlists not implemented")
+}
+func (UnimplementedPortfolioServiceServer) DeleteWatchlist(context.Context, *DeleteWatchlistRequest) (*DeleteWatchlistResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteWatchlist not implemented")
+}
+func (UnimplementedPortfolioServiceServer) AddWatchlistItem(context.Context, *AddWatchlistItemRequest) (*WatchlistItemResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddWatchlistItem not implemented")
+}
+func (UnimplementedPortfolioServiceServer) RemoveWatchlistItem(context.Context, *RemoveWatchlistItemRequest) (*RemoveWatchlistItemResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveWatchlistItem not implemented")
+}
+func (UnimplementedPortfolioServiceServer) GetWatchlistItems(context.Context, *GetWatchlistItemsRequest) (*GetWatchlistItemsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetWatchlistItems not implemented")
+}
+func (UnimplementedPortfolioServiceServer) CreateDividendPayout(context.Context, *CreateDividendPayoutRequest) (*DividendPayoutResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateDividendPayout not implemented")
+}
+func (UnimplementedPortfolioServiceServer) GetDividendHistory(context.Context, *GetDividendHistoryRequest) (*GetDividendHistoryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetDividendHistory not implemented")
+}
+func (UnimplementedPortfolioServiceServer) GetHoldersByListing(context.Context, *GetHoldersByListingRequest) (*GetHoldersByListingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetHoldersByListing not implemented")
 }
 func (UnimplementedPortfolioServiceServer) mustEmbedUnimplementedPortfolioServiceServer() {}
 func (UnimplementedPortfolioServiceServer) testEmbeddedByValue()                          {}
@@ -376,6 +524,168 @@ func _PortfolioService_CollectTaxForUser_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PortfolioService_CreateWatchlist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateWatchlistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PortfolioServiceServer).CreateWatchlist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PortfolioService_CreateWatchlist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PortfolioServiceServer).CreateWatchlist(ctx, req.(*CreateWatchlistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PortfolioService_ListWatchlists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListWatchlistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PortfolioServiceServer).ListWatchlists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PortfolioService_ListWatchlists_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PortfolioServiceServer).ListWatchlists(ctx, req.(*ListWatchlistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PortfolioService_DeleteWatchlist_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteWatchlistRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PortfolioServiceServer).DeleteWatchlist(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PortfolioService_DeleteWatchlist_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PortfolioServiceServer).DeleteWatchlist(ctx, req.(*DeleteWatchlistRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PortfolioService_AddWatchlistItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddWatchlistItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PortfolioServiceServer).AddWatchlistItem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PortfolioService_AddWatchlistItem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PortfolioServiceServer).AddWatchlistItem(ctx, req.(*AddWatchlistItemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PortfolioService_RemoveWatchlistItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveWatchlistItemRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PortfolioServiceServer).RemoveWatchlistItem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PortfolioService_RemoveWatchlistItem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PortfolioServiceServer).RemoveWatchlistItem(ctx, req.(*RemoveWatchlistItemRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PortfolioService_GetWatchlistItems_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetWatchlistItemsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PortfolioServiceServer).GetWatchlistItems(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PortfolioService_GetWatchlistItems_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PortfolioServiceServer).GetWatchlistItems(ctx, req.(*GetWatchlistItemsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PortfolioService_CreateDividendPayout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDividendPayoutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PortfolioServiceServer).CreateDividendPayout(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PortfolioService_CreateDividendPayout_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PortfolioServiceServer).CreateDividendPayout(ctx, req.(*CreateDividendPayoutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PortfolioService_GetDividendHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDividendHistoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PortfolioServiceServer).GetDividendHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PortfolioService_GetDividendHistory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PortfolioServiceServer).GetDividendHistory(ctx, req.(*GetDividendHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PortfolioService_GetHoldersByListing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetHoldersByListingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PortfolioServiceServer).GetHoldersByListing(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PortfolioService_GetHoldersByListing_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PortfolioServiceServer).GetHoldersByListing(ctx, req.(*GetHoldersByListingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PortfolioService_ServiceDesc is the grpc.ServiceDesc for PortfolioService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -418,6 +728,42 @@ var PortfolioService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CollectTaxForUser",
 			Handler:    _PortfolioService_CollectTaxForUser_Handler,
+		},
+		{
+			MethodName: "CreateWatchlist",
+			Handler:    _PortfolioService_CreateWatchlist_Handler,
+		},
+		{
+			MethodName: "ListWatchlists",
+			Handler:    _PortfolioService_ListWatchlists_Handler,
+		},
+		{
+			MethodName: "DeleteWatchlist",
+			Handler:    _PortfolioService_DeleteWatchlist_Handler,
+		},
+		{
+			MethodName: "AddWatchlistItem",
+			Handler:    _PortfolioService_AddWatchlistItem_Handler,
+		},
+		{
+			MethodName: "RemoveWatchlistItem",
+			Handler:    _PortfolioService_RemoveWatchlistItem_Handler,
+		},
+		{
+			MethodName: "GetWatchlistItems",
+			Handler:    _PortfolioService_GetWatchlistItems_Handler,
+		},
+		{
+			MethodName: "CreateDividendPayout",
+			Handler:    _PortfolioService_CreateDividendPayout_Handler,
+		},
+		{
+			MethodName: "GetDividendHistory",
+			Handler:    _PortfolioService_GetDividendHistory_Handler,
+		},
+		{
+			MethodName: "GetHoldersByListing",
+			Handler:    _PortfolioService_GetHoldersByListing_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

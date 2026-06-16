@@ -68,6 +68,9 @@ func (s *stubClientSvcClient) ActivateClient(ctx context.Context, in *clientpb.A
 	}
 	return nil, fmt.Errorf("not implemented")
 }
+func (s *stubClientSvcClient) UpdateLoginAttempts(ctx context.Context, in *clientpb.UpdateLoginAttemptsRequest, opts ...grpc.CallOption) (*clientpb.UpdateLoginAttemptsResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
 
 // ---- helpers ----
 

@@ -3,12 +3,38 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"regexp"
+	"time"
 
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/client"
 	"github.com/lib/pq"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+var (
+	emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+	phoneRegex = regexp.MustCompile(`^\+?[0-9]+$`)
+)
+
+func validateClientInput(email, phone, dob string) error {
+	if email != "" && !emailRegex.MatchString(email) {
+		return status.Error(codes.InvalidArgument, "invalid email format")
+	}
+	if phone != "" && !phoneRegex.MatchString(phone) {
+		return status.Error(codes.InvalidArgument, "phone must contain only digits and optional leading +")
+	}
+	if dob != "" {
+		t, err := time.Parse("2006-01-02", dob)
+		if err != nil {
+			return status.Error(codes.InvalidArgument, "date of birth must be in YYYY-MM-DD format")
+		}
+		if !time.Now().After(t) {
+			return status.Error(codes.InvalidArgument, "date of birth must be in the past")
+		}
+	}
+	return nil
+}
 
 type ClientServer struct {
 	pb.UnimplementedClientServiceServer
@@ -99,6 +125,9 @@ func (s *ClientServer) GetClientById(ctx context.Context, req *pb.GetClientByIdR
 }
 
 func (s *ClientServer) CreateClient(ctx context.Context, req *pb.CreateClientRequest) (*pb.CreateClientResponse, error) {
+	if err := validateClientInput(req.Email, req.PhoneNumber, req.DateOfBirth); err != nil {
+		return nil, err
+	}
 	var id int64
 	err := s.DB.QueryRowContext(ctx, `
 		INSERT INTO clients
@@ -132,6 +161,9 @@ func (s *ClientServer) CreateClient(ctx context.Context, req *pb.CreateClientReq
 }
 
 func (s *ClientServer) UpdateClient(ctx context.Context, req *pb.UpdateClientRequest) (*pb.UpdateClientResponse, error) {
+	if err := validateClientInput(req.Email, req.PhoneNumber, req.DateOfBirth); err != nil {
+		return nil, err
+	}
 	c, err := scanClient(s.DB.QueryRowContext(ctx, `
 		UPDATE clients
 		SET first_name=$2, last_name=$3, jmbg=$4, date_of_birth=$5::date,
@@ -174,17 +206,55 @@ func (s *ClientServer) ActivateClient(ctx context.Context, req *pb.ActivateClien
 
 func (s *ClientServer) GetClientCredentials(ctx context.Context, req *pb.GetClientCredentialsRequest) (*pb.GetClientCredentialsResponse, error) {
 	var id int64
-	var passwordHash string
+	var passwordHash, email, firstName string
 	var active bool
+	var failedAttempts int32
+	var lockedUntil sql.NullTime
 	err := s.DB.QueryRowContext(ctx,
-		`SELECT id, password, active FROM clients WHERE email = $1`,
+		`SELECT id, password, active, email, first_name,
+		        failed_login_attempts, account_locked_until
+		 FROM clients WHERE email = $1`,
 		req.Email,
-	).Scan(&id, &passwordHash, &active)
+	).Scan(&id, &passwordHash, &active, &email, &firstName,
+		&failedAttempts, &lockedUntil)
 	if err == sql.ErrNoRows {
 		return nil, status.Error(codes.NotFound, "client not found")
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &pb.GetClientCredentialsResponse{Id: id, PasswordHash: passwordHash, Active: active}, nil
+	lockedUntilStr := ""
+	if lockedUntil.Valid {
+		lockedUntilStr = lockedUntil.Time.UTC().Format(time.RFC3339)
+	}
+	return &pb.GetClientCredentialsResponse{
+		Id:                  id,
+		PasswordHash:        passwordHash,
+		Active:              active,
+		Email:               email,
+		FirstName:           firstName,
+		FailedLoginAttempts: failedAttempts,
+		AccountLockedUntil:  lockedUntilStr,
+	}, nil
+}
+
+func (s *ClientServer) UpdateLoginAttempts(ctx context.Context, req *pb.UpdateLoginAttemptsRequest) (*pb.UpdateLoginAttemptsResponse, error) {
+	var lockedUntil interface{}
+	if req.LockedUntil == "" {
+		lockedUntil = nil
+	} else {
+		t, err := time.Parse(time.RFC3339, req.LockedUntil)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid locked_until format, expected RFC3339")
+		}
+		lockedUntil = t
+	}
+	_, err := s.DB.ExecContext(ctx,
+		`UPDATE clients SET failed_login_attempts = $1, account_locked_until = $2 WHERE id = $3`,
+		req.Attempts, lockedUntil, req.Id,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "update login attempts: %v", err)
+	}
+	return &pb.UpdateLoginAttemptsResponse{}, nil
 }

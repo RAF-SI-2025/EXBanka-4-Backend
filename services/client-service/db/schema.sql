@@ -10,7 +10,9 @@ CREATE TABLE clients (
     address       VARCHAR     NOT NULL,
     username      VARCHAR     NOT NULL UNIQUE,
     password      VARCHAR,
-    active        BOOLEAN     NOT NULL DEFAULT false
+    active                BOOLEAN     NOT NULL DEFAULT false,
+    failed_login_attempts INT NOT NULL DEFAULT 0,
+    account_locked_until  TIMESTAMPTZ
 );
 
 -- Seed test client used by Cypress e2e tests (password: taraDunjic123)
