@@ -40,7 +40,7 @@ func ResolveBankByRoutingNumber(routingNumber string) (BankInfo, error) {
 			RoutingNumber: routingNumber,
 			BankName:      os.Getenv("PARTNER_BANK_NAME"),
 			BankURL:       os.Getenv("PARTNER_BANK_URL"),
-			APIKey:        os.Getenv("PARTNER_API_KEY"),
+			APIKey:        os.Getenv("OWN_INTERBANK_API_KEY"),
 		}, nil
 	default:
 		return BankInfo{}, fmt.Errorf("unknown routing number: %s", routingNumber)
