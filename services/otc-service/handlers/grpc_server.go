@@ -3,11 +3,14 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"time"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/otc"
 	"google.golang.org/grpc/codes"
@@ -117,6 +120,25 @@ type OtcServer struct {
 	PortfolioDB  *sql.DB // portfolio_db
 	SecuritiesDB *sql.DB // securities_db
 	ExchangeDB   *sql.DB // exchange_db (daily_exchange_rates)
+	AmqpChannel  *amqp.Channel
+}
+
+func (s *OtcServer) publishOtcMsg(queueName string, msg interface{}) {
+	if s.AmqpChannel == nil {
+		return
+	}
+	body, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("publishOtcMsg: marshal error: %v", err)
+		return
+	}
+	if err := s.AmqpChannel.Publish("", queueName, false, false, amqp.Publishing{
+		ContentType:  "application/json",
+		DeliveryMode: amqp.Persistent,
+		Body:         body,
+	}); err != nil {
+		log.Printf("publishOtcMsg: publish to %s error: %v", queueName, err)
+	}
 }
 
 func getUserName(employeeDB, clientDB *sql.DB, userID int64, userType string) string {
@@ -322,6 +344,10 @@ func (s *OtcServer) CreateNegotiation(ctx context.Context, req *pb.CreateNegotia
 		return nil, status.Errorf(codes.Internal, "failed to create negotiation: %v", err)
 	}
 
+	go s.insertHistory(context.Background(), id, "CREATED", req.BuyerId, req.BuyerType, nil,
+		&negSnapshot{Amount: req.Amount, PricePerStock: req.PricePerStock, SettlementDate: req.SettlementDate, Premium: req.Premium},
+	)
+
 	return s.fetchNegotiationByID(ctx, id)
 }
 
@@ -379,15 +405,22 @@ func (s *OtcServer) CounterOffer(ctx context.Context, req *pb.CounterOfferReques
 
 	var sellerID, buyerID int64
 	var sellerType, buyerType, currentStatus string
+	var coTicker string
+	var coOldAmount int32
+	var coOldPrice, coOldPremium float64
+	var coOldSettlementDate string
 	err = tx.QueryRowContext(ctx, `
-		SELECT seller_id, seller_type, buyer_id, buyer_type, status
+		SELECT seller_id, seller_type, buyer_id, buyer_type, status,
+		       ticker, amount, price_per_stock, settlement_date::text, premium
 		FROM otc_negotiations WHERE id = $1 FOR UPDATE`, req.NegotiationId,
-	).Scan(&sellerID, &sellerType, &buyerID, &buyerType, &currentStatus)
+	).Scan(&sellerID, &sellerType, &buyerID, &buyerType, &currentStatus,
+		&coTicker, &coOldAmount, &coOldPrice, &coOldSettlementDate, &coOldPremium)
 	if err == sql.ErrNoRows {
 		return nil, status.Error(codes.NotFound, "negotiation not found")
 	} else if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to load negotiation: %v", err)
 	}
+	_ = coTicker // used by BE-C4-01 email notification
 
 	isSeller := req.CallerType == sellerType && (req.CallerId == sellerID || sellerID == 0)
 	isBuyer := req.CallerId == buyerID && req.CallerType == buyerType
@@ -425,6 +458,38 @@ func (s *OtcServer) CounterOffer(ctx context.Context, req *pb.CounterOfferReques
 	if err = tx.Commit(); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to commit counter offer: %v", err)
 	}
+
+	go s.insertHistory(context.Background(), req.NegotiationId, "COUNTER_OFFER", req.CallerId, req.CallerType,
+		&negSnapshot{Amount: coOldAmount, PricePerStock: coOldPrice, SettlementDate: coOldSettlementDate, Premium: coOldPremium},
+		&negSnapshot{Amount: req.Amount, PricePerStock: req.PricePerStock, SettlementDate: req.SettlementDate, Premium: req.Premium},
+	)
+
+	go func() {
+		callerName := getUserName(s.EmployeeDB, s.ClientDB, req.CallerId, req.CallerType)
+		if newStatus == "PENDING_BUYER" && buyerType != "INTERBANK" {
+			email, firstName := lookupEmailAndName(s.EmployeeDB, s.ClientDB, buyerID, buyerType)
+			if email != "" {
+				s.publishOtcMsg("email.otc.counteroffer", map[string]interface{}{
+					"email": email, "first_name": firstName,
+					"negotiation_id": req.NegotiationId, "ticker": coTicker,
+					"new_amount": req.Amount, "new_price_per_stock": req.PricePerStock,
+					"new_premium": req.Premium, "new_settlement_date": req.SettlementDate,
+					"counter_party_name": callerName,
+				})
+			}
+		} else if newStatus == "PENDING_SELLER" && sellerType != "INTERBANK" {
+			email, firstName := lookupEmailAndName(s.EmployeeDB, s.ClientDB, sellerID, sellerType)
+			if email != "" {
+				s.publishOtcMsg("email.otc.counteroffer", map[string]interface{}{
+					"email": email, "first_name": firstName,
+					"negotiation_id": req.NegotiationId, "ticker": coTicker,
+					"new_amount": req.Amount, "new_price_per_stock": req.PricePerStock,
+					"new_premium": req.Premium, "new_settlement_date": req.SettlementDate,
+					"counter_party_name": callerName,
+				})
+			}
+		}
+	}()
 
 	if buyerType == "INTERBANK" {
 		if fwdErr := s.forwardSellerCounterOfferToPartner(ctx, req.NegotiationId, req.Amount, req.PricePerStock, req.Premium, req.SettlementDate); fwdErr != nil {
@@ -480,8 +545,12 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 
 	// Cross-bank: our buyer accepts an offer from a seller on a partner bank.
 	if sellerType == "INTERBANK" && isBuyer {
-		return s.acceptCrossBank(ctx, req, tx, sellerID, buyerID, buyerType,
+		resp, crossErr := s.acceptCrossBank(ctx, req, tx, sellerID, buyerID, buyerType,
 			ticker, amount, strikePrice, premium, currency, settlementDate, req.NegotiationId)
+		if crossErr == nil {
+			go s.insertHistory(context.Background(), req.NegotiationId, "ACCEPTED", req.CallerId, req.CallerType, nil, nil)
+		}
+		return resp, crossErr
 	}
 
 	// --- Seller capacity check ---
@@ -530,6 +599,7 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 				`UPDATE otc_negotiations SET status='PENDING_SELLER' WHERE id = $1`, req.NegotiationId)
 			return nil, status.Errorf(codes.Unavailable, "accept 2PC failed: %v", twopcErr)
 		}
+		go s.insertHistory(context.Background(), req.NegotiationId, "ACCEPTED", req.CallerId, req.CallerType, nil, nil)
 		return s.fetchNegotiationByID(ctx, req.NegotiationId)
 	}
 
@@ -648,6 +718,25 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 	}
 
 	_ = contractID
+	go s.insertHistory(context.Background(), req.NegotiationId, "ACCEPTED", req.CallerId, req.CallerType, nil, nil)
+	go func() {
+		var notifyID int64
+		var notifyType string
+		if isBuyer {
+			notifyID, notifyType = sellerID, sellerType
+		} else {
+			notifyID, notifyType = buyerID, buyerType
+		}
+		if notifyType != "INTERBANK" {
+			email, firstName := lookupEmailAndName(s.EmployeeDB, s.ClientDB, notifyID, notifyType)
+			if email != "" {
+				s.publishOtcMsg("email.otc.statuschange", map[string]interface{}{
+					"email": email, "first_name": firstName,
+					"negotiation_id": req.NegotiationId, "ticker": ticker, "status": "ACCEPTED",
+				})
+			}
+		}
+	}()
 	if sellerType != "INTERBANK" {
 		s.recordOtcTax(sellerID, sellerType, premium, currency, int(now.Month()), now.Year())
 	}
@@ -663,15 +752,17 @@ func (s *OtcServer) RejectNegotiation(ctx context.Context, req *pb.RejectNegotia
 
 	var sellerID, buyerID int64
 	var sellerType, buyerType, currentStatus string
+	var rejTicker string
 	err = tx.QueryRowContext(ctx, `
-		SELECT seller_id, seller_type, buyer_id, buyer_type, status
+		SELECT seller_id, seller_type, buyer_id, buyer_type, status, ticker
 		FROM otc_negotiations WHERE id = $1 FOR UPDATE`, req.NegotiationId,
-	).Scan(&sellerID, &sellerType, &buyerID, &buyerType, &currentStatus)
+	).Scan(&sellerID, &sellerType, &buyerID, &buyerType, &currentStatus, &rejTicker)
 	if err == sql.ErrNoRows {
 		return nil, status.Error(codes.NotFound, "negotiation not found")
 	} else if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to load negotiation: %v", err)
 	}
+	_ = rejTicker // used by BE-C4-01 email notification
 
 	isSeller := req.CallerType == sellerType && (req.CallerId == sellerID || sellerID == 0)
 	isBuyer := req.CallerId == buyerID && req.CallerType == buyerType
@@ -695,6 +786,27 @@ func (s *OtcServer) RejectNegotiation(ctx context.Context, req *pb.RejectNegotia
 	if err = tx.Commit(); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to commit rejection: %v", err)
 	}
+
+	go s.insertHistory(context.Background(), req.NegotiationId, "REJECTED", req.CallerId, req.CallerType, nil, nil)
+	go func() {
+		isBuyerRejecter := req.CallerId == buyerID && req.CallerType == buyerType
+		var notifyID int64
+		var notifyType string
+		if isBuyerRejecter {
+			notifyID, notifyType = sellerID, sellerType
+		} else {
+			notifyID, notifyType = buyerID, buyerType
+		}
+		if notifyType != "INTERBANK" {
+			email, firstName := lookupEmailAndName(s.EmployeeDB, s.ClientDB, notifyID, notifyType)
+			if email != "" {
+				s.publishOtcMsg("email.otc.statuschange", map[string]interface{}{
+					"email": email, "first_name": firstName,
+					"negotiation_id": req.NegotiationId, "ticker": rejTicker, "status": "REJECTED",
+				})
+			}
+		}
+	}()
 
 	if buyerType == "INTERBANK" {
 		if fwdErr := s.notifyPartnerRejection(ctx, req.NegotiationId); fwdErr != nil {
@@ -1982,5 +2094,178 @@ func (s *OtcServer) ExpireContracts() {
 			continue
 		}
 		s.recordOtcTax(buyerID, buyerType, -prem, currency, int(now.Month()), now.Year())
+	}
+}
+
+// ── Negotiation history helpers ───────────────────────────────────────────────
+
+func lookupEmailAndName(employeeDB, clientDB *sql.DB, userID int64, userType string) (email, firstName string) {
+	if userID == 0 {
+		return
+	}
+	if userType == "CLIENT" {
+		_ = clientDB.QueryRow(`SELECT email, first_name FROM clients WHERE id = $1`, userID).Scan(&email, &firstName)
+	} else {
+		_ = employeeDB.QueryRow(`SELECT email, first_name FROM employees WHERE id = $1`, userID).Scan(&email, &firstName)
+	}
+	return
+}
+
+type negSnapshot struct {
+	Amount        int32
+	PricePerStock float64
+	SettlementDate string
+	Premium       float64
+}
+
+func (s *OtcServer) insertHistory(ctx context.Context, negID int64, action string, actorID int64, actorType string, old, newSnap *negSnapshot) {
+	actorName := getUserName(s.EmployeeDB, s.ClientDB, actorID, actorType)
+	var oldAmount, newAmount *int32
+	var oldPrice, newPrice *float64
+	var oldDate, newDate *string
+	var oldPrem, newPrem *float64
+	if old != nil {
+		oldAmount = &old.Amount
+		oldPrice = &old.PricePerStock
+		oldDate = &old.SettlementDate
+		oldPrem = &old.Premium
+	}
+	if newSnap != nil {
+		newAmount = &newSnap.Amount
+		newPrice = &newSnap.PricePerStock
+		newDate = &newSnap.SettlementDate
+		newPrem = &newSnap.Premium
+	}
+	_, _ = s.DB.ExecContext(ctx, `
+		INSERT INTO otc_negotiation_history
+		    (negotiation_id, action, actor_id, actor_type, actor_name,
+		     old_amount, new_amount, old_price_per_stock, new_price_per_stock,
+		     old_settlement_date, new_settlement_date, old_premium, new_premium)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+		negID, action, actorID, actorType, actorName,
+		oldAmount, newAmount, oldPrice, newPrice,
+		oldDate, newDate, oldPrem, newPrem)
+}
+
+func (s *OtcServer) GetNegotiationHistory(ctx context.Context, req *pb.GetNegotiationHistoryRequest) (*pb.GetNegotiationHistoryResponse, error) {
+	var sellerID, buyerID int64
+	var sellerType, buyerType string
+	err := s.DB.QueryRowContext(ctx,
+		`SELECT seller_id, seller_type, buyer_id, buyer_type FROM otc_negotiations WHERE id = $1`,
+		req.NegotiationId,
+	).Scan(&sellerID, &sellerType, &buyerID, &buyerType)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "negotiation not found")
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to load negotiation: %v", err)
+	}
+
+	isSeller := req.CallerType == sellerType && (req.CallerId == sellerID || sellerID == 0)
+	isBuyer := req.CallerId == buyerID && req.CallerType == buyerType
+	if !isSeller && !isBuyer {
+		return nil, status.Error(codes.PermissionDenied, "caller is not a participant in this negotiation")
+	}
+
+	rows, err := s.DB.QueryContext(ctx, `
+		SELECT id, action, actor_id, actor_type, actor_name,
+		       old_amount, new_amount, old_price_per_stock, new_price_per_stock,
+		       old_settlement_date, new_settlement_date, old_premium, new_premium,
+		       timestamp
+		FROM otc_negotiation_history
+		WHERE negotiation_id = $1
+		ORDER BY timestamp ASC`, req.NegotiationId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to query history: %v", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var entries []*pb.NegotiationHistoryEntry
+	for rows.Next() {
+		var e pb.NegotiationHistoryEntry
+		var actorName *string
+		var oldAmount, newAmount *int32
+		var oldPrice, newPrice *float64
+		var oldDate, newDate *string
+		var oldPrem, newPrem *float64
+		var ts time.Time
+		if err := rows.Scan(
+			&e.Id, &e.Action, &e.ActorId, &e.ActorType, &actorName,
+			&oldAmount, &newAmount, &oldPrice, &newPrice,
+			&oldDate, &newDate, &oldPrem, &newPrem, &ts,
+		); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to scan history: %v", err)
+		}
+		if actorName != nil {
+			e.ActorName = *actorName
+		}
+		if oldAmount != nil {
+			e.OldAmount = *oldAmount
+		}
+		if newAmount != nil {
+			e.NewAmount = *newAmount
+		}
+		if oldPrice != nil {
+			e.OldPricePerStock = *oldPrice
+		}
+		if newPrice != nil {
+			e.NewPricePerStock = *newPrice
+		}
+		if oldDate != nil {
+			e.OldSettlementDate = *oldDate
+		}
+		if newDate != nil {
+			e.NewSettlementDate = *newDate
+		}
+		if oldPrem != nil {
+			e.OldPremium = *oldPrem
+		}
+		if newPrem != nil {
+			e.NewPremium = *newPrem
+		}
+		e.Timestamp = ts.Format(time.RFC3339)
+		entries = append(entries, &e)
+	}
+	return &pb.GetNegotiationHistoryResponse{Entries: entries}, nil
+}
+
+func (s *OtcServer) SendExpiryWarnings() {
+	rows, err := s.DB.QueryContext(context.Background(), `
+		SELECT c.id, c.ticker, c.seller_id, c.seller_type, c.buyer_id, c.buyer_type,
+		       c.settlement_date::text
+		FROM otc_contracts c
+		WHERE c.status = 'ACTIVE'
+		  AND c.settlement_date::date = CURRENT_DATE + INTERVAL '3 days'`)
+	if err != nil {
+		log.Printf("SendExpiryWarnings: query error: %v", err)
+		return
+	}
+	defer func() { _ = rows.Close() }()
+
+	for rows.Next() {
+		var contractID, sellerID, buyerID int64
+		var ticker, sellerType, buyerType, settlementDate string
+		if err := rows.Scan(&contractID, &ticker, &sellerID, &sellerType, &buyerID, &buyerType, &settlementDate); err != nil {
+			continue
+		}
+		if sellerType != "INTERBANK" {
+			email, firstName := lookupEmailAndName(s.EmployeeDB, s.ClientDB, sellerID, sellerType)
+			if email != "" {
+				s.publishOtcMsg("email.otc.expiry", map[string]interface{}{
+					"email": email, "first_name": firstName,
+					"contract_id": contractID, "ticker": ticker,
+					"expiry_date": settlementDate, "days_left": 3,
+				})
+			}
+		}
+		if buyerType != "INTERBANK" {
+			email, firstName := lookupEmailAndName(s.EmployeeDB, s.ClientDB, buyerID, buyerType)
+			if email != "" {
+				s.publishOtcMsg("email.otc.expiry", map[string]interface{}{
+					"email": email, "first_name": firstName,
+					"contract_id": contractID, "ticker": ticker,
+					"expiry_date": settlementDate, "days_left": 3,
+				})
+			}
+		}
 	}
 }

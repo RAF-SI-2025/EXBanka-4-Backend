@@ -307,6 +307,7 @@ func main() {
 	r.POST("/otc/negotiations", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.CreateNegotiation(otcClient))
 	r.GET("/otc/negotiations", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.ListNegotiations(otcClient))
 	r.GET("/otc/negotiations/:id", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.GetNegotiation(otcClient))
+	r.GET("/otc/negotiations/:id/history", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.GetNegotiationHistory(otcClient))
 	r.PUT("/otc/negotiations/:id/counter", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.CounterOffer(otcClient))
 	r.PUT("/otc/negotiations/:id/accept", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.AcceptNegotiation(otcClient))
 	r.PUT("/otc/negotiations/:id/reject", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.RejectNegotiation(otcClient))
@@ -319,6 +320,7 @@ func main() {
 	// Investment funds
 	r.POST("/investment/funds", middleware.RequireRole("SUPERVISOR"), handlers.CreateFund(fundClient))
 	r.GET("/investment/funds", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.ListFunds(fundClient))
+	r.GET("/investment/funds/average-performance", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.GetAveragePerformance(fundClient))
 	r.GET("/investment/funds/:id", middleware.RequireRole("CLIENT", "AGENT", "SUPERVISOR"), handlers.GetFund(fundClient))
 	r.PUT("/investment/funds/:id", middleware.RequireRole("SUPERVISOR"), handlers.UpdateFund(fundClient))
 	r.DELETE("/investment/funds/:id", middleware.RequireRole("SUPERVISOR"), handlers.DeleteFund(fundClient))

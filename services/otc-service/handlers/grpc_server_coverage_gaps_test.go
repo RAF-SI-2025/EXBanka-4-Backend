@@ -105,8 +105,8 @@ func TestCounterOffer_CommitFails(t *testing.T) {
 	s, mainMock, _, _, _, _, _ := newTestServer(t)
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT seller_id, seller_type, buyer_id, buyer_type, status").
-		WillReturnRows(sqlmock.NewRows([]string{"seller_id", "seller_type", "buyer_id", "buyer_type", "status"}).
-			AddRow(int64(10), "EMPLOYEE", int64(20), "CLIENT", "PENDING_SELLER"))
+		WillReturnRows(sqlmock.NewRows([]string{"seller_id", "seller_type", "buyer_id", "buyer_type", "status", "ticker", "amount", "price_per_stock", "settlement_date", "premium"}).
+			AddRow(int64(10), "EMPLOYEE", int64(20), "CLIENT", "PENDING_SELLER", "AAPL", int32(100), float64(150.0), "2027-01-01", float64(5.0)))
 	mainMock.ExpectExec("UPDATE otc_negotiations").WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectCommit().WillReturnError(sql.ErrConnDone)
 	mainMock.ExpectRollback()
@@ -180,8 +180,8 @@ func TestRejectNegotiation_CommitFails(t *testing.T) {
 	s, mainMock, _, _, _, _, _ := newTestServer(t)
 	mainMock.ExpectBegin()
 	mainMock.ExpectQuery("SELECT seller_id, seller_type, buyer_id, buyer_type, status").
-		WillReturnRows(sqlmock.NewRows([]string{"seller_id", "seller_type", "buyer_id", "buyer_type", "status"}).
-			AddRow(int64(10), "EMPLOYEE", int64(20), "CLIENT", "PENDING_SELLER"))
+		WillReturnRows(sqlmock.NewRows([]string{"seller_id", "seller_type", "buyer_id", "buyer_type", "status", "ticker"}).
+			AddRow(int64(10), "EMPLOYEE", int64(20), "CLIENT", "PENDING_SELLER", "AAPL"))
 	mainMock.ExpectExec("UPDATE otc_negotiations SET status = 'REJECTED'").WillReturnResult(sqlmock.NewResult(0, 1))
 	mainMock.ExpectCommit().WillReturnError(sql.ErrConnDone)
 	mainMock.ExpectRollback()

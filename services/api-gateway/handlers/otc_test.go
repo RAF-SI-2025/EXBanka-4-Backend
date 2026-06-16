@@ -122,6 +122,9 @@ func (s *stubOtcClient) InterbankDeleteNegotiation(_ context.Context, _ *pb.Inte
 func (s *stubOtcClient) InterbankAcceptNegotiation(_ context.Context, _ *pb.InterbankNegotiationIdRequest, _ ...grpc.CallOption) (*pb.OtcEmptyResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+func (s *stubOtcClient) GetNegotiationHistory(_ context.Context, _ *pb.GetNegotiationHistoryRequest, _ ...grpc.CallOption) (*pb.GetNegotiationHistoryResponse, error) {
+	return &pb.GetNegotiationHistoryResponse{}, nil
+}
 func (s *stubOtcClient) PrepareOtcInterbank(_ context.Context, _ *pb.OtcInterbankPrepareRequest, _ ...grpc.CallOption) (*pb.OtcInterbankVoteResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }

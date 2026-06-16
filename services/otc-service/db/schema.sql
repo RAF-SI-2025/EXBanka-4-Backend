@@ -96,3 +96,22 @@ CREATE TABLE IF NOT EXISTS otc_interbank_tx (
 );
 ALTER TABLE otc_interbank_tx ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT NOW();
 ALTER TABLE otc_negotiations ADD COLUMN IF NOT EXISTS buyer_account_number VARCHAR(50);
+
+CREATE TABLE IF NOT EXISTS otc_negotiation_history (
+    id                  BIGSERIAL PRIMARY KEY,
+    negotiation_id      BIGINT NOT NULL REFERENCES otc_negotiations(id),
+    action              VARCHAR(20) NOT NULL,
+    actor_id            BIGINT NOT NULL,
+    actor_type          VARCHAR(20) NOT NULL,
+    actor_name          VARCHAR(200),
+    old_amount          INT,
+    new_amount          INT,
+    old_price_per_stock DOUBLE PRECISION,
+    new_price_per_stock DOUBLE PRECISION,
+    old_settlement_date VARCHAR(20),
+    new_settlement_date VARCHAR(20),
+    old_premium         DOUBLE PRECISION,
+    new_premium         DOUBLE PRECISION,
+    timestamp           TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_otc_negotiation_history_neg_id ON otc_negotiation_history(negotiation_id);
