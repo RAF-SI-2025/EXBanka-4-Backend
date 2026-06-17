@@ -296,6 +296,12 @@ func (s *stubAuthClient) MarkAllRead(ctx context.Context, in *authpb.MarkAllRead
 func (s *stubAuthClient) GetUnreadCount(ctx context.Context, in *authpb.GetUnreadCountRequest, opts ...grpc.CallOption) (*authpb.GetUnreadCountResponse, error) {
 	return nil, fmt.Errorf("not implemented")
 }
+func (s *stubAuthClient) RequestClientPasswordReset(ctx context.Context, in *authpb.RequestPasswordResetRequest, opts ...grpc.CallOption) (*authpb.RequestPasswordResetResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+func (s *stubAuthClient) ResetClientPassword(ctx context.Context, in *authpb.ResetPasswordRequest, opts ...grpc.CallOption) (*authpb.ResetPasswordResponse, error) {
+	return nil, fmt.Errorf("not implemented")
+}
 
 // ---- stub email client ----
 
