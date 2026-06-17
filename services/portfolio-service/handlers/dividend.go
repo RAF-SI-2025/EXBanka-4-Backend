@@ -4,6 +4,7 @@ import (
 	"context"
 
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/portfolio"
+	"github.com/lib/pq"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -53,7 +54,7 @@ func (s *PortfolioServer) GetDividendHistory(ctx context.Context, req *pb.GetDiv
 	}
 	defer func() { _ = rows.Close() }()
 
-	var payouts []*pb.DividendPayout
+	payouts := []*pb.DividendPayout{}
 	for rows.Next() {
 		var dp pb.DividendPayout
 		if err := rows.Scan(
@@ -64,6 +65,35 @@ func (s *PortfolioServer) GetDividendHistory(ctx context.Context, req *pb.GetDiv
 		}
 		payouts = append(payouts, &dp)
 	}
+
+	// Enrich with ticker from securities DB in one query, same pattern as GetWatchlistItems.
+	if s.SecuritiesDB != nil && len(payouts) > 0 {
+		listingIDs := make([]int64, len(payouts))
+		for i, p := range payouts {
+			listingIDs[i] = p.StockListingId
+		}
+		secRows, secErr := s.SecuritiesDB.QueryContext(ctx, `
+			SELECT id, ticker FROM listing WHERE id = ANY($1)`,
+			pq.Array(listingIDs),
+		)
+		if secErr == nil {
+			tickerMap := make(map[int64]string)
+			for secRows.Next() {
+				var id int64
+				var ticker string
+				if err := secRows.Scan(&id, &ticker); err == nil {
+					tickerMap[id] = ticker
+				}
+			}
+			_ = secRows.Close()
+			for _, p := range payouts {
+				if ticker, ok := tickerMap[p.StockListingId]; ok {
+					p.Ticker = ticker
+				}
+			}
+		}
+	}
+
 	return &pb.GetDividendHistoryResponse{Payouts: payouts}, nil
 }
 

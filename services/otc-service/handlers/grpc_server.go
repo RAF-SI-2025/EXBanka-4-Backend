@@ -12,6 +12,7 @@ import (
 
 	amqp "github.com/rabbitmq/amqp091-go"
 
+	pb_auth "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/otc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -121,6 +122,25 @@ type OtcServer struct {
 	SecuritiesDB *sql.DB // securities_db
 	ExchangeDB   *sql.DB // exchange_db (daily_exchange_rates)
 	AmqpChannel  *amqp.Channel
+	AuthClient   pb_auth.AuthServiceClient
+}
+
+// notifyOtcInApp creates an in-app notification for a negotiation participant via auth-service.
+// Mirrors the email notification pattern (s.publishOtcMsg) used alongside it.
+func (s *OtcServer) notifyOtcInApp(userID int64, userType, title, message, notifType string) {
+	if s.AuthClient == nil || userType == "INTERBANK" {
+		return
+	}
+	_, err := s.AuthClient.CreateNotification(context.Background(), &pb_auth.CreateNotificationRequest{
+		UserId:   userID,
+		UserType: userType,
+		Title:    title,
+		Message:  message,
+		Type:     notifType,
+	})
+	if err != nil {
+		log.Printf("warn: notifyOtcInApp(%d, %s): %v", userID, userType, err)
+	}
 }
 
 func (s *OtcServer) publishOtcMsg(queueName string, msg interface{}) {
@@ -477,6 +497,8 @@ func (s *OtcServer) CounterOffer(ctx context.Context, req *pb.CounterOfferReques
 					"counter_party_name": callerName,
 				})
 			}
+			s.notifyOtcInApp(buyerID, buyerType, "Counter-Offer Received",
+				fmt.Sprintf("%s sent a counter-offer for %s.", callerName, coTicker), "OTC_COUNTER_OFFER")
 		} else if newStatus == "PENDING_SELLER" && sellerType != "INTERBANK" {
 			email, firstName := lookupEmailAndName(s.EmployeeDB, s.ClientDB, sellerID, sellerType)
 			if email != "" {
@@ -488,6 +510,8 @@ func (s *OtcServer) CounterOffer(ctx context.Context, req *pb.CounterOfferReques
 					"counter_party_name": callerName,
 				})
 			}
+			s.notifyOtcInApp(sellerID, sellerType, "Counter-Offer Received",
+				fmt.Sprintf("%s sent a counter-offer for %s.", callerName, coTicker), "OTC_COUNTER_OFFER")
 		}
 	}()
 
@@ -741,6 +765,8 @@ func (s *OtcServer) AcceptNegotiation(ctx context.Context, req *pb.AcceptNegotia
 					"negotiation_id": req.NegotiationId, "ticker": ticker, "status": "ACCEPTED",
 				})
 			}
+			s.notifyOtcInApp(notifyID, notifyType, "OTC Negotiation Accepted",
+				fmt.Sprintf("Your OTC negotiation for %s was accepted.", ticker), "OTC_ACCEPTED")
 		}
 	}()
 	if sellerType != "INTERBANK" {
@@ -811,6 +837,8 @@ func (s *OtcServer) RejectNegotiation(ctx context.Context, req *pb.RejectNegotia
 					"negotiation_id": req.NegotiationId, "ticker": rejTicker, "status": "REJECTED",
 				})
 			}
+			s.notifyOtcInApp(notifyID, notifyType, "OTC Negotiation Rejected",
+				fmt.Sprintf("Your OTC negotiation for %s was rejected.", rejTicker), "OTC_REJECTED")
 		}
 	}()
 
