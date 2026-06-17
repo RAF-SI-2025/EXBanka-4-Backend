@@ -329,11 +329,9 @@ func (s *EmployeeServer) UpdateEmployee(ctx context.Context, req *pb.UpdateEmplo
 	willHaveAgent := hasAgent
 	willHaveSupervisor := hasSupervisor
 	if (!hadAgent && willHaveAgent) || (!hadSupervisor && willHaveSupervisor) {
-		if !hadAgent && !hadSupervisor {
-			_, _ = s.DB.ExecContext(ctx,
-				`INSERT INTO actuary_info (employee_id) VALUES ($1) ON CONFLICT DO NOTHING`,
-				req.Id)
-		}
+		_, _ = s.DB.ExecContext(ctx,
+			`INSERT INTO actuary_info (employee_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+			req.Id)
 	}
 	// If employee lost both AGENT and SUPERVISOR → delete row
 	if (hadAgent || hadSupervisor) && !willHaveAgent && !willHaveSupervisor {

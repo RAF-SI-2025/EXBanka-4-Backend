@@ -3245,14 +3245,16 @@ const file_auth_proto_rawDesc = "" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"%\n" +
 	"\rLogoutRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"\x10\n" +
-	"\x0eLogoutResponse2\xe7\x11\n" +
+	"\x0eLogoutResponse2\x9c\x13\n" +
 	"\vAuthService\x120\n" +
 	"\x05Login\x12\x12.auth.LoginRequest\x1a\x13.auth.LoginResponse\x126\n" +
 	"\aRefresh\x12\x14.auth.RefreshRequest\x1a\x15.auth.RefreshResponse\x12`\n" +
 	"\x15CreateActivationToken\x12\".auth.CreateActivationTokenRequest\x1a#.auth.CreateActivationTokenResponse\x12N\n" +
 	"\x0fActivateAccount\x12\x1c.auth.ActivateAccountRequest\x1a\x1d.auth.ActivateAccountResponse\x12]\n" +
 	"\x14RequestPasswordReset\x12!.auth.RequestPasswordResetRequest\x1a\".auth.RequestPasswordResetResponse\x12H\n" +
-	"\rResetPassword\x12\x1a.auth.ResetPasswordRequest\x1a\x1b.auth.ResetPasswordResponse\x12B\n" +
+	"\rResetPassword\x12\x1a.auth.ResetPasswordRequest\x1a\x1b.auth.ResetPasswordResponse\x12c\n" +
+	"\x1aRequestClientPasswordReset\x12!.auth.RequestPasswordResetRequest\x1a\".auth.RequestPasswordResetResponse\x12N\n" +
+	"\x13ResetClientPassword\x12\x1a.auth.ResetPasswordRequest\x1a\x1b.auth.ResetPasswordResponse\x12B\n" +
 	"\vClientLogin\x12\x18.auth.ClientLoginRequest\x1a\x19.auth.ClientLoginResponse\x12H\n" +
 	"\rClientRefresh\x12\x1a.auth.ClientRefreshRequest\x1a\x1b.auth.ClientRefreshResponse\x12r\n" +
 	"\x1bCreateClientActivationToken\x12(.auth.CreateClientActivationTokenRequest\x1a).auth.CreateClientActivationTokenResponse\x12K\n" +
@@ -3367,60 +3369,64 @@ var file_auth_proto_depIdxs = []int32{
 	6,  // 9: auth.AuthService.ActivateAccount:input_type -> auth.ActivateAccountRequest
 	8,  // 10: auth.AuthService.RequestPasswordReset:input_type -> auth.RequestPasswordResetRequest
 	10, // 11: auth.AuthService.ResetPassword:input_type -> auth.ResetPasswordRequest
-	12, // 12: auth.AuthService.ClientLogin:input_type -> auth.ClientLoginRequest
-	16, // 13: auth.AuthService.ClientRefresh:input_type -> auth.ClientRefreshRequest
-	18, // 14: auth.AuthService.CreateClientActivationToken:input_type -> auth.CreateClientActivationTokenRequest
-	20, // 15: auth.AuthService.ActivateClient:input_type -> auth.ActivateClientRequest
-	14, // 16: auth.AuthService.PollApproval:input_type -> auth.PollApprovalRequest
-	44, // 17: auth.AuthService.CreateApproval:input_type -> auth.CreateApprovalRequest
-	46, // 18: auth.AuthService.GetApproval:input_type -> auth.GetApprovalRequest
-	48, // 19: auth.AuthService.GetClientApprovals:input_type -> auth.GetClientApprovalsRequest
-	50, // 20: auth.AuthService.UpdateApprovalStatus:input_type -> auth.UpdateApprovalStatusRequest
-	52, // 21: auth.AuthService.RegisterPushToken:input_type -> auth.RegisterPushTokenRequest
-	54, // 22: auth.AuthService.UnregisterPushToken:input_type -> auth.UnregisterPushTokenRequest
-	56, // 23: auth.AuthService.GetPushToken:input_type -> auth.GetPushTokenRequest
-	58, // 24: auth.AuthService.Logout:input_type -> auth.LogoutRequest
-	33, // 25: auth.AuthService.GenerateTOTPSecret:input_type -> auth.GenerateTOTPRequest
-	35, // 26: auth.AuthService.VerifyTOTP:input_type -> auth.VerifyTOTPRequest
-	37, // 27: auth.AuthService.EnableTOTP:input_type -> auth.EnableTOTPRequest
-	39, // 28: auth.AuthService.ValidateTOTPLogin:input_type -> auth.ValidateTOTPLoginRequest
-	41, // 29: auth.AuthService.DisableTOTP:input_type -> auth.DisableTOTPRequest
-	23, // 30: auth.AuthService.CreateNotification:input_type -> auth.CreateNotificationRequest
-	25, // 31: auth.AuthService.ListNotifications:input_type -> auth.ListNotificationsRequest
-	27, // 32: auth.AuthService.MarkNotificationRead:input_type -> auth.MarkNotificationReadRequest
-	29, // 33: auth.AuthService.MarkAllRead:input_type -> auth.MarkAllReadRequest
-	31, // 34: auth.AuthService.GetUnreadCount:input_type -> auth.GetUnreadCountRequest
-	1,  // 35: auth.AuthService.Login:output_type -> auth.LoginResponse
-	3,  // 36: auth.AuthService.Refresh:output_type -> auth.RefreshResponse
-	5,  // 37: auth.AuthService.CreateActivationToken:output_type -> auth.CreateActivationTokenResponse
-	7,  // 38: auth.AuthService.ActivateAccount:output_type -> auth.ActivateAccountResponse
-	9,  // 39: auth.AuthService.RequestPasswordReset:output_type -> auth.RequestPasswordResetResponse
-	11, // 40: auth.AuthService.ResetPassword:output_type -> auth.ResetPasswordResponse
-	13, // 41: auth.AuthService.ClientLogin:output_type -> auth.ClientLoginResponse
-	17, // 42: auth.AuthService.ClientRefresh:output_type -> auth.ClientRefreshResponse
-	19, // 43: auth.AuthService.CreateClientActivationToken:output_type -> auth.CreateClientActivationTokenResponse
-	21, // 44: auth.AuthService.ActivateClient:output_type -> auth.ActivateClientResponse
-	15, // 45: auth.AuthService.PollApproval:output_type -> auth.PollApprovalResponse
-	45, // 46: auth.AuthService.CreateApproval:output_type -> auth.CreateApprovalResponse
-	47, // 47: auth.AuthService.GetApproval:output_type -> auth.GetApprovalResponse
-	49, // 48: auth.AuthService.GetClientApprovals:output_type -> auth.GetClientApprovalsResponse
-	51, // 49: auth.AuthService.UpdateApprovalStatus:output_type -> auth.UpdateApprovalStatusResponse
-	53, // 50: auth.AuthService.RegisterPushToken:output_type -> auth.RegisterPushTokenResponse
-	55, // 51: auth.AuthService.UnregisterPushToken:output_type -> auth.UnregisterPushTokenResponse
-	57, // 52: auth.AuthService.GetPushToken:output_type -> auth.GetPushTokenResponse
-	59, // 53: auth.AuthService.Logout:output_type -> auth.LogoutResponse
-	34, // 54: auth.AuthService.GenerateTOTPSecret:output_type -> auth.GenerateTOTPResponse
-	36, // 55: auth.AuthService.VerifyTOTP:output_type -> auth.VerifyTOTPResponse
-	38, // 56: auth.AuthService.EnableTOTP:output_type -> auth.EnableTOTPResponse
-	40, // 57: auth.AuthService.ValidateTOTPLogin:output_type -> auth.ValidateTOTPLoginResponse
-	42, // 58: auth.AuthService.DisableTOTP:output_type -> auth.DisableTOTPResponse
-	24, // 59: auth.AuthService.CreateNotification:output_type -> auth.CreateNotificationResponse
-	26, // 60: auth.AuthService.ListNotifications:output_type -> auth.ListNotificationsResponse
-	28, // 61: auth.AuthService.MarkNotificationRead:output_type -> auth.MarkNotificationReadResponse
-	30, // 62: auth.AuthService.MarkAllRead:output_type -> auth.MarkAllReadResponse
-	32, // 63: auth.AuthService.GetUnreadCount:output_type -> auth.GetUnreadCountResponse
-	35, // [35:64] is the sub-list for method output_type
-	6,  // [6:35] is the sub-list for method input_type
+	8,  // 12: auth.AuthService.RequestClientPasswordReset:input_type -> auth.RequestPasswordResetRequest
+	10, // 13: auth.AuthService.ResetClientPassword:input_type -> auth.ResetPasswordRequest
+	12, // 14: auth.AuthService.ClientLogin:input_type -> auth.ClientLoginRequest
+	16, // 15: auth.AuthService.ClientRefresh:input_type -> auth.ClientRefreshRequest
+	18, // 16: auth.AuthService.CreateClientActivationToken:input_type -> auth.CreateClientActivationTokenRequest
+	20, // 17: auth.AuthService.ActivateClient:input_type -> auth.ActivateClientRequest
+	14, // 18: auth.AuthService.PollApproval:input_type -> auth.PollApprovalRequest
+	44, // 19: auth.AuthService.CreateApproval:input_type -> auth.CreateApprovalRequest
+	46, // 20: auth.AuthService.GetApproval:input_type -> auth.GetApprovalRequest
+	48, // 21: auth.AuthService.GetClientApprovals:input_type -> auth.GetClientApprovalsRequest
+	50, // 22: auth.AuthService.UpdateApprovalStatus:input_type -> auth.UpdateApprovalStatusRequest
+	52, // 23: auth.AuthService.RegisterPushToken:input_type -> auth.RegisterPushTokenRequest
+	54, // 24: auth.AuthService.UnregisterPushToken:input_type -> auth.UnregisterPushTokenRequest
+	56, // 25: auth.AuthService.GetPushToken:input_type -> auth.GetPushTokenRequest
+	58, // 26: auth.AuthService.Logout:input_type -> auth.LogoutRequest
+	33, // 27: auth.AuthService.GenerateTOTPSecret:input_type -> auth.GenerateTOTPRequest
+	35, // 28: auth.AuthService.VerifyTOTP:input_type -> auth.VerifyTOTPRequest
+	37, // 29: auth.AuthService.EnableTOTP:input_type -> auth.EnableTOTPRequest
+	39, // 30: auth.AuthService.ValidateTOTPLogin:input_type -> auth.ValidateTOTPLoginRequest
+	41, // 31: auth.AuthService.DisableTOTP:input_type -> auth.DisableTOTPRequest
+	23, // 32: auth.AuthService.CreateNotification:input_type -> auth.CreateNotificationRequest
+	25, // 33: auth.AuthService.ListNotifications:input_type -> auth.ListNotificationsRequest
+	27, // 34: auth.AuthService.MarkNotificationRead:input_type -> auth.MarkNotificationReadRequest
+	29, // 35: auth.AuthService.MarkAllRead:input_type -> auth.MarkAllReadRequest
+	31, // 36: auth.AuthService.GetUnreadCount:input_type -> auth.GetUnreadCountRequest
+	1,  // 37: auth.AuthService.Login:output_type -> auth.LoginResponse
+	3,  // 38: auth.AuthService.Refresh:output_type -> auth.RefreshResponse
+	5,  // 39: auth.AuthService.CreateActivationToken:output_type -> auth.CreateActivationTokenResponse
+	7,  // 40: auth.AuthService.ActivateAccount:output_type -> auth.ActivateAccountResponse
+	9,  // 41: auth.AuthService.RequestPasswordReset:output_type -> auth.RequestPasswordResetResponse
+	11, // 42: auth.AuthService.ResetPassword:output_type -> auth.ResetPasswordResponse
+	9,  // 43: auth.AuthService.RequestClientPasswordReset:output_type -> auth.RequestPasswordResetResponse
+	11, // 44: auth.AuthService.ResetClientPassword:output_type -> auth.ResetPasswordResponse
+	13, // 45: auth.AuthService.ClientLogin:output_type -> auth.ClientLoginResponse
+	17, // 46: auth.AuthService.ClientRefresh:output_type -> auth.ClientRefreshResponse
+	19, // 47: auth.AuthService.CreateClientActivationToken:output_type -> auth.CreateClientActivationTokenResponse
+	21, // 48: auth.AuthService.ActivateClient:output_type -> auth.ActivateClientResponse
+	15, // 49: auth.AuthService.PollApproval:output_type -> auth.PollApprovalResponse
+	45, // 50: auth.AuthService.CreateApproval:output_type -> auth.CreateApprovalResponse
+	47, // 51: auth.AuthService.GetApproval:output_type -> auth.GetApprovalResponse
+	49, // 52: auth.AuthService.GetClientApprovals:output_type -> auth.GetClientApprovalsResponse
+	51, // 53: auth.AuthService.UpdateApprovalStatus:output_type -> auth.UpdateApprovalStatusResponse
+	53, // 54: auth.AuthService.RegisterPushToken:output_type -> auth.RegisterPushTokenResponse
+	55, // 55: auth.AuthService.UnregisterPushToken:output_type -> auth.UnregisterPushTokenResponse
+	57, // 56: auth.AuthService.GetPushToken:output_type -> auth.GetPushTokenResponse
+	59, // 57: auth.AuthService.Logout:output_type -> auth.LogoutResponse
+	34, // 58: auth.AuthService.GenerateTOTPSecret:output_type -> auth.GenerateTOTPResponse
+	36, // 59: auth.AuthService.VerifyTOTP:output_type -> auth.VerifyTOTPResponse
+	38, // 60: auth.AuthService.EnableTOTP:output_type -> auth.EnableTOTPResponse
+	40, // 61: auth.AuthService.ValidateTOTPLogin:output_type -> auth.ValidateTOTPLoginResponse
+	42, // 62: auth.AuthService.DisableTOTP:output_type -> auth.DisableTOTPResponse
+	24, // 63: auth.AuthService.CreateNotification:output_type -> auth.CreateNotificationResponse
+	26, // 64: auth.AuthService.ListNotifications:output_type -> auth.ListNotificationsResponse
+	28, // 65: auth.AuthService.MarkNotificationRead:output_type -> auth.MarkNotificationReadResponse
+	30, // 66: auth.AuthService.MarkAllRead:output_type -> auth.MarkAllReadResponse
+	32, // 67: auth.AuthService.GetUnreadCount:output_type -> auth.GetUnreadCountResponse
+	37, // [37:68] is the sub-list for method output_type
+	6,  // [6:37] is the sub-list for method input_type
 	6,  // [6:6] is the sub-list for extension type_name
 	6,  // [6:6] is the sub-list for extension extendee
 	0,  // [0:6] is the sub-list for field type_name

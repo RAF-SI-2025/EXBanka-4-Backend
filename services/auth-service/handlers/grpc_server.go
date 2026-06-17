@@ -356,6 +356,82 @@ func (s *AuthServer) ResetPassword(ctx context.Context, req *pb_auth.ResetPasswo
 	return &pb_auth.ResetPasswordResponse{}, nil
 }
 
+func (s *AuthServer) RequestClientPasswordReset(ctx context.Context, req *pb_auth.RequestPasswordResetRequest) (*pb_auth.RequestPasswordResetResponse, error) {
+	clientResp, err := s.ClientClient.GetClientCredentials(ctx, &pb_client.GetClientCredentialsRequest{Email: req.Email})
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := generateActivationToken()
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate token")
+	}
+
+	_, err = s.DB.ExecContext(ctx,
+		`INSERT INTO client_password_reset_tokens (token, client_id, expires_at) VALUES ($1, $2, now() + interval '24 hours')`,
+		token, clientResp.Id,
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to store password reset token: %v", err)
+	}
+
+	return &pb_auth.RequestPasswordResetResponse{
+		Token:     token,
+		FirstName: clientResp.FirstName,
+		Email:     clientResp.Email,
+	}, nil
+}
+
+func (s *AuthServer) ResetClientPassword(ctx context.Context, req *pb_auth.ResetPasswordRequest) (*pb_auth.ResetPasswordResponse, error) {
+	var clientID int64
+	var expiresAt time.Time
+	err := s.DB.QueryRowContext(ctx,
+		`SELECT client_id, expires_at FROM client_password_reset_tokens WHERE token = $1`,
+		req.Token,
+	).Scan(&clientID, &expiresAt)
+	if err == sql.ErrNoRows {
+		return nil, status.Error(codes.NotFound, "invalid or expired token")
+	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to look up token: %v", err)
+	}
+
+	if time.Now().After(expiresAt) {
+		if _, err := s.DB.ExecContext(ctx, `DELETE FROM client_password_reset_tokens WHERE token = $1`, req.Token); err != nil {
+			log.Printf("failed to delete expired client password reset token: %v", err)
+		}
+		return nil, status.Error(codes.FailedPrecondition, "password reset token has expired")
+	}
+
+	if req.Password != req.ConfirmPassword {
+		return nil, status.Error(codes.InvalidArgument, "passwords do not match")
+	}
+	if err := validatePassword(req.Password); err != nil {
+		return nil, err
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to hash password")
+	}
+
+	if _, err = s.ClientClient.ActivateClient(ctx, &pb_client.ActivateClientRequest{
+		ClientId:     clientID,
+		PasswordHash: string(hash),
+	}); err != nil {
+		return nil, err
+	}
+
+	_, _ = s.ClientClient.UpdateLoginAttempts(ctx, &pb_client.UpdateLoginAttemptsRequest{
+		Id: clientID, Attempts: 0, LockedUntil: "",
+	})
+
+	if _, err := s.DB.ExecContext(ctx, `DELETE FROM client_password_reset_tokens WHERE token = $1`, req.Token); err != nil {
+		log.Printf("failed to delete used client password reset token: %v", err)
+	}
+	return &pb_auth.ResetPasswordResponse{}, nil
+}
+
 func validatePassword(p string) error {
 	if len(p) < 8 {
 		return status.Error(codes.InvalidArgument, "password must be at least 8 characters")

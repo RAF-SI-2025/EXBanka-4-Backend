@@ -25,6 +25,8 @@ const (
 	AuthService_ActivateAccount_FullMethodName             = "/auth.AuthService/ActivateAccount"
 	AuthService_RequestPasswordReset_FullMethodName        = "/auth.AuthService/RequestPasswordReset"
 	AuthService_ResetPassword_FullMethodName               = "/auth.AuthService/ResetPassword"
+	AuthService_RequestClientPasswordReset_FullMethodName  = "/auth.AuthService/RequestClientPasswordReset"
+	AuthService_ResetClientPassword_FullMethodName         = "/auth.AuthService/ResetClientPassword"
 	AuthService_ClientLogin_FullMethodName                 = "/auth.AuthService/ClientLogin"
 	AuthService_ClientRefresh_FullMethodName               = "/auth.AuthService/ClientRefresh"
 	AuthService_CreateClientActivationToken_FullMethodName = "/auth.AuthService/CreateClientActivationToken"
@@ -60,6 +62,8 @@ type AuthServiceClient interface {
 	ActivateAccount(ctx context.Context, in *ActivateAccountRequest, opts ...grpc.CallOption) (*ActivateAccountResponse, error)
 	RequestPasswordReset(ctx context.Context, in *RequestPasswordResetRequest, opts ...grpc.CallOption) (*RequestPasswordResetResponse, error)
 	ResetPassword(ctx context.Context, in *ResetPasswordRequest, opts ...grpc.CallOption) (*ResetPasswordResponse, error)
+	RequestClientPasswordReset(ctx context.Context, in *RequestPasswordResetRequest, opts ...grpc.CallOption) (*RequestPasswordResetResponse, error)
+	ResetClientPassword(ctx context.Context, in *ResetPasswordRequest, opts ...grpc.CallOption) (*ResetPasswordResponse, error)
 	ClientLogin(ctx context.Context, in *ClientLoginRequest, opts ...grpc.CallOption) (*ClientLoginResponse, error)
 	ClientRefresh(ctx context.Context, in *ClientRefreshRequest, opts ...grpc.CallOption) (*ClientRefreshResponse, error)
 	CreateClientActivationToken(ctx context.Context, in *CreateClientActivationTokenRequest, opts ...grpc.CallOption) (*CreateClientActivationTokenResponse, error)
@@ -147,6 +151,26 @@ func (c *authServiceClient) ResetPassword(ctx context.Context, in *ResetPassword
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ResetPasswordResponse)
 	err := c.cc.Invoke(ctx, AuthService_ResetPassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) RequestClientPasswordReset(ctx context.Context, in *RequestPasswordResetRequest, opts ...grpc.CallOption) (*RequestPasswordResetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestPasswordResetResponse)
+	err := c.cc.Invoke(ctx, AuthService_RequestClientPasswordReset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ResetClientPassword(ctx context.Context, in *ResetPasswordRequest, opts ...grpc.CallOption) (*ResetPasswordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResetPasswordResponse)
+	err := c.cc.Invoke(ctx, AuthService_ResetClientPassword_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -393,6 +417,8 @@ type AuthServiceServer interface {
 	ActivateAccount(context.Context, *ActivateAccountRequest) (*ActivateAccountResponse, error)
 	RequestPasswordReset(context.Context, *RequestPasswordResetRequest) (*RequestPasswordResetResponse, error)
 	ResetPassword(context.Context, *ResetPasswordRequest) (*ResetPasswordResponse, error)
+	RequestClientPasswordReset(context.Context, *RequestPasswordResetRequest) (*RequestPasswordResetResponse, error)
+	ResetClientPassword(context.Context, *ResetPasswordRequest) (*ResetPasswordResponse, error)
 	ClientLogin(context.Context, *ClientLoginRequest) (*ClientLoginResponse, error)
 	ClientRefresh(context.Context, *ClientRefreshRequest) (*ClientRefreshResponse, error)
 	CreateClientActivationToken(context.Context, *CreateClientActivationTokenRequest) (*CreateClientActivationTokenResponse, error)
@@ -443,6 +469,12 @@ func (UnimplementedAuthServiceServer) RequestPasswordReset(context.Context, *Req
 }
 func (UnimplementedAuthServiceServer) ResetPassword(context.Context, *ResetPasswordRequest) (*ResetPasswordResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ResetPassword not implemented")
+}
+func (UnimplementedAuthServiceServer) RequestClientPasswordReset(context.Context, *RequestPasswordResetRequest) (*RequestPasswordResetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RequestClientPasswordReset not implemented")
+}
+func (UnimplementedAuthServiceServer) ResetClientPassword(context.Context, *ResetPasswordRequest) (*ResetPasswordResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResetClientPassword not implemented")
 }
 func (UnimplementedAuthServiceServer) ClientLogin(context.Context, *ClientLoginRequest) (*ClientLoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ClientLogin not implemented")
@@ -638,6 +670,42 @@ func _AuthService_ResetPassword_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServiceServer).ResetPassword(ctx, req.(*ResetPasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_RequestClientPasswordReset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestPasswordResetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).RequestClientPasswordReset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_RequestClientPasswordReset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).RequestClientPasswordReset(ctx, req.(*RequestPasswordResetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ResetClientPassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetPasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ResetClientPassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ResetClientPassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ResetClientPassword(ctx, req.(*ResetPasswordRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1086,6 +1154,14 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ResetPassword",
 			Handler:    _AuthService_ResetPassword_Handler,
+		},
+		{
+			MethodName: "RequestClientPasswordReset",
+			Handler:    _AuthService_RequestClientPasswordReset_Handler,
+		},
+		{
+			MethodName: "ResetClientPassword",
+			Handler:    _AuthService_ResetClientPassword_Handler,
 		},
 		{
 			MethodName: "ClientLogin",
