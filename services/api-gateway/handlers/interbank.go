@@ -152,13 +152,16 @@ func handleNewTx(c *gin.Context, client pb.PaymentServiceClient, otcClient pb_ot
 			PartnerNegExternalId: partnerNegExternalID,
 		})
 		vote := "NO"
-		reason := ""
+		type voteReason struct {
+			Reason string `json:"reason"`
+		}
+		reasons := []voteReason{}
 		if otcErr == nil && otcResp != nil && otcResp.Vote == "YES" {
 			vote = "YES"
-		} else if otcResp != nil {
-			reason = otcResp.Reason
+		} else if otcResp != nil && otcResp.Reason != "" {
+			reasons = append(reasons, voteReason{Reason: otcResp.Reason})
 		}
-		c.JSON(http.StatusOK, gin.H{"vote": vote, "reasons": []string{reason}})
+		c.JSON(http.StatusOK, gin.H{"vote": vote, "reasons": reasons})
 		return
 	}
 
