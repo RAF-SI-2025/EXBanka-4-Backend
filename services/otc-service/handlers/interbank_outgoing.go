@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -148,6 +149,9 @@ func executeOtcOutgoing2PC(ctx context.Context, bank otcInterbank.BankInfo, req 
 	txID := otcIbTransactionID{RoutingNumber: ownRouting, ID: otcGenerateUUID()}
 	idemKey := otcIbIdempotenceKey{RoutingNumber: ownRouting, LocallyGeneratedKey: otcGenerateUUID()}
 
+	log.Printf("[exercise 2PC] partnerRouting=%d partnerNegID=%q ticker=%q stockAmount=%d totalCost=%.4f txID=%s",
+		req.partnerRoutingNum, req.partnerNegotiationID, req.ticker, req.stockAmount, req.totalCost, txID.ID)
+
 	newTxResp, err := otcSendInterbankRequest(ctx, bankURL, bank.APIKey, otcIbEnvelope{
 		IdempotenceKey: idemKey,
 		MessageType:    "NEW_TX",
@@ -199,6 +203,7 @@ func executeOtcOutgoing2PC(ctx context.Context, bank otcInterbank.BankInfo, req 
 	if err := json.NewDecoder(newTxResp.Body).Decode(&voteResp); err != nil {
 		return "NO", fmt.Errorf("decode vote response: %w", err)
 	}
+	log.Printf("[exercise 2PC] vote=%q reasons=%v txID=%s", voteResp.Vote, voteResp.Reasons, txID.ID)
 	if voteResp.Vote != "YES" {
 		return "NO", nil
 	}
@@ -1099,11 +1104,32 @@ func (s *OtcServer) executeInterbankAcceptBuyerSide(ctx context.Context, localNe
 		ticker, amount, strikePrice, premium, currency, settlementDate)
 
 	// COMMIT — bank4 will commit their postings (credit seller's MONAS, create authoritative seller contract).
-	_, _ = otcSendInterbankRequest(ctx, bankURL, bank.APIKey, otcIbEnvelope{
+	commitResp, commitErr := otcSendInterbankRequest(ctx, bankURL, bank.APIKey, otcIbEnvelope{
 		IdempotenceKey: otcIbIdempotenceKey{RoutingNumber: ownRouting, LocallyGeneratedKey: otcGenerateUUID()},
 		MessageType:    "COMMIT_TX",
 		Message:        otcIbCommitMessage{TransactionID: txID},
 	})
+	if commitErr != nil || (commitResp != nil && commitResp.StatusCode != http.StatusNoContent) {
+		statusCode := 0
+		if commitResp != nil {
+			statusCode = commitResp.StatusCode
+		}
+		log.Printf("[accept 2PC] COMMIT_TX failed: err=%v status=%d — rolling back local state for neg %d", commitErr, statusCode, localNegID)
+		// Undo local premium debit.
+		_, _ = s.AccountDB.ExecContext(context.Background(),
+			`UPDATE accounts SET balance = balance + $1, available_balance = available_balance + $1
+			 WHERE account_number = $2`, premiumToPay, buyerAcctNum.String)
+		// Remove the locally-created buyer contract so a retry can re-insert it.
+		_, _ = s.DB.ExecContext(context.Background(),
+			`DELETE FROM otc_contracts WHERE negotiation_id = $1`, localNegID)
+		// Best-effort rollback at bank4 so their PreparedTransaction doesn't linger.
+		_, _ = otcSendInterbankRequest(context.Background(), bankURL, bank.APIKey, otcIbEnvelope{
+			IdempotenceKey: otcIbIdempotenceKey{RoutingNumber: ownRouting, LocallyGeneratedKey: otcGenerateUUID()},
+			MessageType:    "ROLLBACK_TX",
+			Message:        otcIbCommitMessage{TransactionID: txID},
+		})
+		return fmt.Errorf("accept COMMIT_TX to bank4 failed (status %d)", statusCode)
+	}
 
 	return nil
 }
