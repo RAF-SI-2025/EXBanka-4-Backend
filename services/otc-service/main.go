@@ -10,8 +10,10 @@ import (
 
 	otcdb "github.com/RAF-SI-2025/EXBanka-4-Backend/services/otc-service/db"
 	"github.com/RAF-SI-2025/EXBanka-4-Backend/services/otc-service/handlers"
+	pb_auth "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/auth"
 	pb "github.com/RAF-SI-2025/EXBanka-4-Backend/shared/pb/otc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const grpcPort = ":50063"
@@ -59,6 +61,12 @@ func main() {
 	}
 	defer func() { _ = exchangeDB.Close() }()
 
+	authConn, err := grpc.NewClient(os.Getenv("AUTH_SERVICE_ADDR"), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("failed to connect to auth-service: %v", err)
+	}
+	defer func() { _ = authConn.Close() }()
+
 	var amqpCh *amqp.Channel
 	if amqpURL := os.Getenv("RABBITMQ_URL"); amqpURL != "" {
 		var amqpConn *amqp.Connection
@@ -97,6 +105,7 @@ func main() {
 		SecuritiesDB: securitiesDB,
 		ExchangeDB:   exchangeDB,
 		AmqpChannel:  amqpCh,
+		AuthClient:   pb_auth.NewAuthServiceClient(authConn),
 	}
 	pb.RegisterOtcServiceServer(srv, srvImpl)
 
