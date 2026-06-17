@@ -227,8 +227,10 @@ service AuthService {
   rpc Refresh(RefreshRequest)                               returns (RefreshResponse);
   rpc CreateActivationToken(CreateActivationTokenRequest)   returns (CreateActivationTokenResponse);
   rpc ActivateAccount(ActivateAccountRequest)               returns (ActivateAccountResponse);
-  rpc RequestPasswordReset(RequestPasswordResetRequest)     returns (RequestPasswordResetResponse);
-  rpc ResetPassword(ResetPasswordRequest)                   returns (ResetPasswordResponse);
+  rpc RequestPasswordReset(RequestPasswordResetRequest)       returns (RequestPasswordResetResponse);
+  rpc ResetPassword(ResetPasswordRequest)                     returns (ResetPasswordResponse);
+  rpc RequestClientPasswordReset(RequestPasswordResetRequest) returns (RequestPasswordResetResponse);
+  rpc ResetClientPassword(ResetPasswordRequest)               returns (ResetPasswordResponse);
   rpc ClientLogin(ClientLoginRequest)                                     returns (ClientLoginResponse);
   rpc ClientRefresh(ClientRefreshRequest)                                 returns (ClientRefreshResponse);
   rpc CreateClientActivationToken(CreateClientActivationTokenRequest)     returns (CreateClientActivationTokenResponse);

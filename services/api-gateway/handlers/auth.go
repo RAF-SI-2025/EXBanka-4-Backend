@@ -240,6 +240,88 @@ func ForgotPassword(authClient pb.AuthServiceClient, emailClient pb_email.EmailS
 	}
 }
 
+func ClientForgotPassword(authClient pb.AuthServiceClient, emailClient pb_email.EmailServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			Email string `json:"email" binding:"required"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+
+		resp, err := authClient.RequestClientPasswordReset(ctx, &pb.RequestPasswordResetRequest{Email: req.Email})
+		if err != nil {
+			switch status.Code(err) {
+			case codes.NotFound:
+				c.JSON(http.StatusNotFound, gin.H{"error": status.Convert(err).Message()})
+			default:
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return
+		}
+
+		frontendURL := os.Getenv("FRONTEND_URL")
+		if frontendURL == "" {
+			frontendURL = "http://localhost:5173"
+		}
+		resetLink := fmt.Sprintf("%s/client/reset-password?token=%s", frontendURL, resp.Token)
+		go func() {
+			emailCtx, emailCancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer emailCancel()
+			if _, err := emailClient.SendPasswordResetEmail(emailCtx, &pb_email.SendPasswordResetEmailRequest{
+				Email:     resp.Email,
+				FirstName: resp.FirstName,
+				ResetLink: resetLink,
+			}); err != nil {
+				_ = err
+			}
+		}()
+
+		c.JSON(http.StatusOK, gin.H{"message": "password reset email sent"})
+	}
+}
+
+func ClientResetPassword(client pb.AuthServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req struct {
+			Token           string `json:"token"            binding:"required"`
+			Password        string `json:"password"         binding:"required"`
+			ConfirmPassword string `json:"confirm_password" binding:"required"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+		_, err := client.ResetClientPassword(ctx, &pb.ResetPasswordRequest{
+			Token:           req.Token,
+			Password:        req.Password,
+			ConfirmPassword: req.ConfirmPassword,
+		})
+		if err != nil {
+			switch status.Code(err) {
+			case codes.NotFound:
+				c.JSON(http.StatusNotFound, gin.H{"error": "invalid or expired token"})
+			case codes.FailedPrecondition:
+				c.JSON(http.StatusConflict, gin.H{"error": status.Convert(err).Message()})
+			case codes.InvalidArgument:
+				c.JSON(http.StatusBadRequest, gin.H{"error": status.Convert(err).Message()})
+			default:
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			}
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "password reset successfully"})
+	}
+}
+
 // ClientLogin godoc
 // @Summary      Client login
 // @Description  Authenticate a client with email and password, receive JWT tokens.
